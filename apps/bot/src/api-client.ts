@@ -5,6 +5,7 @@ export interface TimeSlotAvailability {
   startTime: string;
   endTime: string;
   available: boolean;
+  availableKitNumber?: number;
 }
 
 export interface BookingResponse {

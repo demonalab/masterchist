@@ -17,6 +17,7 @@ interface TimeSlotAvailability {
   startTime: string;
   endTime: string;
   available: boolean;
+  availableKitNumber?: number;
 }
 
 const BLOCKING_STATUSES = [
@@ -46,7 +47,8 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
       }),
       prisma.cleaningKit.findMany({
         where: { isActive: true },
-        select: { id: true },
+        orderBy: { number: 'asc' },
+        select: { id: true, number: true },
       }),
       prisma.booking.findMany({
         where: {
@@ -69,14 +71,22 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const result: TimeSlotAvailability[] = timeSlots.map((slot) => {
-      const bookedKits = bookedKitsPerSlot.get(slot.id)?.size ?? 0;
-      const available = bookedKits < totalKits;
+      const bookedKitIds = bookedKitsPerSlot.get(slot.id) ?? new Set<string>();
+      const available = bookedKitIds.size < totalKits;
+
+      // Find first available kit number
+      let availableKitNumber: number | undefined;
+      if (available) {
+        const freeKit = activeKits.find(kit => !bookedKitIds.has(kit.id));
+        availableKitNumber = freeKit?.number;
+      }
 
       return {
         timeSlotId: slot.id,
         startTime: slot.startTime,
         endTime: slot.endTime,
         available,
+        availableKitNumber,
       };
     });
 

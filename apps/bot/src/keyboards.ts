@@ -38,7 +38,8 @@ export function buildTimeSlotsKeyboard(slots: TimeSlotAvailability[]): InlineKey
   const kb = new InlineKeyboard();
   for (const slot of slots) {
     const icon = slot.available ? '✅' : '❌';
-    const label = `${icon} ${slot.startTime} - ${slot.endTime}`;
+    const kitInfo = slot.available && slot.availableKitNumber ? ` (набор №${slot.availableKitNumber})` : '';
+    const label = `${icon} ${slot.startTime} - ${slot.endTime}${kitInfo}`;
     // Use | as separator to avoid conflict with : in time format
     const timeLabel = `${slot.startTime} - ${slot.endTime}`;
     const data = slot.available ? `slot|${slot.timeSlotId}|${timeLabel}` : 'slot:unavailable';
