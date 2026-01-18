@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
+import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
 import telegramAuthPlugin from './plugins/telegram-auth.plugin';
 import healthRoutes from './routes/health';
@@ -23,6 +24,11 @@ export async function buildApp(): Promise<FastifyInstance> {
   });
 
   await fastify.register(sensible);
+  await fastify.register(multipart, {
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+    },
+  });
   await fastify.register(telegramAuthPlugin);
 
   fastify.setErrorHandler((error, request, reply) => {
