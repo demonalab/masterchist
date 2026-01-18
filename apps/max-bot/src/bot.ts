@@ -84,7 +84,7 @@ function dateKeyboard(dates: { date: string; display: string }[], weekOffset: nu
 function timeSlotsKeyboard(slots: { slotId: string; startTime: string; endTime: string; availableKits: number }[]) {
   const rows = slots.map(slot => [
     Keyboard.button.callback(
-      `🕐 ${slot.startTime} - ${slot.endTime}`,
+      `🕐 ${slot.startTime} - ${slot.endTime} (${slot.availableKits} наб.)`,
       `slot:${slot.slotId}:${slot.startTime}-${slot.endTime}`
     ),
   ]);
