@@ -14,6 +14,28 @@ async function main() {
     console.log(`Starting bot in webhook mode...`);
     console.log(`Webhook: https://${config.WEBHOOK_DOMAIN}/bot/webhook`);
 
+    // Set Menu Button for Mini App
+    try {
+      await bot.api.setChatMenuButton({
+        menu_button: {
+          type: 'web_app',
+          text: '📱 Открыть приложение',
+          web_app: { url: WEBAPP_URL }
+        }
+      });
+      console.log('Menu button set successfully');
+    } catch (err) {
+      console.log('Failed to set menu button:', err);
+    }
+
+    // Register webhook with Telegram
+    try {
+      await bot.api.setWebhook(`https://${config.WEBHOOK_DOMAIN}/bot/webhook`);
+      console.log('Webhook registered with Telegram');
+    } catch (err) {
+      console.log('Failed to set webhook:', err);
+    }
+
     const handleUpdate = webhookCallback(bot, 'http');
 
     const server = createServer(async (req, res) => {
