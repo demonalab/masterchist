@@ -12,8 +12,8 @@ export async function handleStart(ctx: BotContext) {
   });
 
   try {
-    const imagePath = path.join(__dirname, '../assets/welcome.png');
-    await ctx.replyWithPhoto(new InputFile(imagePath), {
+    const animationPath = path.join(__dirname, '../assets/welcome.gif');
+    await ctx.replyWithAnimation(new InputFile(animationPath), {
       caption: `<b>Сервис аренды наборов для химчистки.</b>
 
 Выберите услугу:`,
@@ -21,14 +21,26 @@ export async function handleStart(ctx: BotContext) {
       reply_markup: mainMenuKeyboard,
     });
   } catch (err) {
-    console.error('Failed to send welcome image:', err);
-    // Fallback to text
-    await ctx.reply(
-      `<b>Сервис аренды наборов для химчистки.</b>
+    console.error('Failed to send welcome animation, trying image:', err);
+    try {
+      const imagePath = path.join(__dirname, '../assets/welcome.png');
+      await ctx.replyWithPhoto(new InputFile(imagePath), {
+        caption: `<b>Сервис аренды наборов для химчистки.</b>
 
 Выберите услугу:`,
-      { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
-    );
+        parse_mode: 'HTML',
+        reply_markup: mainMenuKeyboard,
+      });
+    } catch (imageErr) {
+      console.error('Failed to send welcome image:', imageErr);
+      // Fallback to text
+      await ctx.reply(
+        `<b>Сервис аренды наборов для химчистки.</b>
+
+Выберите услугу:`,
+        { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
+      );
+    }
   }
 }
 
