@@ -198,6 +198,20 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     IN_PROGRESS: 'В работе',
     COMPLETED: 'Завершён',
     CANCELLED: 'Отменён',
+    // lowercase variants
+    new: 'Новый',
+    awaiting_prepayment: 'Ожидает предоплаты',
+    prepaid: 'Предоплачен',
+    confirmed: 'Подтверждён',
+    in_progress: 'В работе',
+    completed: 'Завершён',
+    cancelled: 'Отменён',
+  };
+
+  const CITY_LABELS: Record<string, string> = {
+    ROSTOV_NA_DONU: 'Ростов-на-Дону',
+    BATAYSK: 'Батайск',
+    STAVROPOL: 'Ставрополь',
   };
 
   // Export bookings to XLSX
@@ -262,17 +276,17 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     // Column headers
     const headers = [
       { header: '№', key: 'num', width: 5 },
-      { header: 'Статус', key: 'status', width: 18 },
+      { header: 'Статус', key: 'status', width: 20 },
       { header: 'Дата заказа', key: 'scheduledDate', width: 14 },
       { header: 'Время', key: 'timeSlot', width: 14 },
-      { header: 'Услуга', key: 'service', width: 20 },
+      { header: 'Услуга', key: 'service', width: 28 },
       { header: 'Набор', key: 'kitNumber', width: 8 },
-      { header: 'Город', key: 'city', width: 16 },
-      { header: 'Адрес', key: 'address', width: 30 },
+      { header: 'Город', key: 'city', width: 18 },
+      { header: 'Адрес', key: 'address', width: 35 },
       { header: 'Клиент', key: 'contactName', width: 18 },
-      { header: 'Телефон', key: 'contactPhone', width: 16 },
+      { header: 'Телефон', key: 'contactPhone', width: 18 },
       { header: 'Telegram', key: 'userName', width: 14 },
-      { header: 'Создан', key: 'createdAt', width: 12 },
+      { header: 'Создан', key: 'createdAt', width: 14 },
     ];
 
     sheet.columns = headers;
@@ -298,6 +312,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       const rowNum = index + 3;
       const row = sheet.getRow(rowNum);
       
+      const cityRu = b.address?.city ? (CITY_LABELS[b.address.city] || b.address.city) : '—';
+      
       row.values = [
         index + 1,
         STATUS_LABELS[b.status] || b.status,
@@ -305,7 +321,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : '—',
         b.service?.title ?? '—',
         b.cleaningKit?.number ?? '—',
-        b.address?.city ?? '—',
+        cityRu,
         b.address?.addressLine ?? '—',
         b.address?.contactName ?? '—',
         b.address?.contactPhone ?? '—',
@@ -313,7 +329,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         b.createdAt.toLocaleDateString('ru-RU'),
       ];
 
-      row.height = 22;
+      row.height = 20;
       const isEven = index % 2 === 0;
       
       row.eachCell((cell) => {
