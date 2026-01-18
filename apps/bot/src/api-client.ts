@@ -223,4 +223,27 @@ export class ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  async getPendingBooking(): Promise<ApiResult<BookingDetails | null>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings/pending`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (res.status === 404) {
+        return { ok: true, data: null };
+      }
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as BookingDetails;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }

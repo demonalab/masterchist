@@ -19,11 +19,17 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 export async function handlePaymentProof(ctx: BotContext) {
-  console.log('Payment proof handler - session:', JSON.stringify(ctx.session));
-  const bookingId = ctx.session.pendingBookingId;
+  const telegramId = ctx.from?.id;
+  if (!telegramId) {
+    await ctx.reply('❌ Ошибка: не удалось определить пользователя.');
+    return;
+  }
 
-  if (!bookingId) {
-    console.log('No pendingBookingId in session for user:', ctx.from?.id);
+  // Find pending booking from API instead of session (session may be lost on restart)
+  const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+  const pendingResult = await api.getPendingBooking();
+  
+  if (!pendingResult.ok || !pendingResult.data) {
     await ctx.reply(
       '❓ Нет активного бронирования.\n\nИспользуйте /start для создания нового.',
       { reply_markup: mainMenuKeyboard }
@@ -31,11 +37,7 @@ export async function handlePaymentProof(ctx: BotContext) {
     return;
   }
 
-  const telegramId = ctx.from?.id;
-  if (!telegramId) {
-    await ctx.reply('❌ Ошибка: не удалось определить пользователя.');
-    return;
-  }
+  const bookingId = pendingResult.data.id;
 
   let fileId: string | undefined;
   let fileName = 'receipt';
@@ -88,7 +90,6 @@ export async function handlePaymentProof(ctx: BotContext) {
     const arrayBuffer = await fileResponse.arrayBuffer();
     const fileBuffer = Buffer.from(arrayBuffer);
 
-    const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
     const result = await api.uploadPaymentProof(bookingId, fileBuffer, fileName, mimeType);
 
     if (!result.ok) {

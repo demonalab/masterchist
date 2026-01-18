@@ -37,6 +37,34 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.notImplemented('GET /bookings - list user bookings');
   });
 
+  fastify.get('/pending', async (request, reply) => {
+    const userId = request.dbUserId;
+    if (!userId) {
+      return reply.unauthorized('User not authenticated');
+    }
+
+    const booking = await prisma.booking.findFirst({
+      where: {
+        userId,
+        status: { in: [BookingStatuses.NEW, BookingStatuses.AWAITING_PREPAYMENT] },
+      },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { select: { telegramId: true, firstName: true } },
+        cleaningKit: { select: { number: true } },
+        timeSlot: { select: { startTime: true, endTime: true } },
+        address: { select: { addressLine: true, contactName: true, contactPhone: true } },
+        service: { select: { code: true } },
+      },
+    });
+
+    if (!booking) {
+      return reply.notFound('No pending booking found');
+    }
+
+    return booking;
+  });
+
   fastify.post<{ Body: CreateBookingBody }>('/', async (request, reply) => {
     const parseResult = createBookingSchema.safeParse(request.body);
     if (!parseResult.success) {
