@@ -146,7 +146,6 @@ const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 function mainMenuKeyboard(showAdmin = false) {
   const rows = [
     [Keyboard.button.callback('🏠 Главное меню', 'back:main')],
-    [Keyboard.button.link('📱 Открыть приложение', WEBAPP_URL)],
     [Keyboard.button.callback('🧹 Химчистка самообслуживания', 'service:self_cleaning')],
     [
       Keyboard.button.callback('👔 Проф. химчистка', 'service:pro_cleaning'),
