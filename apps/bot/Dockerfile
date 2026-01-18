@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-alpine AS builder
+FROM node:20.11-alpine AS builder
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
@@ -23,7 +23,7 @@ RUN pnpm --filter @himchistka/shared build
 RUN pnpm --filter @himchistka/bot build
 
 # Stage 2: Production
-FROM node:20-alpine AS runner
+FROM node:20.11-alpine AS runner
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 

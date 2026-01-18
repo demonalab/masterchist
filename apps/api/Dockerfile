@@ -1,5 +1,5 @@
 # Stage 1: Build
-FROM node:20-slim AS builder
+FROM node:20.11-slim AS builder
 
 RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9 --activate
@@ -29,7 +29,7 @@ RUN pnpm --filter @himchistka/db build
 RUN pnpm --filter @himchistka/api build
 
 # Stage 2: Production
-FROM node:20-slim AS runner
+FROM node:20.11-slim AS runner
 
 RUN apt-get update && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && corepack prepare pnpm@9 --activate

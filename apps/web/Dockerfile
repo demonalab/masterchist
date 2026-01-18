@@ -1,5 +1,5 @@
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:20.11-alpine AS deps
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
@@ -12,7 +12,7 @@ COPY apps/web/package.json ./apps/web/
 RUN pnpm install --frozen-lockfile
 
 # Stage 2: Build
-FROM node:20-alpine AS builder
+FROM node:20.11-alpine AS builder
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
@@ -37,7 +37,7 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN pnpm --filter @himchistka/web build
 
 # Stage 3: Production
-FROM node:20-alpine AS runner
+FROM node:20.11-alpine AS runner
 
 WORKDIR /app
 
