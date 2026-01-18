@@ -9,6 +9,7 @@ import {
   backToMainKeyboard,
   retrySlotKeyboard,
 } from '../keyboards';
+import { getCurrentCalendar, buildCalendarKeyboard, parseCalendarCallback } from '../calendar';
 
 const CITY_NAMES: Record<string, string> = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
@@ -44,21 +45,57 @@ export async function selfCleaningConversation(
   const city = cityCtx.callbackQuery.data.replace('city:', '');
   ctx.session.draft.city = city;
 
-  // Step 2: Date input
-  await ctx.reply('📅 Введите дату (ДД.ММ.ГГГГ):', { reply_markup: cancelKeyboard });
+  // Step 2: Date selection via calendar
+  const calendarMsg = await ctx.reply('📅 Выберите дату:', { reply_markup: getCurrentCalendar() });
 
-  const dateCtx = await conversation.waitFor('message:text');
-  const dateInput = dateCtx.message.text.trim();
-
-  // Parse DD.MM.YYYY format
-  const dateMatch = dateInput.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
-  if (!dateMatch) {
-    await ctx.reply('❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ', { reply_markup: backToMainKeyboard });
-    return;
+  let scheduledDate = '';
+  let displayDate = '';
+  
+  while (true) {
+    const calCtx = await conversation.waitForCallbackQuery(/^cal:|^cancel$/);
+    await calCtx.answerCallbackQuery();
+    
+    if (calCtx.callbackQuery.data === 'cancel') {
+      await ctx.reply('❌ Отменено.', { reply_markup: backToMainKeyboard });
+      return;
+    }
+    
+    const parsed = parseCalendarCallback(calCtx.callbackQuery.data);
+    
+    if (parsed.action === 'ignore') {
+      continue;
+    }
+    
+    if (parsed.action === 'prev' && parsed.year && parsed.month !== undefined) {
+      let newMonth = parsed.month - 1;
+      let newYear = parsed.year;
+      if (newMonth < 0) {
+        newMonth = 11;
+        newYear--;
+      }
+      await calCtx.editMessageReplyMarkup({ reply_markup: buildCalendarKeyboard(newYear, newMonth) });
+      continue;
+    }
+    
+    if (parsed.action === 'next' && parsed.year && parsed.month !== undefined) {
+      let newMonth = parsed.month + 1;
+      let newYear = parsed.year;
+      if (newMonth > 11) {
+        newMonth = 0;
+        newYear++;
+      }
+      await calCtx.editMessageReplyMarkup({ reply_markup: buildCalendarKeyboard(newYear, newMonth) });
+      continue;
+    }
+    
+    if (parsed.action === 'date' && parsed.date) {
+      scheduledDate = parsed.date;
+      const [y, m, d] = scheduledDate.split('-');
+      displayDate = `${d}.${m}.${y}`;
+      await calCtx.editMessageText(`📅 Выбрана дата: ${displayDate}`);
+      break;
+    }
   }
-
-  const [, day, month, year] = dateMatch;
-  const scheduledDate = `${year}-${month!.padStart(2, '0')}-${day!.padStart(2, '0')}`;
 
   ctx.session.draft.scheduledDate = scheduledDate;
 
@@ -128,7 +165,6 @@ export async function selfCleaningConversation(
 
   // Step 7: Confirmation
   const cityName = CITY_NAMES[city] ?? city;
-  const displayDate = `${day!.padStart(2, '0')}.${month!.padStart(2, '0')}.${year}`;
   await ctx.reply(
     `📋 <b>Проверьте данные:</b>
 
