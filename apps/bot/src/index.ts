@@ -3,7 +3,7 @@ import { createServer } from 'http';
 import { createBot } from './bot';
 import { config } from './config';
 
-const WEBAPP_URL = 'https://xn--80ahdblodqf4k.xn--p1ai';
+const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
 async function main() {
   const bot = createBot();

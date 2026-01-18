@@ -1,7 +1,7 @@
 import { InlineKeyboard } from 'grammy';
 import { TimeSlotAvailability } from './api-client';
 
-const WEBAPP_URL = 'https://xn--80ahdblodqf4k.xn--p1ai';
+const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
 export const mainMenuKeyboard = new InlineKeyboard()
   .webApp('📱 Открыть приложение', WEBAPP_URL)
