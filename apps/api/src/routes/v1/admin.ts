@@ -89,9 +89,10 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Get stats
   fastify.get('/stats', async () => {
-    const [total, newCount, prepaid, confirmed, cancelled] = await Promise.all([
+    const [total, newCount, awaitingPrepayment, prepaid, confirmed, cancelled] = await Promise.all([
       prisma.booking.count(),
       prisma.booking.count({ where: { status: BookingStatuses.NEW } }),
+      prisma.booking.count({ where: { status: BookingStatuses.AWAITING_PREPAYMENT } }),
       prisma.booking.count({ where: { status: BookingStatuses.PREPAID } }),
       prisma.booking.count({ where: { status: BookingStatuses.CONFIRMED } }),
       prisma.booking.count({ where: { status: BookingStatuses.CANCELLED } }),
@@ -100,8 +101,9 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return {
       totalBookings: total,
       newBookings: newCount,
-      confirmedBookings: confirmed,
+      awaitingPrepaymentBookings: awaitingPrepayment,
       prepaidBookings: prepaid,
+      confirmedBookings: confirmed,
       cancelledBookings: cancelled,
     };
   });
@@ -112,47 +114,40 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return { role };
   });
 
-  // List all admins (super_admin only)
+  // ============ SUPER ADMIN ONLY ============
+
+  // List all admins
   fastify.get('/admins', async (request, reply) => {
-    const role = (request as any).adminRole;
-    if (role !== 'super_admin') {
-      return reply.forbidden('Super admin access required');
+    if ((request as any).adminRole !== 'super_admin') {
+      return reply.forbidden('Только для супер-админа');
     }
 
     const admins = await prisma.admin.findMany({
+      where: { isActive: true },
       orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        telegramId: true,
-        role: true,
-        name: true,
-        isActive: true,
-        createdAt: true,
-      },
     });
 
     return admins;
   });
 
-  // Add admin (super_admin only)
-  fastify.post<{ Body: { telegramId: string; name?: string; role?: string } }>('/admins', async (request, reply) => {
-    const adminRole = (request as any).adminRole;
-    if (adminRole !== 'super_admin') {
-      return reply.forbidden('Super admin access required');
+  // Add admin
+  fastify.post<{ Body: { telegramId: string; name?: string } }>('/admins', async (request, reply) => {
+    if ((request as any).adminRole !== 'super_admin') {
+      return reply.forbidden('Только для супер-админа');
     }
 
-    const { telegramId, name, role } = request.body;
+    const { telegramId, name } = request.body;
     if (!telegramId) {
-      return reply.badRequest('telegramId is required');
+      return reply.badRequest('telegramId обязателен');
     }
 
     const admin = await prisma.admin.upsert({
       where: { telegramId },
-      update: { name, role: role === 'super_admin' ? 'super_admin' : 'admin', isActive: true },
+      update: { name, isActive: true },
       create: {
         telegramId,
         name,
-        role: role === 'super_admin' ? 'super_admin' : 'admin',
+        role: 'admin',
         addedBy: String(request.telegramUser?.id),
       },
     });
@@ -160,11 +155,10 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return admin;
   });
 
-  // Remove admin (super_admin only)
+  // Remove admin
   fastify.delete<{ Params: { telegramId: string } }>('/admins/:telegramId', async (request, reply) => {
-    const adminRole = (request as any).adminRole;
-    if (adminRole !== 'super_admin') {
-      return reply.forbidden('Super admin access required');
+    if ((request as any).adminRole !== 'super_admin') {
+      return reply.forbidden('Только для супер-админа');
     }
 
     const { telegramId } = request.params;
@@ -177,21 +171,25 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return { success: true };
   });
 
-  // Delete booking (super_admin only)
+  // Delete booking
   fastify.delete<{ Params: { id: string } }>('/bookings/:id', async (request, reply) => {
-    const adminRole = (request as any).adminRole;
-    if (adminRole !== 'super_admin') {
-      return reply.forbidden('Super admin access required');
+    if ((request as any).adminRole !== 'super_admin') {
+      return reply.forbidden('Только для супер-админа');
     }
 
     const { id } = request.params;
 
+    // First delete related payment proofs
+    await prisma.paymentProof.deleteMany({ where: { bookingId: id } });
+    // Then delete booking
     await prisma.booking.delete({ where: { id } });
 
     return { success: true };
   });
 
-  // Export bookings (all admins)
+  // ============ EXPORT ============
+
+  // Export bookings to JSON (can be converted to Excel on client)
   fastify.get<{ Querystring: { period?: string } }>('/export', async (request) => {
     const { period } = request.query;
 
@@ -209,7 +207,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         startDate = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
       default:
-        startDate = new Date(0); // All time
+        startDate = new Date(0);
     }
 
     const bookings = await prisma.booking.findMany({
@@ -228,22 +226,25 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       },
     });
 
-    // Return as CSV-ready data
-    return bookings.map((b) => ({
-      id: b.id,
-      status: b.status,
-      scheduledDate: b.scheduledDate?.toISOString().split('T')[0] ?? '',
-      createdAt: b.createdAt.toISOString(),
-      service: b.service?.title ?? b.service?.code ?? '',
-      kitNumber: b.cleaningKit?.number ?? '',
-      timeSlot: b.timeSlot ? `${b.timeSlot.startTime}-${b.timeSlot.endTime}` : '',
-      city: b.address?.city ?? '',
-      address: b.address?.addressLine ?? '',
-      contactName: b.address?.contactName ?? '',
-      contactPhone: b.address?.contactPhone ?? '',
-      userTelegramId: b.user?.telegramId ?? '',
-      userName: b.user?.firstName ?? '',
-    }));
+    return {
+      period: period || 'all',
+      count: bookings.length,
+      data: bookings.map((b) => ({
+        id: b.id,
+        status: b.status,
+        scheduledDate: b.scheduledDate?.toISOString().split('T')[0] ?? '',
+        createdAt: b.createdAt.toISOString(),
+        service: b.service?.title ?? '',
+        kitNumber: b.cleaningKit?.number ?? '',
+        timeSlot: b.timeSlot ? `${b.timeSlot.startTime}-${b.timeSlot.endTime}` : '',
+        city: b.address?.city ?? '',
+        address: b.address?.addressLine ?? '',
+        contactName: b.address?.contactName ?? '',
+        contactPhone: b.address?.contactPhone ?? '',
+        userTelegramId: b.user?.telegramId ?? '',
+        userName: b.user?.firstName ?? '',
+      })),
+    };
   });
 };
 

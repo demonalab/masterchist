@@ -68,9 +68,39 @@ export interface AdminBooking {
 export interface AdminStats {
   totalBookings: number;
   newBookings: number;
-  confirmedBookings: number;
+  awaitingPrepaymentBookings: number;
   prepaidBookings: number;
+  confirmedBookings: number;
   cancelledBookings: number;
+}
+
+export interface AdminInfo {
+  id: string;
+  telegramId: string;
+  role: string;
+  name: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface ExportData {
+  period: string;
+  count: number;
+  data: Array<{
+    id: string;
+    status: string;
+    scheduledDate: string;
+    createdAt: string;
+    service: string;
+    kitNumber: number | string;
+    timeSlot: string;
+    city: string;
+    address: string;
+    contactName: string;
+    contactPhone: string;
+    userTelegramId: string;
+    userName: string;
+  }>;
 }
 
 export interface ApiError {
@@ -335,6 +365,124 @@ export class ApiClient {
       }
 
       const data = (await res.json()) as AdminStats;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdminRole(): Promise<ApiResult<{ role: string }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/role`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as { role: string };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdmins(): Promise<ApiResult<AdminInfo[]>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/admins`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as AdminInfo[];
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async addAdmin(telegramId: string, name?: string): Promise<ApiResult<AdminInfo>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/admins`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({ telegramId, name }),
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as AdminInfo;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async removeAdmin(telegramId: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/admins/${telegramId}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as { success: boolean };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async deleteBooking(bookingId: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/bookings/${bookingId}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as { success: boolean };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async exportBookings(period?: string): Promise<ApiResult<ExportData>> {
+    try {
+      const url = period
+        ? `${this.baseUrl}/api/v1/admin/export?period=${period}`
+        : `${this.baseUrl}/api/v1/admin/export`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as ExportData;
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };

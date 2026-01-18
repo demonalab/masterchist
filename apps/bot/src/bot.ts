@@ -2,7 +2,12 @@ import { Bot, session, BotError, GrammyError, HttpError } from 'grammy';
 import { conversations, createConversation } from '@grammyjs/conversations';
 import { BotContext, SessionData } from './types';
 import { config } from './config';
-import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel, handleMyOrders, handleAdminMenu, handleAdminNewOrders, handleAdminAllOrders, handleAdminStats } from './handlers';
+import { 
+  handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel, handleMyOrders, 
+  handleAdminMenu, handleAdminNewOrders, handleAdminAllOrders, handleAdminStats,
+  handleAdminExport, handleExportPeriod, handleAdminManage, handleListAdmins,
+  handleAddAdminPrompt, handleAddAdmin, handleRemoveAdmin, handleDeleteBooking
+} from './handlers';
 import { selfCleaningConversation } from './conversations/self-cleaning';
 import { proCleaningConversation } from './conversations/pro-cleaning';
 import { handlePaymentProof, setBotInstance } from './handlers/payment-proof';
@@ -114,9 +119,15 @@ export function createBot(): Bot<BotContext> {
   bot.hears('📋 Новые заказы', handleAdminNewOrders);
   bot.hears('📊 Все заказы', handleAdminAllOrders);
   bot.hears('📈 Статистика', handleAdminStats);
+  bot.hears('📥 Экспорт', handleAdminExport);
+  bot.hears('👥 Управление админами', handleAdminManage);
   bot.hears('👤 Выйти из админки', handleStart);
 
   // Admin inline callbacks
+  bot.callbackQuery('admin:menu', async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleAdminMenu(ctx);
+  });
   bot.callbackQuery('admin:new_orders', async (ctx) => {
     await ctx.answerCallbackQuery();
     await handleAdminNewOrders(ctx);
@@ -128,6 +139,39 @@ export function createBot(): Bot<BotContext> {
   bot.callbackQuery('admin:stats', async (ctx) => {
     await ctx.answerCallbackQuery();
     await handleAdminStats(ctx);
+  });
+
+  // Export callbacks
+  bot.callbackQuery(/^export:(.+)$/, async (ctx) => {
+    const period = ctx.match?.[1] ?? 'all';
+    await handleExportPeriod(ctx, period);
+  });
+
+  // Admin management callbacks
+  bot.callbackQuery('admin:manage', async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleAdminManage(ctx);
+  });
+  bot.callbackQuery('admin:add_admin', handleAddAdminPrompt);
+  bot.callbackQuery('admin:list_admins', handleListAdmins);
+  bot.callbackQuery(/^admin:remove:(.+)$/, async (ctx) => {
+    const adminId = ctx.match?.[1];
+    if (adminId) await handleRemoveAdmin(ctx, adminId);
+  });
+
+  // Delete booking callback (super admin)
+  bot.callbackQuery(/^admin:delete:(.+)$/, async (ctx) => {
+    const bookingId = ctx.match?.[1];
+    if (bookingId) await handleDeleteBooking(ctx, bookingId);
+  });
+
+  // Handle text input for adding admin
+  bot.on('message:text', async (ctx, next) => {
+    if (ctx.session.awaitingAdminId && /^\d+$/.test(ctx.message.text)) {
+      await handleAddAdmin(ctx, ctx.message.text);
+      return;
+    }
+    await next();
   });
 
   bot.catch((err: BotError<BotContext>) => {

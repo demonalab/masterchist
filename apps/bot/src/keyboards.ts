@@ -28,27 +28,61 @@ export function getMenuKeyboard(telegramId?: number): Keyboard {
   return persistentMenuKeyboard;
 }
 
-// Admin reply keyboard
+// Admin reply keyboard (regular admin)
 export const adminMenuKeyboard = new Keyboard()
   .text('📋 Новые заказы').text('📊 Все заказы').row()
-  .text('📈 Статистика').text('👤 Выйти из админки')
+  .text('📈 Статистика').text('📥 Экспорт').row()
+  .text('👤 Выйти из админки')
   .resized()
   .persistent();
 
-// Admin inline keyboards
-export const adminMainKeyboard = new InlineKeyboard()
-  .text('📋 Новые заказы', 'admin:new_orders')
-  .row()
-  .text('📊 Все заказы', 'admin:all_orders')
-  .row()
-  .text('📈 Статистика', 'admin:stats');
+// Super admin reply keyboard
+export const superAdminMenuKeyboard = new Keyboard()
+  .text('📋 Новые заказы').text('📊 Все заказы').row()
+  .text('📈 Статистика').text('📥 Экспорт').row()
+  .text('👥 Управление админами').row()
+  .text('👤 Выйти из админки')
+  .resized()
+  .persistent();
 
-export function buildAdminOrderKeyboard(bookingId: string): InlineKeyboard {
-  return new InlineKeyboard()
+// Export period keyboard
+export const exportPeriodKeyboard = new InlineKeyboard()
+  .text('📅 Сегодня', 'export:day')
+  .text('📆 Неделя', 'export:week')
+  .row()
+  .text('🗓 Месяц', 'export:month')
+  .text('📊 Всё время', 'export:all')
+  .row()
+  .text('« Назад', 'admin:menu');
+
+// Admin management keyboard
+export const adminManageKeyboard = new InlineKeyboard()
+  .text('➕ Добавить админа', 'admin:add_admin')
+  .row()
+  .text('📋 Список админов', 'admin:list_admins')
+  .row()
+  .text('« Назад', 'admin:menu');
+
+export function buildAdminOrderKeyboard(bookingId: string, isSuperAdmin: boolean): InlineKeyboard {
+  const kb = new InlineKeyboard()
     .text('✅ Подтвердить', `admin:confirm:${bookingId}`)
-    .text('❌ Отклонить', `admin:reject:${bookingId}`)
-    .row()
-    .text('« Назад к заказам', 'admin:new_orders');
+    .text('❌ Отклонить', `admin:reject:${bookingId}`);
+  
+  if (isSuperAdmin) {
+    kb.row().text('🗑 Удалить заказ', `admin:delete:${bookingId}`);
+  }
+  
+  kb.row().text('« Назад к заказам', 'admin:new_orders');
+  return kb;
+}
+
+export function buildAdminListKeyboard(admins: Array<{ telegramId: string; name: string | null }>): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const admin of admins) {
+    kb.text(`❌ ${admin.name || admin.telegramId}`, `admin:remove:${admin.telegramId}`).row();
+  }
+  kb.text('« Назад', 'admin:manage');
+  return kb;
 }
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';

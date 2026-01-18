@@ -14,6 +14,7 @@ export interface BookingDraft {
 export interface SessionData {
   draft: BookingDraft;
   pendingBookingId?: string;
+  awaitingAdminId?: boolean;
 }
 
 export type BotContext = Context & SessionFlavor<SessionData> & ConversationFlavor;
