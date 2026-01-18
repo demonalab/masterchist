@@ -11,10 +11,11 @@ import {
   ConfirmStep,
   SuccessStep,
 } from '@/components/steps';
+import { WebHomePage } from '@/components/web/WebHomePage';
 
 export default function HomePage() {
   const { step, error, setError } = useBookingStore();
-  const { isReady } = useTelegram();
+  const { isReady, webApp } = useTelegram();
 
   if (!isReady) {
     return (
@@ -22,6 +23,10 @@ export default function HomePage() {
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tg-button" />
       </div>
     );
+  }
+
+  if (!webApp) {
+    return <WebHomePage />;
   }
 
   if (error) {
