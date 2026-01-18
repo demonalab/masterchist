@@ -44,11 +44,12 @@ async function handleUpdate(update: MaxUpdate) {
     }
 
     if (update.update_type === 'message_callback' && update.callback) {
-      const chatId = update.callback.message?.recipient?.chat_id;
       const userId = update.callback.user.user_id;
+      // chatId can be in message.recipient.chat_id or fallback to userId for dialogs
+      const chatId = update.callback.message?.recipient?.chat_id || userId;
       
       if (!chatId) {
-        console.log('No chat_id in callback');
+        console.log('No chat_id in callback, userId:', userId);
         return;
       }
 
