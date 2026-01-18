@@ -127,10 +127,19 @@ export function createBot() {
     );
   });
 
-  // Handle text messages
+  // Handle text messages and photos
   bot.on('message_created', async (ctx) => {
     const userId = (ctx as any).user?.user_id || 0;
-    const text = ctx.message?.body?.text || '';
+    const message = ctx.message as any;
+    const text = message?.body?.text || '';
+    const attachments = message?.body?.attachments || [];
+    
+    // Check for photo attachment (payment proof)
+    const photoAttachment = attachments.find((a: any) => a.type === 'image');
+    if (photoAttachment) {
+      await handlePhotoUpload(ctx, userId, photoAttachment);
+      return;
+    }
     
     if (text.startsWith('/')) return; // Skip commands
     
@@ -423,7 +432,7 @@ async function createSelfCleaningBooking(ctx: Context, userId: number) {
 
   const booking = result.data;
   await ctx.reply(
-    `✅ <b>Бронирование создано!</b>\n\n📋 ID: <code>${booking.id}</code>\n🧹 Набор: #${booking.kitNumber}\n📅 Дата: ${d.displayDate}\n🕐 Время: ${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}\n📍 Адрес: ${booking.address.addressLine}\n\n💳 <b>Для подтверждения внесите предоплату 500₽</b>\n\nРеквизиты:\n• Сбербанк: 1234 5678 9012 3456\n• СБП: +7 (999) 123-45-67`,
+    `✅ <b>Бронирование создано!</b>\n\n📋 ID: <code>${booking.id}</code>\n🧹 Набор: #${booking.kitNumber}\n📅 Дата: ${d.displayDate}\n🕐 Время: ${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}\n📍 Адрес: ${booking.address.addressLine}\n\n💳 <b>Для подтверждения внесите предоплату 500₽</b>\n\nРеквизиты:\n• Сбербанк: 1234 5678 9012 3456\n• СБП: +7 (999) 123-45-67\n\n📸 <b>После оплаты отправьте фото чека в этот чат!</b>`,
     { attachments: [mainMenuKeyboard()], format: 'html' }
   );
   resetState(userId);
@@ -465,4 +474,49 @@ async function createProCleaningBooking(ctx: Context, userId: number) {
     { attachments: [mainMenuKeyboard()], format: 'html' }
   );
   resetState(userId);
+}
+
+async function handlePhotoUpload(ctx: Context, userId: number, photoAttachment: any) {
+  const api = new ApiClient(userId);
+  
+  // Check for pending booking awaiting payment
+  const pendingResult = await api.getPendingBooking();
+  
+  if (!pendingResult.ok || !pendingResult.data) {
+    await ctx.reply(
+      '📷 Фото получено, но у вас нет активных бронирований, ожидающих оплаты.\n\nСоздайте бронирование и отправьте фото чека после оплаты.',
+      { attachments: [mainMenuKeyboard()] }
+    );
+    return;
+  }
+
+  if (pendingResult.data.status !== 'awaiting_prepayment') {
+    await ctx.reply(
+      '📷 Фото получено, но ваше бронирование не ожидает оплаты.\n\nСтатус: ' + pendingResult.data.status,
+      { attachments: [mainMenuKeyboard()] }
+    );
+    return;
+  }
+
+  const bookingId = pendingResult.data.id;
+  const photoUrl = photoAttachment.payload?.url || photoAttachment.url || '';
+
+  if (!photoUrl) {
+    await ctx.reply('❌ Не удалось получить фото. Попробуйте ещё раз.');
+    return;
+  }
+
+  await ctx.reply('⏳ Загружаю чек...');
+
+  const result = await api.uploadPaymentProof(bookingId, photoUrl);
+
+  if (!result.ok) {
+    await ctx.reply(`❌ Ошибка: ${result.error}`, { attachments: [backKeyboard()] });
+    return;
+  }
+
+  await ctx.reply(
+    `✅ <b>Чек получен!</b>\n\nВаше бронирование переведено в статус "Оплачено".\nОжидайте подтверждения от администратора.\n\nМы свяжемся с вами для уточнения деталей доставки.\n\nСпасибо! 🙏`,
+    { attachments: [mainMenuKeyboard()], format: 'html' }
+  );
 }

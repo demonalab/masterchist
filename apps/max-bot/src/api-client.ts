@@ -163,6 +163,50 @@ export class ApiClient {
       console.error('Failed to track conversation complete:', err);
     }
   }
+
+  async getPendingBooking(): Promise<ApiResult<{ id: string; status: string } | null>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings/pending`, {
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Max-User-Id': String(this.userId),
+        },
+      });
+      if (res.status === 404) {
+        return { ok: true, data: null };
+      }
+      if (!res.ok) {
+        return { ok: false, status: res.status, error: 'Failed to get pending booking' };
+      }
+      const data = await res.json() as { id: string; status: string };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async uploadPaymentProof(bookingId: string, photoUrl: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings/${bookingId}/payment-proof`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Max-User-Id': String(this.userId),
+        },
+        body: JSON.stringify({ 
+          photoUrl,
+          maxUserId: this.userId,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+      return { ok: true, data: { success: true } };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }
 
 export type { TimeSlotAvailability, BookingResponse, UserBooking };
