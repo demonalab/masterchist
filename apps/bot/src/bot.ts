@@ -72,16 +72,19 @@ export function createBot(): Bot<BotContext> {
   // Text button handlers (persistent keyboard)
   bot.hears('🧹 Химчистка (самообслуживание)', async (ctx) => {
     await ctx.conversation.exit();
+    ctx.session.draft = {};
     await ctx.conversation.enter('selfCleaningConversation');
   });
 
   bot.hears('👔 Проф. химчистка', async (ctx) => {
     await ctx.conversation.exit();
+    ctx.session.draft = {};
     await ctx.conversation.enter('proCleaningConversation');
   });
 
   bot.hears('🏠 Клининг', async (ctx) => {
     await ctx.conversation.exit();
+    ctx.session.draft = {};
     await handleCleaning(ctx);
   });
 
