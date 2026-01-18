@@ -38,18 +38,23 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
 
     const { scheduledDate } = parseResult.data;
     const dateObj = new Date(scheduledDate + 'T00:00:00.000Z');
+    
+    // Previous day - kits booked yesterday are unavailable until their slot time today
+    const prevDateObj = new Date(dateObj);
+    prevDateObj.setUTCDate(prevDateObj.getUTCDate() - 1);
 
-    const [timeSlots, activeKits, existingBookings] = await Promise.all([
+    const [timeSlots, activeKits, todayBookings, yesterdayBookings] = await Promise.all([
       prisma.timeSlot.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
-        select: { id: true, startTime: true, endTime: true },
+        select: { id: true, startTime: true, endTime: true, sortOrder: true },
       }),
       prisma.cleaningKit.findMany({
         where: { isActive: true },
         orderBy: { number: 'asc' },
         select: { id: true, number: true },
       }),
+      // Bookings for requested date
       prisma.booking.findMany({
         where: {
           scheduledDate: dateObj,
@@ -58,20 +63,53 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
         },
         select: { timeSlotId: true, cleaningKitId: true },
       }),
+      // Bookings from previous day (kit rented for 24h)
+      prisma.booking.findMany({
+        where: {
+          scheduledDate: prevDateObj,
+          status: { in: [...BLOCKING_STATUSES] },
+          cleaningKitId: { not: null },
+        },
+        select: { timeSlotId: true, cleaningKitId: true },
+      }),
     ]);
 
     const totalKits = activeKits.length;
+    
+    // Build map: slotId -> sortOrder for comparison
+    const slotSortOrder = new Map<string, number>();
+    for (const slot of timeSlots) {
+      slotSortOrder.set(slot.id, slot.sortOrder);
+    }
 
+    // Kits booked today per slot
     const bookedKitsPerSlot = new Map<string, Set<string>>();
-    for (const booking of existingBookings) {
+    for (const booking of todayBookings) {
       if (!booking.timeSlotId || !booking.cleaningKitId) continue;
       const existing = bookedKitsPerSlot.get(booking.timeSlotId) ?? new Set();
-      existing.add(booking.cleaningKitId);
+      existing.add(booking.cleaningKitId visir);
       bookedKitsPerSlot.set(booking.timeSlotId, existing);
+    }
+    
+    // Kits booked yesterday - blocked until same slot today
+    // Map: kitId -> slotSortOrder (kit is blocked for slots with sortOrder < this value)
+    const kitBlockedUntilSlot = new Map<string, number>();
+    for (const booking of yesterdayBookings) {
+      if (!booking.timeSlotId || !booking.cleaningKitId) continue;
+      const slotOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
+      kitBlockedUntilSlot.set(booking.cleaningKitId, slotOrder);
     }
 
     const result: TimeSlotAvailability[] = timeSlots.map((slot) => {
-      const bookedKitIds = bookedKitsPerSlot.get(slot.id) ?? new Set<string>();
+      const bookedKitIds = new Set(bookedKitsPerSlot.get(slot.id) ?? []);
+      
+      // Add kits blocked from yesterday's bookings
+      for (const [kitId, blockedUntilOrder] of kitBlockedUntilSlot) {
+        if (slot.sortOrder < blockedUntilOrder) {
+          bookedKitIds.add(kitId);
+        }
+      }
+      
       const available = bookedKitIds.size < totalKits;
 
       // Find first available kit number
