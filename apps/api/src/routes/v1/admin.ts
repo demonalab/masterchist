@@ -259,12 +259,12 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     // Calculate statistics
     const stats = {
       total: bookings.length,
-      new: bookings.filter(b => b.status === 'NEW' || b.status === 'new').length,
-      awaitingPrepayment: bookings.filter(b => b.status === 'AWAITING_PREPAYMENT' || b.status === 'awaiting_prepayment').length,
-      prepaid: bookings.filter(b => b.status === 'PREPAID' || b.status === 'prepaid').length,
-      confirmed: bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'confirmed').length,
-      completed: bookings.filter(b => b.status === 'COMPLETED' || b.status === 'completed').length,
-      cancelled: bookings.filter(b => b.status === 'CANCELLED' || b.status === 'cancelled').length,
+      new: bookings.filter(b => b.status.toLowerCase() === 'new').length,
+      awaitingPrepayment: bookings.filter(b => b.status.toLowerCase() === 'awaiting_prepayment').length,
+      prepaid: bookings.filter(b => b.status.toLowerCase() === 'prepaid').length,
+      confirmed: bookings.filter(b => b.status.toLowerCase() === 'confirmed').length,
+      completed: bookings.filter(b => b.status.toLowerCase() === 'completed').length,
+      cancelled: bookings.filter(b => b.status.toLowerCase() === 'cancelled').length,
     };
 
     // Create Excel workbook
