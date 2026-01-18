@@ -51,12 +51,13 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
       const params = new URLSearchParams(initData);
       const userStr = params.get('user');
       if (userStr) {
-        const user = JSON.parse(decodeURIComponent(userStr)) as TelegramUser;
+        const user = JSON.parse(userStr) as TelegramUser;
         request.telegramUser = user;
         request.dbUserId = await upsertUser(user);
         return;
       }
-    } catch {
+    } catch (err) {
+      console.error('Bot direct initData parse error:', err, 'initData:', initData);
       return reply.unauthorized('Invalid bot direct initData');
     }
   }
