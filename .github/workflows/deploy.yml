@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     
     steps:
       - name: Deploy to server
@@ -16,9 +16,14 @@ jobs:
           host: ${{ secrets.VDS_HOST }}
           username: ${{ secrets.VDS_USER }}
           key: ${{ secrets.VDS_SSH_KEY }}
-          command_timeout: 25m
+          command_timeout: 5m
           script: |
             cd /opt/masterchist
             git pull origin main
-            docker compose build web api bot
-            docker compose up -d
+            pnpm install --frozen-lockfile
+            pnpm --filter @himchistka/shared build
+            pnpm --filter @himchistka/db build
+            pnpm --filter @himchistka/bot build
+            pnpm --filter @himchistka/api build
+            pnpm --filter @himchistka/web build
+            pm2 restart all
