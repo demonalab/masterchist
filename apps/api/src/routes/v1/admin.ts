@@ -256,46 +256,113 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       },
     });
 
+    // Calculate statistics
+    const stats = {
+      total: bookings.length,
+      new: bookings.filter(b => b.status === 'NEW' || b.status === 'new').length,
+      awaitingPrepayment: bookings.filter(b => b.status === 'AWAITING_PREPAYMENT' || b.status === 'awaiting_prepayment').length,
+      prepaid: bookings.filter(b => b.status === 'PREPAID' || b.status === 'prepaid').length,
+      confirmed: bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'confirmed').length,
+      completed: bookings.filter(b => b.status === 'COMPLETED' || b.status === 'completed').length,
+      cancelled: bookings.filter(b => b.status === 'CANCELLED' || b.status === 'cancelled').length,
+    };
+
     // Create Excel workbook
     const workbook = new ExcelJS.Workbook();
     workbook.creator = 'МастерЧист';
     workbook.created = new Date();
 
-    const sheet = workbook.addWorksheet('Заказы', {
-      views: [{ state: 'frozen', ySplit: 2 }],
+    const sheet = workbook.addWorksheet('Заказы');
+
+    // ============ SUMMARY TABLE ============
+    // Summary header
+    const summaryHeaderRow = sheet.getRow(1);
+    summaryHeaderRow.values = ['Показатель', 'Значение'];
+    summaryHeaderRow.height = 22;
+    summaryHeaderRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E75B6' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FF1F4E79' } },
+        bottom: { style: 'thin', color: { argb: 'FF1F4E79' } },
+        left: { style: 'thin', color: { argb: 'FF1F4E79' } },
+        right: { style: 'thin', color: { argb: 'FF1F4E79' } },
+      };
     });
 
-    // Header row with period info
-    sheet.mergeCells('A1:L1');
-    const titleCell = sheet.getCell('A1');
-    titleCell.value = `Отчёт по заказам — ${periodLabel} (${bookings.length} шт.)`;
-    titleCell.font = { bold: true, size: 14, color: { argb: 'FF1F4E79' } };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    sheet.getRow(1).height = 30;
-
-    // Column headers
-    const headers = [
-      { header: '№', key: 'num', width: 5 },
-      { header: 'Статус', key: 'status', width: 20 },
-      { header: 'Дата заказа', key: 'scheduledDate', width: 14 },
-      { header: 'Время', key: 'timeSlot', width: 14 },
-      { header: 'Услуга', key: 'service', width: 28 },
-      { header: 'Набор', key: 'kitNumber', width: 8 },
-      { header: 'Город', key: 'city', width: 18 },
-      { header: 'Адрес', key: 'address', width: 35 },
-      { header: 'Клиент', key: 'contactName', width: 18 },
-      { header: 'Телефон', key: 'contactPhone', width: 18 },
-      { header: 'Telegram', key: 'userName', width: 14 },
-      { header: 'Создан', key: 'createdAt', width: 14 },
+    // Summary data
+    const summaryData = [
+      ['Всего заказов', stats.total],
+      ['Новых', stats.new],
+      ['Ожидает предоплаты', stats.awaitingPrepayment],
+      ['Предоплачено', stats.prepaid],
+      ['Подтверждено', stats.confirmed],
+      ['Завершено', stats.completed],
+      ['Отменено', stats.cancelled],
     ];
 
-    sheet.columns = headers;
+    summaryData.forEach((item, index) => {
+      const row = sheet.getRow(index + 2);
+      row.values = item;
+      row.height = 20;
+      const isEven = index % 2 === 0;
+      row.eachCell((cell, colNum) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEven ? 'FFF2F2F2' : 'FFFFFFFF' } };
+        cell.border = {
+          bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+          left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+          right: { style: 'thin', color: { argb: 'FFD9D9D9' } },
+        };
+        cell.alignment = { vertical: 'middle', horizontal: colNum === 2 ? 'center' : 'left' };
+      });
+    });
 
-    // Style header row (row 2)
-    const headerRow = sheet.getRow(2);
-    headerRow.values = headers.map(h => h.header);
-    headerRow.height = 25;
-    headerRow.eachCell((cell) => {
+    // Set summary columns width
+    sheet.getColumn(1).width = 25;
+    sheet.getColumn(2).width = 12;
+
+    // Add autofilter to summary
+    sheet.autoFilter = { from: 'A1', to: 'B1' };
+
+    // ============ DATA TABLE ============
+    const dataStartRow = summaryData.length + 4;
+
+    // Data table header
+    const headers = [
+      { key: 'num', width: 5 },
+      { key: 'status', width: 20 },
+      { key: 'scheduledDate', width: 14 },
+      { key: 'timeSlot', width: 14 },
+      { key: 'service', width: 28 },
+      { key: 'kitNumber', width: 8 },
+      { key: 'city', width: 18 },
+      { key: 'address', width: 35 },
+      { key: 'contactName', width: 18 },
+      { key: 'contactPhone', width: 18 },
+      { key: 'userName', width: 14 },
+    ];
+    const headerLabels = ['№', 'Статус', 'Дата заказа', 'Время', 'Услуга', 'Набор', 'Город', 'Адрес', 'Клиент', 'Телефон', 'Telegram'];
+
+    // Set column widths (columns 3-13 for data table, reusing 1-2 for summary)
+    headers.forEach((h, i) => {
+      if (i >= 2) sheet.getColumn(i + 1).width = h.width;
+    });
+    sheet.getColumn(3).width = 14;
+    sheet.getColumn(4).width = 14;
+    sheet.getColumn(5).width = 28;
+    sheet.getColumn(6).width = 8;
+    sheet.getColumn(7).width = 18;
+    sheet.getColumn(8).width = 35;
+    sheet.getColumn(9).width = 18;
+    sheet.getColumn(10).width = 18;
+    sheet.getColumn(11).width = 14;
+
+    // Data header row
+    const dataHeaderRow = sheet.getRow(dataStartRow);
+    dataHeaderRow.values = headerLabels;
+    dataHeaderRow.height = 22;
+    dataHeaderRow.eachCell((cell) => {
       cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2E75B6' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -309,7 +376,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Data rows with zebra striping
     bookings.forEach((b, index) => {
-      const rowNum = index + 3;
+      const rowNum = dataStartRow + index + 1;
       const row = sheet.getRow(rowNum);
       
       const cityRu = b.address?.city ? (CITY_LABELS[b.address.city] || b.address.city) : '—';
@@ -326,18 +393,13 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         b.address?.contactName ?? '—',
         b.address?.contactPhone ?? '—',
         b.user?.firstName ?? '—',
-        b.createdAt.toLocaleDateString('ru-RU'),
       ];
 
       row.height = 20;
       const isEven = index % 2 === 0;
       
       row.eachCell((cell) => {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: isEven ? 'FFF2F2F2' : 'FFFFFFFF' },
-        };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: isEven ? 'FFF2F2F2' : 'FFFFFFFF' } };
         cell.border = {
           bottom: { style: 'thin', color: { argb: 'FFD9D9D9' } },
           left: { style: 'thin', color: { argb: 'FFD9D9D9' } },
@@ -346,25 +408,18 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         cell.alignment = { vertical: 'middle', wrapText: true };
       });
 
-      // Center align number column
-      row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
-      // Center align status
-      row.getCell(2).alignment = { horizontal: 'center', vertical: 'middle' };
-      // Center dates and times
-      row.getCell(3).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(4).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(6).alignment = { horizontal: 'center', vertical: 'middle' };
-      row.getCell(12).alignment = { horizontal: 'center', vertical: 'middle' };
+      // Center align specific columns
+      [1, 2, 3, 4, 6].forEach(col => {
+        row.getCell(col).alignment = { horizontal: 'center', vertical: 'middle' };
+      });
     });
 
-    // Summary row
+    // Add autofilter for data table
     if (bookings.length > 0) {
-      const summaryRowNum = bookings.length + 4;
-      sheet.mergeCells(`A${summaryRowNum}:L${summaryRowNum}`);
-      const summaryCell = sheet.getCell(`A${summaryRowNum}`);
-      summaryCell.value = `Итого: ${bookings.length} заказов`;
-      summaryCell.font = { bold: true, size: 11 };
-      summaryCell.alignment = { horizontal: 'right' };
+      sheet.autoFilter = {
+        from: { row: dataStartRow, column: 1 },
+        to: { row: dataStartRow + bookings.length, column: 11 },
+      };
     }
 
     // Generate buffer
