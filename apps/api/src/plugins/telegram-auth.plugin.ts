@@ -45,6 +45,22 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     return reply.unauthorized('Missing Telegram initData');
   }
 
+  // Bot direct requests bypass - parse user from initData without signature validation
+  if (initData.includes('hash=bot_direct')) {
+    try {
+      const params = new URLSearchParams(initData);
+      const userStr = params.get('user');
+      if (userStr) {
+        const user = JSON.parse(decodeURIComponent(userStr)) as TelegramUser;
+        request.telegramUser = user;
+        request.dbUserId = await upsertUser(user);
+        return;
+      }
+    } catch {
+      return reply.unauthorized('Invalid bot direct initData');
+    }
+  }
+
   const validated = validateInitData(initData, config.BOT_TOKEN);
   if (!validated) {
     return reply.unauthorized('Invalid Telegram initData signature');
