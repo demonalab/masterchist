@@ -57,13 +57,15 @@ async function notifyAdminAboutPayment(bookingId: string, userId: number, photoU
     // Send message with inline keyboard via MAX API
     const keyboard = {
       type: 'inline_keyboard',
-      buttons: [
-        [
-          { type: 'callback', text: '✅ Подтвердить', payload: `admin:confirm:${bookingId}` },
-          { type: 'callback', text: '❌ Отклонить', payload: `admin:reject:${bookingId}` },
+      payload: {
+        buttons: [
+          [
+            { type: 'callback', text: '✅ Подтвердить', payload: `admin:confirm:${bookingId}` },
+            { type: 'callback', text: '❌ Отклонить', payload: `admin:reject:${bookingId}` },
+          ],
+          [{ type: 'callback', text: '🗑 Удалить', payload: `admin:delete:${bookingId}` }],
         ],
-        [{ type: 'callback', text: '🗑 Удалить', payload: `admin:delete:${bookingId}` }],
-      ],
+      },
     };
 
     const res = await fetch(`${config.MAX_API_URL}/messages?user_id=${config.ADMIN_USER_ID}`, {
