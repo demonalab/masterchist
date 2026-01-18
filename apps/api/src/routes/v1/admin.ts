@@ -5,11 +5,12 @@ import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import ExcelJS from 'exceljs';
 
 const SUPER_ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID || '';
+const MAX_ADMIN_USER_ID = process.env.MAX_ADMIN_USER_ID || '';
 
 // Helper to check admin status
 async function getAdminRole(telegramId: string): Promise<'super_admin' | 'admin' | null> {
-  // Super admin from env
-  if (telegramId === SUPER_ADMIN_TELEGRAM_ID) {
+  // Super admin from env (Telegram or MAX)
+  if (telegramId === SUPER_ADMIN_TELEGRAM_ID || telegramId === MAX_ADMIN_USER_ID) {
     return 'super_admin';
   }
   

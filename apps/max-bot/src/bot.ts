@@ -70,8 +70,8 @@ function getDaysWithOffset(offset: number = 0) {
   return days;
 }
 
-function mainMenuKeyboard() {
-  return Keyboard.inlineKeyboard([
+function mainMenuKeyboard(showAdmin = false) {
+  const rows = [
     [Keyboard.button.callback('🏠 Главное меню', 'back:main')],
     [Keyboard.button.callback('🧹 Химчистка самообслуживания', 'service:self_cleaning')],
     [
@@ -82,7 +82,20 @@ function mainMenuKeyboard() {
       Keyboard.button.callback('📋 Мои заказы', 'my_orders'),
       Keyboard.button.callback('❓ Помощь', 'help'),
     ],
-  ]);
+  ];
+  
+  if (showAdmin) {
+    rows.push([Keyboard.button.callback('👨‍💼 Админка', 'admin:menu')]);
+  }
+  
+  return Keyboard.inlineKeyboard(rows);
+}
+
+// Check if user is admin
+async function isUserAdmin(userId: number): Promise<boolean> {
+  const api = new ApiClient(userId);
+  const result = await api.getAdminRole();
+  return result.ok;
 }
 
 function cityKeyboard() {
@@ -178,9 +191,10 @@ export function createBot() {
     const userId = (ctx as any).user?.user_id || 0;
     resetState(userId);
     
+    const showAdmin = await isUserAdmin(userId);
     await ctx.reply(
       `👋 <b>Добро пожаловать в МастерЧист!</b>\n\n<b>Сервис аренды наборов для химчистки.</b>\n\nВыберите услугу 👇`,
-      { attachments: [mainMenuKeyboard()], format: 'html' }
+      { attachments: [mainMenuKeyboard(showAdmin)], format: 'html' }
     );
   });
 
@@ -250,9 +264,21 @@ export function createBot() {
 
     if (payload === 'back:main' || payload === 'main_menu') {
       resetState(userId);
+      const showAdmin = await isUserAdmin(userId);
       await ctx.reply(
         `👋 <b>МастерЧист</b>\n\nВыберите услугу 👇`,
-        { attachments: [mainMenuKeyboard()], format: 'html' }
+        { attachments: [mainMenuKeyboard(showAdmin)], format: 'html' }
+      );
+    }
+    else if (payload === 'admin:menu') {
+      const showAdmin = await isUserAdmin(userId);
+      if (!showAdmin) {
+        await ctx.reply('❌ У вас нет доступа к админ-панели.');
+        return;
+      }
+      await ctx.reply(
+        `👨‍💼 <b>Админ-панель</b>\n\nВыберите действие:`,
+        { attachments: [adminMenuKeyboard()], format: 'html' }
       );
     }
     else if (payload === 'service:self_cleaning') {
