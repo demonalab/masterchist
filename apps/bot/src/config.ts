@@ -5,6 +5,8 @@ const envSchema = z.object({
   BOT_TOKEN: z.string().min(1),
   API_BASE_URL: z.string().url().default('http://localhost:3001'),
   ADMIN_TELEGRAM_ID: z.string().optional(),
+  WEBHOOK_DOMAIN: z.string().optional(),
+  WEBHOOK_PORT: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -2,6 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@himchistka/shared'],
+  output: 'standalone',
 };
 
 module.exports = nextConfig;
