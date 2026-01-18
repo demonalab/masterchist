@@ -17,12 +17,13 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: '❌ Отменён',
 };
 
-function getNext7Days() {
+function getDaysWithOffset(offset: number = 0) {
   const days = [];
   const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
   const monthNames = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
   
-  for (let i = 1; i <= 7; i++) {
+  const startDay = 1 + (offset * 7);
+  for (let i = startDay; i < startDay + 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() + i);
     const date = d.toISOString().split('T')[0];
@@ -34,6 +35,7 @@ function getNext7Days() {
 
 function mainMenuKeyboard() {
   return Keyboard.inlineKeyboard([
+    [Keyboard.button.callback('🏠 Главное меню', 'back:main')],
     [Keyboard.button.callback('🧹 Химчистка самообслуживания', 'service:self_cleaning')],
     [
       Keyboard.button.callback('👔 Проф. химчистка', 'service:pro_cleaning'),
@@ -55,7 +57,7 @@ function cityKeyboard() {
   ]);
 }
 
-function dateKeyboard(dates: { date: string; display: string }[]) {
+function dateKeyboard(dates: { date: string; display: string }[], weekOffset: number = 0) {
   const rows: any[][] = [];
   for (let i = 0; i < dates.length; i += 2) {
     const row = [Keyboard.button.callback(`📅 ${dates[i].display}`, `date:${dates[i].date}`)];
@@ -63,6 +65,17 @@ function dateKeyboard(dates: { date: string; display: string }[]) {
       row.push(Keyboard.button.callback(`📅 ${dates[i + 1].display}`, `date:${dates[i + 1].date}`));
     }
     rows.push(row);
+  }
+  // Pagination buttons
+  const navRow = [];
+  if (weekOffset > 0) {
+    navRow.push(Keyboard.button.callback('« Пред. неделя', `week:${weekOffset - 1}`));
+  }
+  if (weekOffset < 3) { // Max 4 weeks ahead
+    navRow.push(Keyboard.button.callback('След. неделя »', `week:${weekOffset + 1}`));
+  }
+  if (navRow.length > 0) {
+    rows.push(navRow);
   }
   rows.push([Keyboard.button.callback('« Назад', 'back:city')]);
   return Keyboard.inlineKeyboard(rows);
@@ -212,10 +225,11 @@ export function createBot() {
 
       if (state.step === 'self_cleaning:city') {
         setStep(userId, 'self_cleaning:date');
-        const dates = getNext7Days();
+        updateStateData(userId, { weekOffset: 0 });
+        const dates = getDaysWithOffset(0);
         await ctx.reply(
           `📅 <b>Выберите дату:</b>\n\n🏙 Город: ${cityName}`,
-          { attachments: [dateKeyboard(dates)], format: 'html' }
+          { attachments: [dateKeyboard(dates, 0)], format: 'html' }
         );
       } else if (state.step === 'pro_cleaning:city') {
         setStep(userId, 'pro_cleaning:address');
@@ -241,9 +255,10 @@ export function createBot() {
       const result = await api.getAvailability(state.data.city!, date);
 
       if (!result.ok || result.data.length === 0) {
+        const weekOffset = state.data.weekOffset || 0;
         await ctx.reply(
           '❌ Нет доступных слотов на эту дату. Выберите другую.',
-          { attachments: [dateKeyboard(getNext7Days())] }
+          { attachments: [dateKeyboard(getDaysWithOffset(weekOffset), weekOffset)] }
         );
         return;
       }
@@ -286,9 +301,20 @@ export function createBot() {
     else if (payload === 'back:date') {
       setStep(userId, 'self_cleaning:date');
       const state = getState(userId);
+      const weekOffset = state.data.weekOffset || 0;
       await ctx.reply(
         `📅 <b>Выберите дату:</b>\n\n🏙 Город: ${state.data.cityName}`,
-        { attachments: [dateKeyboard(getNext7Days())], format: 'html' }
+        { attachments: [dateKeyboard(getDaysWithOffset(weekOffset), weekOffset)], format: 'html' }
+      );
+    }
+    else if (payload.startsWith('week:')) {
+      const weekOffset = parseInt(payload.replace('week:', ''), 10);
+      updateStateData(userId, { weekOffset });
+      const state = getState(userId);
+      const dates = getDaysWithOffset(weekOffset);
+      await ctx.reply(
+        `📅 <b>Выберите дату:</b>\n\n🏙 Город: ${state.data.cityName}`,
+        { attachments: [dateKeyboard(dates, weekOffset)], format: 'html' }
       );
     }
   });

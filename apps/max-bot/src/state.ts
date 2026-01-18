@@ -33,6 +33,7 @@ export interface UserState {
     contactName?: string;
     contactPhone?: string;
     description?: string;
+    weekOffset?: number;
   };
 }
 
