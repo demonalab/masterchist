@@ -20,13 +20,21 @@ const ALLOWED_MIME_TYPES = [
 
 export async function handlePaymentProof(ctx: BotContext) {
   const telegramId = ctx.from?.id;
-  if (!telegramId) {
+  const chatId = ctx.chat?.id;
+  
+  // Skip if no user or chat (prevents session errors)
+  if (!telegramId || !chatId) {
     return;
   }
 
   // Skip if there's an active conversation (let conversation handle it)
-  const activeConversations = await ctx.conversation.active();
-  if (activeConversations && Object.keys(activeConversations).length > 0) {
+  try {
+    const activeConversations = await ctx.conversation.active();
+    if (activeConversations && Object.keys(activeConversations).length > 0) {
+      return;
+    }
+  } catch {
+    // If we can't check conversations, skip this handler
     return;
   }
 
