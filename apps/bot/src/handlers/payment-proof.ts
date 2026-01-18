@@ -133,7 +133,7 @@ export async function handlePaymentProof(ctx: BotContext) {
     if (botInstance) {
       const bookingResult = await api.getBooking(bookingId);
       if (bookingResult.ok) {
-        await notifyAdminAboutPayment(botInstance, bookingResult.data);
+        await notifyAdminAboutPayment(botInstance, bookingResult.data, fileId);
       }
     }
   } catch (err) {

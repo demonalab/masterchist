@@ -36,7 +36,8 @@ export function formatAdminNotification(booking: BookingDetails): string {
 
 export async function notifyAdminAboutPayment(
   bot: Bot<BotContext>,
-  booking: BookingDetails
+  booking: BookingDetails,
+  receiptFileId?: string
 ): Promise<void> {
   if (!config.ADMIN_TELEGRAM_ID) {
     console.log('ADMIN_TELEGRAM_ID not set, skipping admin notification');
@@ -44,6 +45,13 @@ export async function notifyAdminAboutPayment(
   }
 
   try {
+    // Send receipt image first if available
+    if (receiptFileId) {
+      await bot.api.sendPhoto(config.ADMIN_TELEGRAM_ID, receiptFileId, {
+        caption: '📎 Чек предоплаты',
+      });
+    }
+
     await bot.api.sendMessage(
       config.ADMIN_TELEGRAM_ID,
       formatAdminNotification(booking),
