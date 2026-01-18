@@ -4,6 +4,7 @@ import { BotContext, SessionData } from './types';
 import { config } from './config';
 import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel } from './handlers';
 import { selfCleaningConversation } from './conversations/self-cleaning';
+import { proCleaningConversation } from './conversations/pro-cleaning';
 import { handlePaymentProof, setBotInstance } from './handlers/payment-proof';
 import { handleAdminConfirm, handleAdminReject } from './handlers/admin';
 
@@ -31,6 +32,7 @@ export function createBot(): Bot<BotContext> {
 
   bot.use(conversations());
   bot.use(createConversation(selfCleaningConversation));
+  bot.use(createConversation(proCleaningConversation));
 
   bot.command('start', handleStart);
 
@@ -39,7 +41,10 @@ export function createBot(): Bot<BotContext> {
     await ctx.conversation.enter('selfCleaningConversation');
   });
 
-  bot.callbackQuery('service:pro_cleaning', handleProCleaning);
+  bot.callbackQuery('service:pro_cleaning', async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await ctx.conversation.enter('proCleaningConversation');
+  });
   bot.callbackQuery('service:cleaning', handleCleaning);
 
   bot.callbackQuery('back:main', handleBackToMain);

@@ -5,7 +5,7 @@ import { backToMainKeyboard, mainMenuKeyboard } from '../keyboards';
 import { config } from '../config';
 import { notifyAdminAboutPayment } from './admin';
 
-let botInstance: Bot<BotContext> | null = null;
+export let botInstance: Bot<BotContext> | null = null;
 
 export function setBotInstance(bot: Bot<BotContext>): void {
   botInstance = bot;
