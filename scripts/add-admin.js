@@ -1,4 +1,4 @@
-const { prisma } = require('@himchistka/db');
+const { prisma } = require('../packages/db/dist/index.js');
 
 async function main() {
   const user = await prisma.user.upsert({
