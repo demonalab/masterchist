@@ -391,7 +391,12 @@ export function createBot() {
       
       updateStateData(userId, { city, cityName });
 
-      if (state.step === 'self_cleaning:city') {
+      // Handle self_cleaning flow (including after bot restart when state is idle)
+      if (state.step === 'self_cleaning:city' || state.step === 'idle' || !state.step) {
+        // Set serviceCode if not set (after bot restart)
+        if (!state.data.serviceCode) {
+          updateStateData(userId, { serviceCode: 'self_cleaning' });
+        }
         setStep(userId, 'self_cleaning:date');
         updateStateData(userId, { weekOffset: 0 });
         const dates = getDaysWithOffset(0);
