@@ -243,9 +243,16 @@ export function createBot() {
     resetState(userId);
     
     const showAdmin = await isUserAdmin(userId);
+    
+    // Send welcome GIF with menu
+    const welcomeGif = {
+      type: 'image',
+      payload: { url: 'https://masterchist.ru/welcome.gif' },
+    } as any;
+    
     await ctx.reply(
       `👋 <b>Добро пожаловать в МастерЧист!</b>\n\n<b>Сервис аренды наборов для химчистки.</b>\n\nВыберите услугу 👇`,
-      { attachments: [mainMenuKeyboard(showAdmin)], format: 'html' }
+      { attachments: [welcomeGif, mainMenuKeyboard(showAdmin)], format: 'html' }
     );
   });
 
