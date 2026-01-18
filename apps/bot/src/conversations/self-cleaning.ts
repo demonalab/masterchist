@@ -1,4 +1,6 @@
 import { Conversation } from '@grammyjs/conversations';
+import { InputFile } from 'grammy';
+import * as path from 'path';
 import { BotContext } from '../types';
 import { ApiClient } from '../api-client';
 import {
@@ -31,6 +33,20 @@ export async function selfCleaningConversation(
 
   // Reset draft
   ctx.session.draft = {};
+
+  // Send promo image
+  try {
+    const promoPath = path.join(__dirname, '../../assets/IMG_20260118_212814.png');
+    await ctx.replyWithPhoto(new InputFile(promoPath), {
+      caption: `🧹 <b>Химчистка самообслуживания</b>
+
+💰 <b>АКЦИЯ: 1500 ₽ за сутки</b>
+🎁 Сушилка и химия в подарок!`,
+      parse_mode: 'HTML',
+    });
+  } catch (err) {
+    console.error('Failed to send promo image:', err);
+  }
 
   // Step 1: City selection
   await ctx.reply('📍 Выберите город:', { reply_markup: cityKeyboard });
