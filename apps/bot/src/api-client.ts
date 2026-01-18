@@ -90,11 +90,11 @@ export class ApiClient {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({ message: res.statusText }));
+        const body = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
         return { ok: false, status: res.status, error: body.message ?? res.statusText };
       }
 
-      const data: TimeSlotAvailability[] = await res.json();
+      const data = (await res.json()) as TimeSlotAvailability[];
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
@@ -125,11 +125,11 @@ export class ApiClient {
       });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ message: res.statusText }));
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
       }
 
-      const data: BookingResponse = await res.json();
+      const data = (await res.json()) as BookingResponse;
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
@@ -156,11 +156,11 @@ export class ApiClient {
       });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ message: res.statusText }));
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
       }
 
-      const data = await res.json();
+      const data = (await res.json()) as { bookingId: string; status: string };
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
@@ -175,11 +175,11 @@ export class ApiClient {
       });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ message: res.statusText }));
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
       }
 
-      const data: BookingDetails = await res.json();
+      const data = (await res.json()) as BookingDetails;
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
@@ -194,11 +194,11 @@ export class ApiClient {
       });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ message: res.statusText }));
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
       }
 
-      const data: AdminActionResponse = await res.json();
+      const data = (await res.json()) as AdminActionResponse;
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
@@ -213,11 +213,11 @@ export class ApiClient {
       });
 
       if (!res.ok) {
-        const errBody = await res.json().catch(() => ({ message: res.statusText }));
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
       }
 
-      const data: AdminActionResponse = await res.json();
+      const data = (await res.json()) as AdminActionResponse;
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
