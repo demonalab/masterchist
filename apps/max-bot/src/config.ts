@@ -4,4 +4,5 @@ export const config = {
   MAX_API_URL: 'https://platform-api.max.ru',
   WEBHOOK_URL: process.env.MAX_WEBHOOK_URL || '',
   PORT: parseInt(process.env.MAX_BOT_PORT || '3004', 10),
+  ADMIN_USER_ID: process.env.MAX_ADMIN_USER_ID || '18782420',
 };

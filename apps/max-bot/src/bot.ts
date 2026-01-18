@@ -3,6 +3,43 @@ import { config } from './config';
 import { ApiClient } from './api-client';
 import { getState, setState, resetState, updateStateData, setStep, ConversationStep } from './state';
 
+// Store bot instance for sending notifications
+let botInstance: Bot | null = null;
+
+export function getBotInstance(): Bot | null {
+  return botInstance;
+}
+
+// Send message to user via MAX API (direct HTTP call)
+async function sendMessageToUser(userId: string, text: string) {
+  try {
+    const res = await fetch(`${config.MAX_API_URL}/messages?user_id=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': config.BOT_TOKEN,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text, format: 'html' }),
+    });
+    if (!res.ok) {
+      console.error('Failed to send message:', await res.text());
+    }
+  } catch (err) {
+    console.error('Failed to send message to user:', err);
+  }
+}
+
+// Notify admin about payment proof
+async function notifyAdminAboutPayment(bookingId: string, userId: number) {
+  if (!config.ADMIN_USER_ID) return;
+  try {
+    const message = `💰 <b>Получен чек предоплаты</b>\n\n📋 Booking ID: <code>${bookingId}</code>\n👤 От пользователя: ${userId}\n\nПроверьте в админ-панели (/admin)`;
+    await sendMessageToUser(config.ADMIN_USER_ID, message);
+  } catch (err) {
+    console.error('Failed to notify admin:', err);
+  }
+}
+
 const CITIES = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
   BATAYSK: 'Батайск',
@@ -134,6 +171,7 @@ function adminOrderKeyboard(bookingId: string) {
 
 export function createBot() {
   const bot = new Bot(config.BOT_TOKEN);
+  botInstance = bot; // Store for notifications
 
   // /start command
   bot.command('start', async (ctx) => {
@@ -579,6 +617,9 @@ async function handlePhotoUpload(ctx: Context, userId: number, photoAttachment: 
     `✅ <b>Чек получен!</b>\n\nВаше бронирование переведено в статус "Оплачено".\nОжидайте подтверждения от администратора.\n\nМы свяжемся с вами для уточнения деталей доставки.\n\nСпасибо! 🙏`,
     { format: 'html' }
   );
+
+  // Notify admin about new payment
+  await notifyAdminAboutPayment(bookingId, userId);
 }
 
 // Admin handlers
@@ -677,7 +718,13 @@ async function handleAdminConfirm(ctx: Context, userId: number, bookingId: strin
 
   await ctx.reply(`✅ <b>Бронирование подтверждено</b>\n\nID: <code>${bookingId}</code>`, { format: 'html' });
   
-  // TODO: Notify user about confirmation via MAX API
+  // Notify user (if they have MAX account linked via telegramId)
+  if (result.data.userTelegramId) {
+    await sendMessageToUser(
+      result.data.userTelegramId,
+      `✅ <b>Оплата подтверждена!</b>\n\nВаш заказ принят в работу.\nНабор будет доставлен в указанное время.\n\nСпасибо, что выбрали нас! 🙏`
+    );
+  }
 }
 
 async function handleAdminReject(ctx: Context, userId: number, bookingId: string) {
@@ -691,5 +738,11 @@ async function handleAdminReject(ctx: Context, userId: number, bookingId: string
 
   await ctx.reply(`❌ <b>Бронирование отклонено</b>\n\nID: <code>${bookingId}</code>\nСлот освобождён`, { format: 'html' });
   
-  // TODO: Notify user about rejection via MAX API
+  // Notify user (if they have MAX account linked via telegramId)
+  if (result.data.userTelegramId) {
+    await sendMessageToUser(
+      result.data.userTelegramId,
+      `❌ <b>Оплата отклонена</b>\n\nК сожалению, мы не смогли подтвердить вашу оплату.\nСлот освобождён для других клиентов.\n\nЕсли это ошибка, свяжитесь с нами или создайте новое бронирование.`
+    );
+  }
 }
