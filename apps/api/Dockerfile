@@ -30,6 +30,9 @@ RUN pnpm --filter @himchistka/api build
 # Stage 2: Production
 FROM node:20-alpine AS runner
 
+# Install OpenSSL 1.1 compatibility for Prisma
+RUN apk add --no-cache openssl1.1-compat
+
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 WORKDIR /app
