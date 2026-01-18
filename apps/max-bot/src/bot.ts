@@ -143,14 +143,10 @@ function getDaysWithOffset(offset: number = 0) {
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
-// Open app button for Mini App
-function openAppButton(text: string, url: string) {
-  return { type: 'open_app', text, url } as any;
-}
-
 function mainMenuKeyboard(showAdmin = false) {
   const rows = [
-    [openAppButton('📱 Открыть приложение', WEBAPP_URL)],
+    [Keyboard.button.callback('🏠 Главное меню', 'back:main')],
+    [Keyboard.button.link('📱 Открыть приложение', WEBAPP_URL)],
     [Keyboard.button.callback('🧹 Химчистка самообслуживания', 'service:self_cleaning')],
     [
       Keyboard.button.callback('👔 Проф. химчистка', 'service:pro_cleaning'),
