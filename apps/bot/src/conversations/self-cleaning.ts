@@ -61,99 +61,105 @@ export async function selfCleaningConversation(
   const city = cityCtx.callbackQuery.data.replace('city:', '');
   ctx.session.draft.city = city;
 
-  // Step 2: Date selection via calendar
-  const calendarMsg = await ctx.reply('📅 Выберите дату:', { reply_markup: getCurrentCalendar() });
-
+  // Step 2-3: Date and slot selection (with back:date support)
   let scheduledDate = '';
   let displayDate = '';
-  
-  while (true) {
-    const calCtx = await conversation.waitForCallbackQuery(/^cal:|^cancel$/);
-    await calCtx.answerCallbackQuery();
-    
-    if (calCtx.callbackQuery.data === 'cancel') {
-      await ctx.reply('❌ Отменено.', { reply_markup: backToMainKeyboard });
+  let timeSlotId = '';
+  let timeSlotLabel = '';
+
+  dateSelection: while (true) {
+    // Date selection via calendar
+    await ctx.reply('📅 Выберите дату:', { reply_markup: getCurrentCalendar() });
+
+    while (true) {
+      const calCtx = await conversation.waitForCallbackQuery(/^cal:|^cancel$/);
+      await calCtx.answerCallbackQuery();
+      
+      if (calCtx.callbackQuery.data === 'cancel') {
+        await ctx.reply('❌ Отменено.', { reply_markup: backToMainKeyboard });
+        return;
+      }
+      
+      const parsed = parseCalendarCallback(calCtx.callbackQuery.data);
+      
+      if (parsed.action === 'ignore') {
+        continue;
+      }
+      
+      if (parsed.action === 'prev' && parsed.year && parsed.month !== undefined) {
+        let newMonth = parsed.month - 1;
+        let newYear = parsed.year;
+        if (newMonth < 0) {
+          newMonth = 11;
+          newYear--;
+        }
+        await calCtx.editMessageReplyMarkup({ reply_markup: buildCalendarKeyboard(newYear, newMonth) });
+        continue;
+      }
+      
+      if (parsed.action === 'next' && parsed.year && parsed.month !== undefined) {
+        let newMonth = parsed.month + 1;
+        let newYear = parsed.year;
+        if (newMonth > 11) {
+          newMonth = 0;
+          newYear++;
+        }
+        await calCtx.editMessageReplyMarkup({ reply_markup: buildCalendarKeyboard(newYear, newMonth) });
+        continue;
+      }
+      
+      if (parsed.action === 'date' && parsed.date) {
+        scheduledDate = parsed.date;
+        const [y, m, d] = scheduledDate.split('-');
+        displayDate = `${d}.${m}.${y}`;
+        await calCtx.editMessageText(`📅 Выбрана дата: ${displayDate}`);
+        break;
+      }
+    }
+
+    ctx.session.draft.scheduledDate = scheduledDate;
+
+    // Fetch availability from API
+    await ctx.reply('⏳ Загружаю доступные слоты...');
+
+    const availResult = await api.getAvailability(city, scheduledDate, 'self_cleaning');
+
+    if (!availResult.ok) {
+      const errorMsg = availResult.status >= 500
+        ? '⚠️ Сервер временно недоступен. Попробуйте позже.'
+        : `❌ Ошибка: ${availResult.error}`;
+      await ctx.reply(errorMsg, { reply_markup: backToMainKeyboard });
       return;
     }
-    
-    const parsed = parseCalendarCallback(calCtx.callbackQuery.data);
-    
-    if (parsed.action === 'ignore') {
-      continue;
+
+    const slots = availResult.data;
+    const availableSlots = slots.filter((s) => s.available);
+
+    if (availableSlots.length === 0) {
+      await ctx.reply('😔 На эту дату нет свободных слотов.', { reply_markup: backToMainKeyboard });
+      return;
     }
-    
-    if (parsed.action === 'prev' && parsed.year && parsed.month !== undefined) {
-      let newMonth = parsed.month - 1;
-      let newYear = parsed.year;
-      if (newMonth < 0) {
-        newMonth = 11;
-        newYear--;
-      }
-      await calCtx.editMessageReplyMarkup({ reply_markup: buildCalendarKeyboard(newYear, newMonth) });
-      continue;
+
+    await ctx.reply('🕐 Выберите время:', { reply_markup: buildTimeSlotsKeyboard(slots) });
+
+    const slotCtx = await conversation.waitForCallbackQuery(/^slot[|:]|^back:date$/);
+    await slotCtx.answerCallbackQuery();
+
+    if (slotCtx.callbackQuery.data === 'back:date') {
+      continue dateSelection;
     }
-    
-    if (parsed.action === 'next' && parsed.year && parsed.month !== undefined) {
-      let newMonth = parsed.month + 1;
-      let newYear = parsed.year;
-      if (newMonth > 11) {
-        newMonth = 0;
-        newYear++;
-      }
-      await calCtx.editMessageReplyMarkup({ reply_markup: buildCalendarKeyboard(newYear, newMonth) });
-      continue;
+
+    if (slotCtx.callbackQuery.data === 'slot:unavailable') {
+      await ctx.reply('❌ Этот слот недоступен. Выберите другой.');
+      continue dateSelection;
     }
-    
-    if (parsed.action === 'date' && parsed.date) {
-      scheduledDate = parsed.date;
-      const [y, m, d] = scheduledDate.split('-');
-      displayDate = `${d}.${m}.${y}`;
-      await calCtx.editMessageText(`📅 Выбрана дата: ${displayDate}`);
-      break;
-    }
+
+    // Parse slot data: slot|uuid|HH:MM - HH:MM
+    const slotParts = slotCtx.callbackQuery.data.split('|');
+    timeSlotId = slotParts[1]!;
+    timeSlotLabel = slotParts[2] ?? '';
+    break dateSelection;
   }
-
-  ctx.session.draft.scheduledDate = scheduledDate;
-
-  // Step 3: Fetch availability from API
-  await ctx.reply('⏳ Загружаю доступные слоты...');
-
-  const availResult = await api.getAvailability(city, scheduledDate, 'self_cleaning');
-
-  if (!availResult.ok) {
-    const errorMsg = availResult.status >= 500
-      ? '⚠️ Сервер временно недоступен. Попробуйте позже.'
-      : `❌ Ошибка: ${availResult.error}`;
-    await ctx.reply(errorMsg, { reply_markup: backToMainKeyboard });
-    return;
-  }
-
-  const slots = availResult.data;
-  const availableSlots = slots.filter((s) => s.available);
-
-  if (availableSlots.length === 0) {
-    await ctx.reply('😔 На эту дату нет свободных слотов.', { reply_markup: backToMainKeyboard });
-    return;
-  }
-
-  await ctx.reply('🕐 Выберите время:', { reply_markup: buildTimeSlotsKeyboard(slots) });
-
-  const slotCtx = await conversation.waitForCallbackQuery(/^slot[|:]|^back:date$/);
-  await slotCtx.answerCallbackQuery();
-
-  if (slotCtx.callbackQuery.data === 'back:date') {
-    return;
-  }
-
-  if (slotCtx.callbackQuery.data === 'slot:unavailable') {
-    await ctx.reply('❌ Этот слот недоступен. Выберите другой.');
-    return;
-  }
-
-  // Parse slot data: slot|uuid|HH:MM - HH:MM
-  const slotParts = slotCtx.callbackQuery.data.split('|');
-  const timeSlotId = slotParts[1]!;
-  const timeSlotLabel = slotParts[2] ?? '';
 
   ctx.session.draft.timeSlotId = timeSlotId;
   ctx.session.draft.timeSlotLabel = timeSlotLabel;
