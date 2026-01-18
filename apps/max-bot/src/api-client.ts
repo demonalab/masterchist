@@ -262,6 +262,7 @@ export class ApiClient {
           'Content-Type': 'application/json',
           'X-Max-User-Id': String(this.userId),
         },
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
@@ -282,6 +283,7 @@ export class ApiClient {
           'Content-Type': 'application/json',
           'X-Max-User-Id': String(this.userId),
         },
+        body: JSON.stringify({}),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
@@ -293,6 +295,50 @@ export class ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  async deleteBooking(bookingId: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/bookings/${bookingId}`, {
+        method: 'DELETE',
+        headers: { 
+          'X-Max-User-Id': String(this.userId),
+        },
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+      const data = await res.json() as { success: boolean };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getBookingDetails(bookingId: string): Promise<ApiResult<BookingDetails>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings/${bookingId}`, {
+        headers: { 'X-Max-User-Id': String(this.userId) },
+      });
+      if (!res.ok) {
+        return { ok: false, status: res.status, error: 'Booking not found' };
+      }
+      const data = await res.json() as BookingDetails;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+}
+
+interface BookingDetails {
+  id: string;
+  status: string;
+  scheduledDate: string | null;
+  kitNumber: number | null;
+  timeSlot: { startTime: string; endTime: string } | null;
+  address: { addressLine: string; contactName: string; contactPhone: string } | null;
+  user: { firstName: string | null; telegramId: string } | null;
 }
 
 interface AdminBooking {

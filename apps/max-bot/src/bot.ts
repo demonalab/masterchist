@@ -29,12 +29,59 @@ async function sendMessageToUser(userId: string, text: string) {
   }
 }
 
-// Notify admin about payment proof
-async function notifyAdminAboutPayment(bookingId: string, userId: number) {
+// Notify admin about payment proof with booking details and buttons
+async function notifyAdminAboutPayment(bookingId: string, userId: number, photoUrl?: string) {
   if (!config.ADMIN_USER_ID) return;
   try {
-    const message = `💰 <b>Получен чек предоплаты</b>\n\n📋 Booking ID: <code>${bookingId}</code>\n👤 От пользователя: ${userId}\n\nПроверьте в админ-панели (/admin)`;
-    await sendMessageToUser(config.ADMIN_USER_ID, message);
+    // Get booking details
+    const api = new ApiClient(Number(config.ADMIN_USER_ID));
+    const bookingResult = await api.getBookingDetails(bookingId);
+    
+    let message = `💰 <b>Получен чек предоплаты!</b>\n\n`;
+    
+    if (bookingResult.ok && bookingResult.data) {
+      const b = bookingResult.data;
+      const date = b.scheduledDate || '—';
+      const time = b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : '';
+      const kit = b.kitNumber ? `🧹 Набор №${b.kitNumber}` : '';
+      const addr = b.address ? `📍 ${b.address.addressLine}\n📞 ${b.address.contactPhone}\n👤 ${b.address.contactName}` : '';
+      
+      message += `📋 ID: <code>${bookingId}</code>\n`;
+      message += `📅 ${date} ${time}\n`;
+      if (kit) message += `${kit}\n`;
+      if (addr) message += `${addr}\n`;
+    } else {
+      message += `📋 Booking ID: <code>${bookingId}</code>\n👤 От пользователя: ${userId}\n`;
+    }
+
+    // Send message with inline keyboard via MAX API
+    const keyboard = {
+      type: 'inline_keyboard',
+      buttons: [
+        [
+          { type: 'callback', text: '✅ Подтвердить', payload: `admin:confirm:${bookingId}` },
+          { type: 'callback', text: '❌ Отклонить', payload: `admin:reject:${bookingId}` },
+        ],
+        [{ type: 'callback', text: '🗑 Удалить', payload: `admin:delete:${bookingId}` }],
+      ],
+    };
+
+    const res = await fetch(`${config.MAX_API_URL}/messages?user_id=${config.ADMIN_USER_ID}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': config.BOT_TOKEN,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        text: message, 
+        format: 'html',
+        attachments: [keyboard],
+      }),
+    });
+    
+    if (!res.ok) {
+      console.error('Failed to send admin notification:', await res.text());
+    }
   } catch (err) {
     console.error('Failed to notify admin:', err);
   }
@@ -179,6 +226,7 @@ function adminOrderKeyboard(bookingId: string) {
       Keyboard.button.callback('✅ Подтвердить', `admin:confirm:${bookingId}`),
       Keyboard.button.callback('❌ Отклонить', `admin:reject:${bookingId}`),
     ],
+    [Keyboard.button.callback('🗑 Удалить', `admin:delete:${bookingId}`)],
   ]);
 }
 
@@ -453,6 +501,10 @@ export function createBot() {
     else if (payload.startsWith('admin:reject:')) {
       const bookingId = payload.replace('admin:reject:', '');
       await handleAdminReject(ctx, userId, bookingId);
+    }
+    else if (payload.startsWith('admin:delete:')) {
+      const bookingId = payload.replace('admin:delete:', '');
+      await handleAdminDelete(ctx, userId, bookingId);
     }
   });
 
@@ -789,4 +841,16 @@ async function handleAdminReject(ctx: Context, userId: number, bookingId: string
       `❌ <b>Оплата отклонена</b>\n\nК сожалению, мы не смогли подтвердить вашу оплату.\nСлот освобождён для других клиентов.\n\nЕсли это ошибка, свяжитесь с нами или создайте новое бронирование.`
     );
   }
+}
+
+async function handleAdminDelete(ctx: Context, userId: number, bookingId: string) {
+  const api = new ApiClient(userId);
+  const result = await api.deleteBooking(bookingId);
+  
+  if (!result.ok) {
+    await ctx.reply(`❌ Ошибка: ${result.error}`);
+    return;
+  }
+
+  await ctx.reply(`🗑 <b>Бронирование удалено</b>\n\nID: <code>${bookingId}</code>`, { format: 'html' });
 }
