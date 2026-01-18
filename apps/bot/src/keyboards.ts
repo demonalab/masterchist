@@ -26,7 +26,9 @@ export function buildTimeSlotsKeyboard(slots: TimeSlotAvailability[]): InlineKey
   for (const slot of slots) {
     const icon = slot.available ? '✅' : '❌';
     const label = `${icon} ${slot.startTime} - ${slot.endTime}`;
-    const data = slot.available ? `slot:${slot.timeSlotId}:${slot.startTime}-${slot.endTime}` : 'slot:unavailable';
+    // Use | as separator to avoid conflict with : in time format
+    const timeLabel = `${slot.startTime} - ${slot.endTime}`;
+    const data = slot.available ? `slot|${slot.timeSlotId}|${timeLabel}` : 'slot:unavailable';
     kb.text(label, data).row();
   }
   kb.text('« Выбрать другую дату', 'back:date');

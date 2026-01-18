@@ -122,7 +122,7 @@ export async function selfCleaningConversation(
 
   await ctx.reply('🕐 Выберите время:', { reply_markup: buildTimeSlotsKeyboard(slots) });
 
-  const slotCtx = await conversation.waitForCallbackQuery(/^slot:|^back:date$/);
+  const slotCtx = await conversation.waitForCallbackQuery(/^slot[|:]|^back:date$/);
   await slotCtx.answerCallbackQuery();
 
   if (slotCtx.callbackQuery.data === 'back:date') {
@@ -134,8 +134,8 @@ export async function selfCleaningConversation(
     return;
   }
 
-  // Parse slot data: slot:uuid:HH:MM-HH:MM
-  const slotParts = slotCtx.callbackQuery.data.split(':');
+  // Parse slot data: slot|uuid|HH:MM - HH:MM
+  const slotParts = slotCtx.callbackQuery.data.split('|');
   const timeSlotId = slotParts[1]!;
   const timeSlotLabel = slotParts[2] ?? '';
 
