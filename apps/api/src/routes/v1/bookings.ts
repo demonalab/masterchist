@@ -114,6 +114,21 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Body: CreateSelfCleaningBody }>('/', async (request, reply) => {
     const body = request.body as any;
     
+    // Support MAX bot: if maxUserId provided, find or create user
+    let userId = request.dbUserId;
+    if (!userId && body.maxUserId) {
+      const maxUser = await prisma.user.upsert({
+        where: { telegramId: String(body.maxUserId) },
+        update: {},
+        create: {
+          telegramId: String(body.maxUserId),
+          firstName: body.maxUserName || 'MAX User',
+        },
+        select: { id: true },
+      });
+      userId = maxUser.id;
+    }
+    
     // Check if it's a pro_cleaning request
     if (body.serviceCode === ServiceCodes.PRO_CLEANING) {
       const parseResult = createProCleaningSchema.safeParse(body);
@@ -122,7 +137,6 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       const { city, address, contact, proCleaningDetails } = parseResult.data;
-      const userId = request.dbUserId;
       if (!userId) {
         return reply.unauthorized('User not authenticated');
       }
@@ -188,7 +202,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
     }
 
     const { serviceCode, city, scheduledDate, timeSlotId, address, contact } = parseResult.data;
-    const userId = request.dbUserId;
+    // userId already set at the top (from Telegram auth or MAX bot)
     if (!userId) {
       return reply.unauthorized('User not authenticated');
     }

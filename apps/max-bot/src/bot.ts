@@ -269,9 +269,11 @@ export function createBot() {
       );
     }
     else if (payload.startsWith('slot:')) {
-      const parts = payload.split(':');
-      const slotId = parts[1];
-      const timeDisplay = parts[2] || '';
+      // Format: slot:slotId:HH:MM-HH:MM - need to handle colons in time
+      const firstColon = payload.indexOf(':');
+      const secondColon = payload.indexOf(':', firstColon + 1);
+      const slotId = payload.substring(firstColon + 1, secondColon);
+      const timeDisplay = payload.substring(secondColon + 1); // "08:00-09:00"
       
       updateStateData(userId, { timeSlotId: slotId, timeSlotDisplay: timeDisplay });
       setStep(userId, 'self_cleaning:address');

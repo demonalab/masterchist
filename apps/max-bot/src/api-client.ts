@@ -42,9 +42,11 @@ export class ApiClient {
   private initData: string;
   private headers: Record<string, string>;
   private userId: number;
+  private firstName?: string;
 
   constructor(userId: number, firstName?: string, username?: string) {
     this.userId = userId;
+    this.firstName = firstName;
     this.initData = Buffer.from(JSON.stringify({
       user: { id: userId, first_name: firstName, username },
     })).toString('base64');
@@ -101,10 +103,16 @@ export class ApiClient {
     proCleaningDetails?: string;
   }): Promise<ApiResult<BookingResponse>> {
     try {
+      // Add maxUserId to body for MAX bot authentication
+      const bodyWithUserId = {
+        ...body,
+        maxUserId: this.userId,
+        maxUserName: this.firstName,
+      };
       const res = await fetch(`${this.baseUrl}/api/v1/bookings`, {
         method: 'POST',
-        headers: this.headers,
-        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bodyWithUserId),
       });
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
