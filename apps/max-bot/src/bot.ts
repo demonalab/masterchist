@@ -113,6 +113,25 @@ function backKeyboard() {
   ]);
 }
 
+// Admin keyboards
+function adminMenuKeyboard() {
+  return Keyboard.inlineKeyboard([
+    [Keyboard.button.callback('📋 Новые заказы', 'admin:new_orders')],
+    [Keyboard.button.callback('📊 Все заказы', 'admin:all_orders')],
+    [Keyboard.button.callback('📈 Статистика', 'admin:stats')],
+    [Keyboard.button.callback('« В меню', 'back:main')],
+  ]);
+}
+
+function adminOrderKeyboard(bookingId: string) {
+  return Keyboard.inlineKeyboard([
+    [
+      Keyboard.button.callback('✅ Подтвердить', `admin:confirm:${bookingId}`),
+      Keyboard.button.callback('❌ Отклонить', `admin:reject:${bookingId}`),
+    ],
+  ]);
+}
+
 export function createBot() {
   const bot = new Bot(config.BOT_TOKEN);
 
@@ -124,6 +143,23 @@ export function createBot() {
     await ctx.reply(
       `👋 <b>Добро пожаловать в МастерЧист!</b>\n\n<b>Сервис аренды наборов для химчистки.</b>\n\nВыберите услугу 👇`,
       { attachments: [mainMenuKeyboard()], format: 'html' }
+    );
+  });
+
+  // /admin command
+  bot.command('admin', async (ctx) => {
+    const userId = (ctx as any).user?.user_id || 0;
+    const api = new ApiClient(userId);
+    const roleResult = await api.getAdminRole();
+    
+    if (!roleResult.ok) {
+      await ctx.reply('❌ У вас нет доступа к админ-панели.');
+      return;
+    }
+    
+    await ctx.reply(
+      `👨‍💼 <b>Админ-панель</b>\n\nВыберите действие:`,
+      { attachments: [adminMenuKeyboard()], format: 'html' }
     );
   });
 
@@ -328,6 +364,24 @@ export function createBot() {
         { attachments: [dateKeyboard(dates, weekOffset)], format: 'html' }
       );
     }
+    // Admin callbacks
+    else if (payload === 'admin:new_orders') {
+      await handleAdminNewOrders(ctx, userId);
+    }
+    else if (payload === 'admin:all_orders') {
+      await handleAdminAllOrders(ctx, userId);
+    }
+    else if (payload === 'admin:stats') {
+      await handleAdminStats(ctx, userId);
+    }
+    else if (payload.startsWith('admin:confirm:')) {
+      const bookingId = payload.replace('admin:confirm:', '');
+      await handleAdminConfirm(ctx, userId, bookingId);
+    }
+    else if (payload.startsWith('admin:reject:')) {
+      const bookingId = payload.replace('admin:reject:', '');
+      await handleAdminReject(ctx, userId, bookingId);
+    }
   });
 
   return bot;
@@ -525,4 +579,117 @@ async function handlePhotoUpload(ctx: Context, userId: number, photoAttachment: 
     `✅ <b>Чек получен!</b>\n\nВаше бронирование переведено в статус "Оплачено".\nОжидайте подтверждения от администратора.\n\nМы свяжемся с вами для уточнения деталей доставки.\n\nСпасибо! 🙏`,
     { format: 'html' }
   );
+}
+
+// Admin handlers
+async function handleAdminNewOrders(ctx: Context, userId: number) {
+  const api = new ApiClient(userId);
+  const result = await api.getAdminBookings();
+  
+  if (!result.ok) {
+    await ctx.reply('❌ Ошибка при загрузке заказов.');
+    return;
+  }
+
+  const pendingStatuses = ['new', 'awaiting_prepayment', 'prepaid'];
+  const bookings = result.data.filter(b => pendingStatuses.includes(b.status));
+  
+  if (bookings.length === 0) {
+    await ctx.reply('📋 Нет заказов, требующих внимания.', { attachments: [adminMenuKeyboard()] });
+    return;
+  }
+
+  await ctx.reply(`📋 <b>Заказы, требующие внимания (${bookings.length}):</b>`, { format: 'html' });
+
+  for (const b of bookings.slice(0, 5)) {
+    const status = STATUS_LABELS[b.status] || b.status;
+    const date = b.scheduledDate || '—';
+    const time = b.timeSlot || '';
+    const kit = b.kitNumber ? `🧹 Набор №${b.kitNumber}` : '';
+    const user = b.user?.firstName || '—';
+    const addr = b.address ? `📍 ${b.address.addressLine}\n📞 ${b.address.contactPhone}` : '';
+
+    const message = `${status}\n\n👤 Клиент: ${user}\n📅 ${date} ${time}\n${kit ? kit + '\n' : ''}${addr}`;
+    await ctx.reply(message, { attachments: [adminOrderKeyboard(b.id)] });
+  }
+}
+
+async function handleAdminAllOrders(ctx: Context, userId: number) {
+  const api = new ApiClient(userId);
+  const result = await api.getAdminBookings();
+  
+  if (!result.ok) {
+    await ctx.reply('❌ Ошибка при загрузке заказов.');
+    return;
+  }
+
+  const bookings = result.data;
+  if (bookings.length === 0) {
+    await ctx.reply('📋 Заказов нет.', { attachments: [adminMenuKeyboard()] });
+    return;
+  }
+
+  let message = `📊 <b>Все заказы (${bookings.length}):</b>\n\n`;
+  for (const b of bookings.slice(0, 10)) {
+    const status = STATUS_LABELS[b.status] || b.status;
+    const date = b.scheduledDate || '—';
+    const user = b.user?.firstName || '—';
+    message += `${status} | ${date} | ${user}\n`;
+  }
+  
+  if (bookings.length > 10) {
+    message += `\n<i>...и ещё ${bookings.length - 10} заказов</i>`;
+  }
+
+  await ctx.reply(message, { attachments: [adminMenuKeyboard()], format: 'html' });
+}
+
+async function handleAdminStats(ctx: Context, userId: number) {
+  const api = new ApiClient(userId);
+  const result = await api.getAdminStats();
+  
+  if (!result.ok) {
+    await ctx.reply('❌ Ошибка при загрузке статистики.');
+    return;
+  }
+
+  const stats = result.data;
+  const message = `📈 <b>Статистика</b>
+
+📊 Всего заказов: ${stats.totalBookings}
+🆕 Новых: ${stats.newBookings}
+⏳ Ожидают предоплаты: ${stats.awaitingPrepaymentBookings}
+💳 Предоплачено: ${stats.prepaidBookings}
+✅ Подтверждено: ${stats.confirmedBookings}
+❌ Отменено: ${stats.cancelledBookings}`;
+
+  await ctx.reply(message, { attachments: [adminMenuKeyboard()], format: 'html' });
+}
+
+async function handleAdminConfirm(ctx: Context, userId: number, bookingId: string) {
+  const api = new ApiClient(userId);
+  const result = await api.confirmBooking(bookingId);
+  
+  if (!result.ok) {
+    await ctx.reply(`❌ Ошибка: ${result.error}`);
+    return;
+  }
+
+  await ctx.reply(`✅ <b>Бронирование подтверждено</b>\n\nID: <code>${bookingId}</code>`, { format: 'html' });
+  
+  // TODO: Notify user about confirmation via MAX API
+}
+
+async function handleAdminReject(ctx: Context, userId: number, bookingId: string) {
+  const api = new ApiClient(userId);
+  const result = await api.rejectBooking(bookingId);
+  
+  if (!result.ok) {
+    await ctx.reply(`❌ Ошибка: ${result.error}`);
+    return;
+  }
+
+  await ctx.reply(`❌ <b>Бронирование отклонено</b>\n\nID: <code>${bookingId}</code>\nСлот освобождён`, { format: 'html' });
+  
+  // TODO: Notify user about rejection via MAX API
 }

@@ -207,6 +207,111 @@ export class ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  // Admin methods
+  async getAdminRole(): Promise<ApiResult<{ role: string }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/role`, {
+        headers: { 'X-Max-User-Id': String(this.userId) },
+      });
+      if (!res.ok) {
+        return { ok: false, status: res.status, error: 'Not admin' };
+      }
+      const data = await res.json() as { role: string };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdminBookings(): Promise<ApiResult<AdminBooking[]>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/bookings`, {
+        headers: { 'X-Max-User-Id': String(this.userId) },
+      });
+      if (!res.ok) {
+        return { ok: false, status: res.status, error: 'Failed to get bookings' };
+      }
+      const data = await res.json() as AdminBooking[];
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdminStats(): Promise<ApiResult<AdminStats>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/stats`, {
+        headers: { 'X-Max-User-Id': String(this.userId) },
+      });
+      if (!res.ok) {
+        return { ok: false, status: res.status, error: 'Failed to get stats' };
+      }
+      const data = await res.json() as AdminStats;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async confirmBooking(bookingId: string): Promise<ApiResult<{ userTelegramId: string }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings/${bookingId}/confirm`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Max-User-Id': String(this.userId),
+        },
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+      const data = await res.json() as { userTelegramId: string };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async rejectBooking(bookingId: string): Promise<ApiResult<{ userTelegramId: string }>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings/${bookingId}/reject`, {
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-Max-User-Id': String(this.userId),
+        },
+      });
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+      const data = await res.json() as { userTelegramId: string };
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }
 
-export type { TimeSlotAvailability, BookingResponse, UserBooking };
+interface AdminBooking {
+  id: string;
+  status: string;
+  scheduledDate: string | null;
+  timeSlot: string | null;
+  kitNumber: number | null;
+  user: { firstName: string | null; telegramId: string } | null;
+  address: { addressLine: string; contactName: string; contactPhone: string } | null;
+}
+
+interface AdminStats {
+  totalBookings: number;
+  newBookings: number;
+  awaitingPrepaymentBookings: number;
+  prepaidBookings: number;
+  confirmedBookings: number;
+  cancelledBookings: number;
+}
+
+export type { TimeSlotAvailability, BookingResponse, UserBooking, AdminBooking, AdminStats };
