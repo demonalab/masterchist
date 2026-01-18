@@ -262,7 +262,8 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.notFound('Booking not found');
     }
 
-    if (booking.status !== BookingStatuses.PREPAID) {
+    const confirmableStatuses = [BookingStatuses.NEW, BookingStatuses.AWAITING_PREPAYMENT, BookingStatuses.PREPAID];
+    if (!confirmableStatuses.includes(booking.status as any)) {
       return reply.badRequest(`Cannot confirm booking with status: ${booking.status}`);
     }
 
@@ -295,7 +296,8 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.notFound('Booking not found');
     }
 
-    if (booking.status !== BookingStatuses.PREPAID) {
+    const rejectableStatuses = [BookingStatuses.NEW, BookingStatuses.AWAITING_PREPAYMENT, BookingStatuses.PREPAID];
+    if (!rejectableStatuses.includes(booking.status as any)) {
       return reply.badRequest(`Cannot reject booking with status: ${booking.status}`);
     }
 
