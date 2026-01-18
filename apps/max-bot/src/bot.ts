@@ -178,14 +178,17 @@ function dateKeyboard(dates: { date: string; display: string }[], weekOffset: nu
   return Keyboard.inlineKeyboard(rows);
 }
 
-function timeSlotsKeyboard(slots: { slotId: string; startTime: string; endTime: string; availableKits: number }[]) {
-  const rows = slots.map(slot => [
-    Keyboard.button.callback(
-      `🕐 ${slot.startTime} - ${slot.endTime} (${slot.availableKits} наб.)`,
-      `slot:${slot.slotId}:${slot.startTime}-${slot.endTime}`
-    ),
-  ]);
-  rows.push([Keyboard.button.callback('« Назад', 'back:date')]);
+function timeSlotsKeyboard(slots: { slotId: string; startTime: string; endTime: string; availableKits: number; availableKitNumber?: number }[]) {
+  const rows = slots.map(slot => {
+    const kitInfo = slot.availableKitNumber ? ` (набор №${slot.availableKitNumber})` : '';
+    return [
+      Keyboard.button.callback(
+        `✅ ${slot.startTime} - ${slot.endTime}${kitInfo}`,
+        `slot:${slot.slotId}:${slot.startTime}-${slot.endTime}`
+      ),
+    ];
+  });
+  rows.push([Keyboard.button.callback('« Выбрать другую дату', 'back:date')]);
   return Keyboard.inlineKeyboard(rows);
 }
 

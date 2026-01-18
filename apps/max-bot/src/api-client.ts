@@ -15,6 +15,7 @@ interface TimeSlotAvailability {
   startTime: string;
   endTime: string;
   availableKits: number;
+  availableKitNumber?: number;
 }
 
 interface BookingResponse {
@@ -77,7 +78,8 @@ export class ApiClient {
           slotCode: s.timeSlotId,
           startTime: s.startTime,
           endTime: s.endTime,
-          availableKits: s.availableKitNumber ? 1 : 0,
+          availableKits: 1,
+          availableKitNumber: s.availableKitNumber,
         }));
       return { ok: true, data: transformed };
     } catch (err) {
