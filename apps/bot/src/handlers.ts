@@ -1,3 +1,5 @@
+import { InputFile } from 'grammy';
+import * as path from 'path';
 import { BotContext } from './types';
 import { mainMenuKeyboard, backToMainKeyboard, persistentMenuKeyboard } from './keyboards';
 
@@ -9,12 +11,25 @@ export async function handleStart(ctx: BotContext) {
     reply_markup: persistentMenuKeyboard,
   });
 
-  await ctx.reply(
-    `<b>Сервис аренды наборов для химчистки.</b>
+  try {
+    const imagePath = path.join(__dirname, '../assets/welcome.png');
+    await ctx.replyWithPhoto(new InputFile(imagePath), {
+      caption: `<b>Сервис аренды наборов для химчистки.</b>
 
 Выберите услугу:`,
-    { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
-  );
+      parse_mode: 'HTML',
+      reply_markup: mainMenuKeyboard,
+    });
+  } catch (err) {
+    console.error('Failed to send welcome image:', err);
+    // Fallback to text
+    await ctx.reply(
+      `<b>Сервис аренды наборов для химчистки.</b>
+
+Выберите услугу:`,
+      { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
+    );
+  }
 }
 
 export async function handleProCleaning(ctx: BotContext) {
