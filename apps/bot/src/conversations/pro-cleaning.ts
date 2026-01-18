@@ -64,9 +64,12 @@ export async function proCleaningConversation(
   // Step 6: Photo/Video/Document
   await ctx.reply('📸 Отправьте фото или видео загрязнений (jpg, png, mp4, mov и др.):', { reply_markup: cancelKeyboard });
 
-  const mediaCtx = await conversation.wait();
+  const mediaCtx = await conversation.waitFor(['message:photo', 'message:video', 'message:document', 'message:video_note', 'message:animation']);
+  
   const photos = mediaCtx.message?.photo;
   const video = mediaCtx.message?.video;
+  const videoNote = mediaCtx.message?.video_note;
+  const animation = mediaCtx.message?.animation;
   const document = mediaCtx.message?.document;
 
   const caption = `👔 <b>Заявка на проф. химчистку</b>
@@ -96,14 +99,17 @@ ${description}`;
           caption,
           parse_mode: 'HTML',
         });
-      } else if (document) {
-        await botInstance.api.sendDocument(config.ADMIN_TELEGRAM_ID, document.file_id, {
+      } else if (videoNote) {
+        await botInstance.api.sendVideoNote(config.ADMIN_TELEGRAM_ID, videoNote.file_id);
+        await botInstance.api.sendMessage(config.ADMIN_TELEGRAM_ID, caption, { parse_mode: 'HTML' });
+      } else if (animation) {
+        await botInstance.api.sendAnimation(config.ADMIN_TELEGRAM_ID, animation.file_id, {
           caption,
           parse_mode: 'HTML',
         });
-      } else {
-        // No media - just send text
-        await botInstance.api.sendMessage(config.ADMIN_TELEGRAM_ID, caption, {
+      } else if (document) {
+        await botInstance.api.sendDocument(config.ADMIN_TELEGRAM_ID, document.file_id, {
+          caption,
           parse_mode: 'HTML',
         });
       }
