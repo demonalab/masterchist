@@ -53,6 +53,26 @@ export interface UserBooking {
   service: string | null;
 }
 
+export interface AdminBooking {
+  id: string;
+  status: string;
+  scheduledDate: string | null;
+  createdAt: string;
+  kitNumber: number | null;
+  timeSlot: string | null;
+  service: string | null;
+  user: { telegramId: string; firstName: string } | null;
+  address: { addressLine: string; contactName: string; contactPhone: string } | null;
+}
+
+export interface AdminStats {
+  totalBookings: number;
+  newBookings: number;
+  confirmedBookings: number;
+  completedBookings: number;
+  cancelledBookings: number;
+}
+
 export interface ApiError {
   error: string;
   message: string;
@@ -273,6 +293,48 @@ export class ApiClient {
       }
 
       const data = (await res.json()) as BookingDetails;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  // Admin methods
+  async getAdminBookings(status?: string): Promise<ApiResult<AdminBooking[]>> {
+    try {
+      const url = status 
+        ? `${this.baseUrl}/api/v1/admin/bookings?status=${status}`
+        : `${this.baseUrl}/api/v1/admin/bookings`;
+      const res = await fetch(url, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as AdminBooking[];
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdminStats(): Promise<ApiResult<AdminStats>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/admin/stats`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as AdminStats;
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };

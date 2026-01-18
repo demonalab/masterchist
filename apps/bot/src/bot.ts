@@ -2,7 +2,7 @@ import { Bot, session, BotError, GrammyError, HttpError } from 'grammy';
 import { conversations, createConversation } from '@grammyjs/conversations';
 import { BotContext, SessionData } from './types';
 import { config } from './config';
-import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel, handleMyOrders } from './handlers';
+import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel, handleMyOrders, handleAdminMenu, handleAdminNewOrders, handleAdminAllOrders, handleAdminStats } from './handlers';
 import { selfCleaningConversation } from './conversations/self-cleaning';
 import { proCleaningConversation } from './conversations/pro-cleaning';
 import { handlePaymentProof, setBotInstance } from './handlers/payment-proof';
@@ -107,24 +107,26 @@ export function createBot(): Bot<BotContext> {
   });
 
   // Admin commands
-  bot.command('admin', async (ctx) => {
-    if (String(ctx.from?.id) !== config.ADMIN_TELEGRAM_ID) {
-      return;
-    }
-    await ctx.reply(
-      `👨‍💼 <b>Админ-панель</b>
+  bot.command('admin', handleAdminMenu);
 
-/orders — список заказов
-/stats — статистика`,
-      { parse_mode: 'HTML' }
-    );
+  // Admin text buttons
+  bot.hears('📋 Новые заказы', handleAdminNewOrders);
+  bot.hears('📊 Все заказы', handleAdminAllOrders);
+  bot.hears('📈 Статистика', handleAdminStats);
+  bot.hears('👤 Выйти из админки', handleStart);
+
+  // Admin inline callbacks
+  bot.callbackQuery('admin:new_orders', async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleAdminNewOrders(ctx);
   });
-
-  bot.command('orders', async (ctx) => {
-    if (String(ctx.from?.id) !== config.ADMIN_TELEGRAM_ID) {
-      return;
-    }
-    await ctx.reply('📋 Для просмотра заказов используйте веб-панель: https://xn--80akjnwedee1c.xn--p1ai/admin');
+  bot.callbackQuery('admin:all_orders', async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleAdminAllOrders(ctx);
+  });
+  bot.callbackQuery('admin:stats', async (ctx) => {
+    await ctx.answerCallbackQuery();
+    await handleAdminStats(ctx);
   });
 
   bot.catch((err: BotError<BotContext>) => {

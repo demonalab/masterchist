@@ -12,10 +12,26 @@ export const persistentMenuKeyboard = new Keyboard()
 
 // Admin reply keyboard
 export const adminMenuKeyboard = new Keyboard()
-  .text('📋 Заказы').text('📊 Статистика').row()
-  .text('⚙️ Настройки')
+  .text('📋 Новые заказы').text('📊 Все заказы').row()
+  .text('📈 Статистика').text('👤 Выйти из админки')
   .resized()
   .persistent();
+
+// Admin inline keyboards
+export const adminMainKeyboard = new InlineKeyboard()
+  .text('📋 Новые заказы', 'admin:new_orders')
+  .row()
+  .text('📊 Все заказы', 'admin:all_orders')
+  .row()
+  .text('📈 Статистика', 'admin:stats');
+
+export function buildAdminOrderKeyboard(bookingId: string): InlineKeyboard {
+  return new InlineKeyboard()
+    .text('✅ Подтвердить', `admin:confirm:${bookingId}`)
+    .text('❌ Отклонить', `admin:reject:${bookingId}`)
+    .row()
+    .text('« Назад к заказам', 'admin:new_orders');
+}
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 

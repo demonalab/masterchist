@@ -114,3 +114,116 @@ export async function handleMyOrders(ctx: BotContext) {
 
   await ctx.reply(message.trim(), { parse_mode: 'HTML' });
 }
+
+// Admin handlers
+import { adminMenuKeyboard, buildAdminOrderKeyboard } from './keyboards';
+import { config } from './config';
+
+function isAdmin(ctx: BotContext): boolean {
+  return String(ctx.from?.id) === config.ADMIN_TELEGRAM_ID;
+}
+
+export async function handleAdminMenu(ctx: BotContext) {
+  if (!isAdmin(ctx)) return;
+
+  await ctx.reply(
+    `👨‍💼 <b>Админ-панель</b>
+
+Выберите действие:`,
+    { parse_mode: 'HTML', reply_markup: adminMenuKeyboard }
+  );
+}
+
+export async function handleAdminNewOrders(ctx: BotContext) {
+  if (!isAdmin(ctx)) return;
+
+  const telegramId = ctx.from?.id;
+  if (!telegramId) return;
+
+  const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+  const result = await api.getAdminBookings('new');
+
+  if (!result.ok) {
+    await ctx.reply('❌ Ошибка при загрузке заказов.');
+    return;
+  }
+
+  const bookings = result.data;
+  if (bookings.length === 0) {
+    await ctx.reply('📋 Новых заказов нет.');
+    return;
+  }
+
+  for (const b of bookings) {
+    const date = b.scheduledDate ?? '—';
+    const time = b.timeSlot ?? '';
+    const kit = b.kitNumber ? `набор №${b.kitNumber}` : '';
+    const user = b.user ? `${b.user.firstName} (${b.user.telegramId})` : '—';
+    const addr = b.address ? `${b.address.addressLine}\n📞 ${b.address.contactPhone}` : '—';
+
+    const message = `🆕 <b>Новый заказ</b>
+
+👤 ${user}
+📅 ${date} ${time}
+${kit ? `🧹 ${kit}\n` : ''}📍 ${addr}`;
+
+    await ctx.reply(message, { parse_mode: 'HTML', reply_markup: buildAdminOrderKeyboard(b.id) });
+  }
+}
+
+export async function handleAdminAllOrders(ctx: BotContext) {
+  if (!isAdmin(ctx)) return;
+
+  const telegramId = ctx.from?.id;
+  if (!telegramId) return;
+
+  const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+  const result = await api.getAdminBookings();
+
+  if (!result.ok) {
+    await ctx.reply('❌ Ошибка при загрузке заказов.');
+    return;
+  }
+
+  const bookings = result.data;
+  if (bookings.length === 0) {
+    await ctx.reply('📋 Заказов нет.');
+    return;
+  }
+
+  let message = '📊 <b>Все заказы (последние 50):</b>\n\n';
+  for (const b of bookings.slice(0, 20)) {
+    const status = STATUS_LABELS[b.status] ?? b.status;
+    const date = b.scheduledDate ?? '—';
+    const user = b.user?.firstName ?? '—';
+    message += `${status} | ${date} | ${user}\n`;
+  }
+
+  await ctx.reply(message.trim(), { parse_mode: 'HTML' });
+}
+
+export async function handleAdminStats(ctx: BotContext) {
+  if (!isAdmin(ctx)) return;
+
+  const telegramId = ctx.from?.id;
+  if (!telegramId) return;
+
+  const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+  const result = await api.getAdminStats();
+
+  if (!result.ok) {
+    await ctx.reply('❌ Ошибка при загрузке статистики.');
+    return;
+  }
+
+  const stats = result.data;
+  const message = `📈 <b>Статистика</b>
+
+📊 Всего заказов: ${stats.totalBookings}
+🆕 Новых: ${stats.newBookings}
+💳 Предоплачено: ${stats.prepaidBookings ?? 0}
+✅ Подтверждено: ${stats.confirmedBookings}
+❌ Отменено: ${stats.cancelledBookings}`;
+
+  await ctx.reply(message, { parse_mode: 'HTML' });
+}

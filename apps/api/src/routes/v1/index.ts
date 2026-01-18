@@ -3,12 +3,14 @@ import servicesRoutes from './services';
 import availabilityRoutes from './availability';
 import bookingsRoutes from './bookings';
 import paymentProofsRoutes from './payment-proofs';
+import adminRoutes from './admin';
 
 const v1Routes: FastifyPluginAsync = async (fastify) => {
   fastify.register(servicesRoutes, { prefix: '/services' });
   fastify.register(availabilityRoutes, { prefix: '/availability' });
   fastify.register(bookingsRoutes, { prefix: '/bookings' });
   fastify.register(paymentProofsRoutes, { prefix: '/payment-proofs' });
+  fastify.register(adminRoutes, { prefix: '/admin' });
 };
 
 export default v1Routes;
