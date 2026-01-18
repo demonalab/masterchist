@@ -41,8 +41,10 @@ export class ApiClient {
   private baseUrl = config.API_BASE_URL;
   private initData: string;
   private headers: Record<string, string>;
+  private userId: number;
 
   constructor(userId: number, firstName?: string, username?: string) {
+    this.userId = userId;
     this.initData = Buffer.from(JSON.stringify({
       user: { id: userId, first_name: firstName, username },
     })).toString('base64');
@@ -124,7 +126,7 @@ export class ApiClient {
       await fetch(`${this.baseUrl}/api/v1/conversations/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: this.initData, serviceCode }),
+        body: JSON.stringify({ telegramId: String(this.userId), serviceCode }),
       });
     } catch (err) {
       console.error('Failed to track conversation start:', err);
@@ -136,7 +138,7 @@ export class ApiClient {
       await fetch(`${this.baseUrl}/api/v1/conversations/complete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telegramId: this.initData, serviceCode }),
+        body: JSON.stringify({ telegramId: String(this.userId), serviceCode }),
       });
     } catch (err) {
       console.error('Failed to track conversation complete:', err);

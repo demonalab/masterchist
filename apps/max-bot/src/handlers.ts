@@ -12,7 +12,6 @@ import {
   CITY_NAMES,
   STATUS_LABELS,
 } from './keyboards';
-import { config } from './config';
 
 const api = new MaxApi();
 
