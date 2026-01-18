@@ -28,8 +28,8 @@ const BLOCKING_STATUSES = [
 ] as const;
 
 const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
-  fastify.addHook('preHandler', telegramAuthHook);
-
+  // Public endpoint - no auth required (availability is public info)
+  
   fastify.get<{ Querystring: AvailabilityQuery }>('/', async (request, reply) => {
     const parseResult = availabilityQuerySchema.safeParse(request.query);
     if (!parseResult.success) {

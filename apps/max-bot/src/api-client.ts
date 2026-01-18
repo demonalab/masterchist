@@ -57,16 +57,27 @@ export class ApiClient {
 
   async getAvailability(city: string, date: string): Promise<ApiResult<TimeSlotAvailability[]>> {
     try {
+      // Public endpoint - no auth required
       const res = await fetch(
-        `${this.baseUrl}/api/v1/availability?city=${city}&date=${date}`,
-        { headers: this.headers }
+        `${this.baseUrl}/api/v1/availability?city=${city}&scheduledDate=${date}&serviceCode=self_cleaning`,
+        { headers: { 'Content-Type': 'application/json' } }
       );
       if (!res.ok) {
         const body = await res.json().catch(() => ({ message: res.statusText })) as { message?: string };
         return { ok: false, status: res.status, error: body.message ?? res.statusText };
       }
-      const data = await res.json() as TimeSlotAvailability[];
-      return { ok: true, data };
+      const data = await res.json() as any[];
+      // Transform API response to match expected format
+      const transformed: TimeSlotAvailability[] = data
+        .filter(s => s.available)
+        .map(s => ({
+          slotId: s.timeSlotId,
+          slotCode: s.timeSlotId,
+          startTime: s.startTime,
+          endTime: s.endTime,
+          availableKits: s.availableKitNumber ? 1 : 0,
+        }));
+      return { ok: true, data: transformed };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
     }
