@@ -87,7 +87,7 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     for (const booking of todayBookings) {
       if (!booking.timeSlotId || !booking.cleaningKitId) continue;
       const existing = bookedKitsPerSlot.get(booking.timeSlotId) ?? new Set();
-      existing.add(booking.cleaningKitId visir);
+      existing.add(booking.cleaningKitId);
       bookedKitsPerSlot.set(booking.timeSlotId, existing);
     }
     
