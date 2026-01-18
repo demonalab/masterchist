@@ -1,5 +1,20 @@
-import { InlineKeyboard } from 'grammy';
+import { InlineKeyboard, Keyboard } from 'grammy';
 import { TimeSlotAvailability } from './api-client';
+
+// Persistent reply keyboard (bottom menu)
+export const persistentMenuKeyboard = new Keyboard()
+  .text('🧹 Химчистка').text('👔 Проф. химчистка').row()
+  .text('🏠 Клининг').text('📱 Мини-приложение').row()
+  .text('📋 Мои заказы').text('❓ Помощь')
+  .resized()
+  .persistent();
+
+// Admin reply keyboard
+export const adminMenuKeyboard = new Keyboard()
+  .text('📋 Заказы').text('📊 Статистика').row()
+  .text('⚙️ Настройки')
+  .resized()
+  .persistent();
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 

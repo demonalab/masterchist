@@ -1,13 +1,16 @@
 import { BotContext } from './types';
-import { mainMenuKeyboard, backToMainKeyboard } from './keyboards';
+import { mainMenuKeyboard, backToMainKeyboard, persistentMenuKeyboard } from './keyboards';
 
 export async function handleStart(ctx: BotContext) {
   ctx.session.draft = {};
 
-  await ctx.reply(
-    `👋 <b>Добро пожаловать!</b>
+  // Send persistent keyboard first
+  await ctx.reply('👋 Добро пожаловать в МастерЧист!', {
+    reply_markup: persistentMenuKeyboard,
+  });
 
-Сервис аренды наборов для химчистки.
+  await ctx.reply(
+    `<b>Сервис аренды наборов для химчистки.</b>
 
 Выберите услугу:`,
     { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
@@ -26,7 +29,9 @@ export async function handleProCleaning(ctx: BotContext) {
 }
 
 export async function handleCleaning(ctx: BotContext) {
-  await ctx.answerCallbackQuery();
+  if (ctx.callbackQuery) {
+    await ctx.answerCallbackQuery();
+  }
   await ctx.reply(
     `🏠 <b>Клининг</b>
 

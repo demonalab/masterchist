@@ -64,6 +64,66 @@ export function createBot(): Bot<BotContext> {
   bot.callbackQuery(/^admin:confirm:/, handleAdminConfirm);
   bot.callbackQuery(/^admin:reject:/, handleAdminReject);
 
+  // Text button handlers (persistent keyboard)
+  bot.hears('🧹 Химчистка', async (ctx) => {
+    await ctx.conversation.enter('selfCleaningConversation');
+  });
+
+  bot.hears('👔 Проф. химчистка', async (ctx) => {
+    await ctx.conversation.enter('proCleaningConversation');
+  });
+
+  bot.hears('🏠 Клининг', handleCleaning);
+
+  bot.hears('📱 Мини-приложение', async (ctx) => {
+    const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
+    await ctx.reply('Откройте мини-приложение:', {
+      reply_markup: {
+        inline_keyboard: [[{ text: '📱 Открыть', web_app: { url: WEBAPP_URL } }]],
+      },
+    });
+  });
+
+  bot.hears('📋 Мои заказы', async (ctx) => {
+    await ctx.reply('📋 Функция "Мои заказы" в разработке.');
+  });
+
+  bot.hears('❓ Помощь', async (ctx) => {
+    await ctx.reply(
+      `❓ <b>Помощь</b>
+
+🧹 <b>Химчистка самообслуживания</b> — аренда набора для чистки мебели
+
+👔 <b>Проф. химчистка</b> — мастер приедет и почистит
+
+🏠 <b>Клининг</b> — уборка помещений
+
+📞 Контакт: @MasterChist_support`,
+      { parse_mode: 'HTML' }
+    );
+  });
+
+  // Admin commands
+  bot.command('admin', async (ctx) => {
+    if (String(ctx.from?.id) !== config.ADMIN_TELEGRAM_ID) {
+      return;
+    }
+    await ctx.reply(
+      `👨‍💼 <b>Админ-панель</b>
+
+/orders — список заказов
+/stats — статистика`,
+      { parse_mode: 'HTML' }
+    );
+  });
+
+  bot.command('orders', async (ctx) => {
+    if (String(ctx.from?.id) !== config.ADMIN_TELEGRAM_ID) {
+      return;
+    }
+    await ctx.reply('📋 Для просмотра заказов используйте веб-панель: https://xn--80akjnwedee1c.xn--p1ai/admin');
+  });
+
   bot.catch((err: BotError<BotContext>) => {
     const ctx = err.ctx;
     const e = err.error;
