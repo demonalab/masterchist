@@ -110,27 +110,24 @@ model Booking {
   timeSlotId            String?
   cleaningKitId         String?
 
-  kitLockKey            String        @default("active") @db.VarChar(64)
-
   proCleaningDetails    String?       @db.Text
   proCleaningPhotoFileIds String[]    @default([])
 
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
-  service    Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
-  address    Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
-  timeSlot   TimeSlot?   @relation(fields: [timeSlotId], references: [id], onDelete: Restrict)
+  user        User         @relation(fields: [userId], references: [id], onDelete: Restrict)
+  service     Service      @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  address     Address?     @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  timeSlot    TimeSlot?    @relation(fields: [timeSlotId], references: [id], onDelete: Restrict)
   cleaningKit CleaningKit? @relation(fields: [cleaningKitId], references: [id], onDelete: Restrict)
 
   paymentProofs PaymentProof[]
 
+  @@unique([cleaningKitId, scheduledDate, timeSlotId], map: "uniq_kit_date_slot")
   @@index([userId, createdAt])
   @@index([serviceId, status])
   @@index([scheduledDate, timeSlotId])
-
-  @@unique([scheduledDate, timeSlotId, cleaningKitId, kitLockKey], map: "uniq_booking_kit_slot_active")
 }
 
 model PaymentProof {

@@ -2,58 +2,55 @@ import { PrismaClient, ServiceCode } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  await prisma.service.upsert({
-    where: { code: ServiceCode.self_cleaning },
-    update: {},
-    create: {
-      code: ServiceCode.self_cleaning,
-      title: 'Химчистка самообслуживания',
-      priceRub: 1500,
-      prepaymentRub: 500,
-      isActive: true,
-    },
-  });
+const CLEANING_KITS = [
+  { number: 1 },
+  { number: 2 },
+  { number: 3 },
+] as const;
 
-  await prisma.service.upsert({
-    where: { code: ServiceCode.pro_cleaning },
-    update: {},
-    create: {
-      code: ServiceCode.pro_cleaning,
-      title: 'Профессиональная химчистка мастером',
-      priceRub: 0,
-      prepaymentRub: null,
-      isActive: true,
-    },
-  });
+const TIME_SLOTS = [
+  { code: 'SLOT_07_08', startTime: '07:00', endTime: '08:00', sortOrder: 1 },
+  { code: 'SLOT_08_09', startTime: '08:00', endTime: '09:00', sortOrder: 2 },
+  { code: 'SLOT_09_10', startTime: '09:00', endTime: '10:00', sortOrder: 3 },
+] as const;
 
-  await prisma.service.upsert({
-    where: { code: ServiceCode.cleaning },
-    update: {},
-    create: {
-      code: ServiceCode.cleaning,
-      title: 'Клининг',
-      priceRub: 0,
-      prepaymentRub: null,
-      isActive: true,
-    },
-  });
+const SERVICES = [
+  {
+    code: ServiceCode.self_cleaning,
+    title: 'Химчистка самообслуживания',
+    priceRub: 1500,
+    prepaymentRub: 500,
+    isActive: true,
+  },
+  {
+    code: ServiceCode.pro_cleaning,
+    title: 'Профессиональная химчистка мастером',
+    priceRub: 0,
+    prepaymentRub: null,
+    isActive: true,
+  },
+  {
+    code: ServiceCode.cleaning,
+    title: 'Клининг',
+    priceRub: 0,
+    prepaymentRub: null,
+    isActive: false,
+  },
+] as const;
 
-  for (const number of [1, 2, 3]) {
+async function seedCleaningKits() {
+  for (const kit of CLEANING_KITS) {
     await prisma.cleaningKit.upsert({
-      where: { number },
+      where: { number: kit.number },
       update: { isActive: true },
-      create: { number, isActive: true },
+      create: { number: kit.number, isActive: true },
     });
   }
+  console.log(`Seeded ${CLEANING_KITS.length} cleaning kits`);
+}
 
-  const timeSlots = [
-    { code: '07:00-08:00', startTime: '07:00', endTime: '08:00', sortOrder: 1 },
-    { code: '08:00-09:00', startTime: '08:00', endTime: '09:00', sortOrder: 2 },
-    { code: '09:00-10:00', startTime: '09:00', endTime: '10:00', sortOrder: 3 },
-  ];
-
-  for (const slot of timeSlots) {
+async function seedTimeSlots() {
+  for (const slot of TIME_SLOTS) {
     await prisma.timeSlot.upsert({
       where: { code: slot.code },
       update: {
@@ -71,6 +68,37 @@ async function main() {
       },
     });
   }
+  console.log(`Seeded ${TIME_SLOTS.length} time slots`);
+}
+
+async function seedServices() {
+  for (const service of SERVICES) {
+    await prisma.service.upsert({
+      where: { code: service.code },
+      update: {
+        title: service.title,
+        priceRub: service.priceRub,
+        prepaymentRub: service.prepaymentRub,
+        isActive: service.isActive,
+      },
+      create: {
+        code: service.code,
+        title: service.title,
+        priceRub: service.priceRub,
+        prepaymentRub: service.prepaymentRub ?? undefined,
+        isActive: service.isActive,
+      },
+    });
+  }
+  console.log(`Seeded ${SERVICES.length} services`);
+}
+
+async function main() {
+  console.log('Starting seed...');
+  await seedCleaningKits();
+  await seedTimeSlots();
+  await seedServices();
+  console.log('Seed completed.');
 }
 
 main()
@@ -78,6 +106,7 @@ main()
     await prisma.$disconnect();
   })
   .catch(async (err) => {
+    console.error('Seed failed:', err);
     await prisma.$disconnect();
-    throw err;
+    process.exit(1);
   });
