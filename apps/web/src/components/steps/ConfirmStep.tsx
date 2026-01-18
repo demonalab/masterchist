@@ -71,57 +71,87 @@ export function ConfirmStep() {
     .filter(Boolean)
     .join(', ');
 
+  const formattedDate = draft.scheduledDate 
+    ? new Date(draft.scheduledDate).toLocaleDateString('ru', { 
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long' 
+      })
+    : '';
+
   return (
     <div className="screen">
-      <h1 className="screen-title">Подтверждение</h1>
+      {/* Header */}
+      <div className="mb-8">
+        <button 
+          onClick={handleBack}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+        >
+          <span>←</span>
+          <span>Назад</span>
+        </button>
+        <h1 className="screen-title">Подтверждение</h1>
+        <p className="screen-subtitle">Проверьте данные заказа</p>
+      </div>
 
-      <div className="card mb-4">
-        <h2 className="font-medium mb-3">Детали заказа</h2>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Услуга</span>
-            <span>Химчистка самообслуживания</span>
+      {/* Order details */}
+      <div className="card-premium mb-4 animate-slide-up">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="icon-circle">
+            <span>📋</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Город</span>
-            <span>{draft.cityName}</span>
+          <div className="font-semibold text-white">Детали заказа</div>
+        </div>
+        
+        <div className="space-y-3">
+          <div className="flex justify-between items-center py-2 border-b border-white/10">
+            <span className="text-gray-400">Услуга</span>
+            <span className="text-white font-medium">Химчистка самообслуживания</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Дата</span>
-            <span>{draft.scheduledDate}</span>
+          <div className="flex justify-between items-center py-2 border-b border-white/10">
+            <span className="text-gray-400">Город</span>
+            <span className="text-white">{draft.cityName}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Время</span>
-            <span>{draft.timeSlotLabel}</span>
+          <div className="flex justify-between items-center py-2 border-b border-white/10">
+            <span className="text-gray-400">Дата</span>
+            <span className="text-white">{formattedDate}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Адрес</span>
-            <span>{addressLine}</span>
+          <div className="flex justify-between items-center py-2 border-b border-white/10">
+            <span className="text-gray-400">Время</span>
+            <span className="text-white">{draft.timeSlotLabel}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Контакт</span>
-            <span>{draft.contactName}</span>
+          <div className="flex justify-between items-center py-2 border-b border-white/10">
+            <span className="text-gray-400">Адрес</span>
+            <span className="text-white text-right">{addressLine}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-tg-hint">Телефон</span>
-            <span>{draft.contactPhone}</span>
+          <div className="flex justify-between items-center py-2 border-b border-white/10">
+            <span className="text-gray-400">Контакт</span>
+            <span className="text-white">{draft.contactName}</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-gray-400">Телефон</span>
+            <span className="text-white">{draft.contactPhone}</span>
           </div>
         </div>
       </div>
 
-      <div className="card mb-4 bg-yellow-50 border border-yellow-200">
-        <div className="flex gap-2">
-          <span>💰</span>
+      {/* Payment info */}
+      <div className="card bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30 mb-4 animate-slide-up" style={{ animationDelay: '100ms' }}>
+        <div className="flex gap-3">
+          <div className="icon-circle-gold">
+            <span>💰</span>
+          </div>
           <div>
-            <div className="font-medium">Предоплата 500 ₽</div>
-            <div className="text-sm text-tg-hint">
-              После создания заказа потребуется предоплата
+            <div className="font-semibold text-amber-400">Предоплата 500 ₽</div>
+            <div className="text-sm text-gray-400 mt-1">
+              После создания заказа потребуется внести предоплату
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-auto pt-4 flex flex-col gap-2">
+      {/* Confirm button */}
+      <div className="mt-auto pt-4">
         <button
           onClick={handleConfirm}
           disabled={loading}
@@ -129,15 +159,15 @@ export function ConfirmStep() {
         >
           {loading ? (
             <span className="flex items-center justify-center gap-2">
-              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+              <span className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
               Создаю заказ...
             </span>
           ) : (
-            'Подтвердить заказ'
+            <span className="flex items-center justify-center gap-2">
+              <span>✓</span>
+              Подтвердить заказ
+            </span>
           )}
-        </button>
-        <button onClick={handleBack} disabled={loading} className="btn-secondary">
-          ← Назад
         </button>
       </div>
     </div>

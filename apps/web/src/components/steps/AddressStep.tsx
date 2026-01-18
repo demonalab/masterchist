@@ -46,86 +46,111 @@ export function AddressStep() {
 
   return (
     <div className="screen">
-      <h1 className="screen-title">Адрес и контакты</h1>
-
-      <div className="flex flex-col gap-4">
-        <div className="card">
-          <label className="block text-sm text-tg-hint mb-2">Улица *</label>
-          <input
-            type="text"
-            value={street}
-            onChange={(e) => {
-              setStreet(e.target.value);
-              setError('');
-            }}
-            placeholder="ул. Ленина"
-            className="input"
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="card">
-            <label className="block text-sm text-tg-hint mb-2">Дом *</label>
-            <input
-              type="text"
-              value={house}
-              onChange={(e) => {
-                setHouse(e.target.value);
-                setError('');
-              }}
-              placeholder="15"
-              className="input"
-            />
-          </div>
-          <div className="card">
-            <label className="block text-sm text-tg-hint mb-2">Квартира</label>
-            <input
-              type="text"
-              value={apartment}
-              onChange={(e) => setApartment(e.target.value)}
-              placeholder="42"
-              className="input"
-            />
-          </div>
-        </div>
-
-        <div className="card">
-          <label className="block text-sm text-tg-hint mb-2">Ваше имя *</label>
-          <input
-            type="text"
-            value={contactName}
-            onChange={(e) => {
-              setContactName(e.target.value);
-              setError('');
-            }}
-            placeholder="Иван"
-            className="input"
-          />
-        </div>
-
-        <div className="card">
-          <label className="block text-sm text-tg-hint mb-2">Телефон *</label>
-          <input
-            type="tel"
-            value={contactPhone}
-            onChange={(e) => {
-              setContactPhone(e.target.value);
-              setError('');
-            }}
-            placeholder="+7 (999) 123-45-67"
-            className="input"
-          />
-        </div>
-
-        {error && <p className="text-red-500 text-sm">{error}</p>}
+      {/* Header */}
+      <div className="mb-8">
+        <button 
+          onClick={handleBack}
+          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+        >
+          <span>←</span>
+          <span>Назад</span>
+        </button>
+        <h1 className="screen-title">Адрес доставки</h1>
+        <p className="screen-subtitle">Куда привезти набор?</p>
       </div>
 
-      <div className="mt-auto pt-4 flex flex-col gap-2">
+      <div className="flex flex-col gap-4">
+        {/* Address section */}
+        <div className="card-premium animate-slide-up">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="icon-circle">
+              <span>📍</span>
+            </div>
+            <div className="font-semibold text-white">Адрес</div>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Улица *</label>
+              <input
+                type="text"
+                value={street}
+                onChange={(e) => { setStreet(e.target.value); setError(''); }}
+                placeholder="ул. Ленина"
+                className="input"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Дом *</label>
+                <input
+                  type="text"
+                  value={house}
+                  onChange={(e) => { setHouse(e.target.value); setError(''); }}
+                  placeholder="15"
+                  className="input"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-400 mb-2">Квартира</label>
+                <input
+                  type="text"
+                  value={apartment}
+                  onChange={(e) => setApartment(e.target.value)}
+                  placeholder="42"
+                  className="input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact section */}
+        <div className="card-premium animate-slide-up" style={{ animationDelay: '100ms' }}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="icon-circle-gold">
+              <span>👤</span>
+            </div>
+            <div className="font-semibold text-white">Контактные данные</div>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Ваше имя *</label>
+              <input
+                type="text"
+                value={contactName}
+                onChange={(e) => { setContactName(e.target.value); setError(''); }}
+                placeholder="Иван"
+                className="input"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-400 mb-2">Телефон *</label>
+              <input
+                type="tel"
+                value={contactPhone}
+                onChange={(e) => { setContactPhone(e.target.value); setError(''); }}
+                placeholder="+7 (999) 123-45-67"
+                className="input"
+              />
+            </div>
+          </div>
+        </div>
+
+        {error && (
+          <div className="card bg-red-500/10 border-red-500/30 text-red-400 text-center animate-fade-in">
+            {error}
+          </div>
+        )}
+      </div>
+
+      {/* Continue button */}
+      <div className="mt-auto pt-6">
         <button onClick={handleContinue} className="btn-primary">
           Продолжить
-        </button>
-        <button onClick={handleBack} className="btn-secondary">
-          ← Назад
         </button>
       </div>
     </div>

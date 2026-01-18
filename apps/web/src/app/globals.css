@@ -2,56 +2,158 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 :root {
-  --tg-theme-bg-color: #ffffff;
-  --tg-theme-text-color: #000000;
-  --tg-theme-hint-color: #999999;
-  --tg-theme-link-color: #2481cc;
-  --tg-theme-button-color: #2481cc;
+  --tg-theme-bg-color: #0f0f1a;
+  --tg-theme-text-color: #ffffff;
+  --tg-theme-hint-color: #9ca3af;
+  --tg-theme-link-color: #a78bfa;
+  --tg-theme-button-color: #7c3aed;
   --tg-theme-button-text-color: #ffffff;
-  --tg-theme-secondary-bg-color: #f0f0f0;
+  --tg-theme-secondary-bg-color: #1a1a2e;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
-  background-color: var(--tg-theme-bg-color);
+  background: linear-gradient(180deg, #0f0f1a 0%, #1a1a2e 100%);
   color: var(--tg-theme-text-color);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  min-height: 100vh;
 }
 
 @layer components {
   .btn-primary {
-    @apply w-full py-3 px-4 bg-tg-button text-tg-button-text rounded-xl font-medium
-           transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply w-full py-4 px-6 rounded-2xl font-semibold text-white
+           bg-gradient-to-r from-purple-600 to-purple-500
+           shadow-premium transition-all duration-300 ease-out
+           hover:shadow-premium-lg hover:scale-[1.02]
+           active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+           disabled:hover:scale-100 disabled:hover:shadow-premium;
   }
 
   .btn-secondary {
-    @apply w-full py-3 px-4 bg-tg-secondary text-tg-text rounded-xl font-medium
-           transition-all active:scale-[0.98];
+    @apply w-full py-4 px-6 bg-white/10 backdrop-blur-sm text-white rounded-2xl font-semibold
+           border border-white/20 transition-all duration-300
+           hover:bg-white/20 active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply w-full py-4 px-6 bg-transparent text-purple-400 rounded-2xl font-semibold
+           border-2 border-purple-500/50 transition-all duration-300
+           hover:bg-purple-500/10 hover:border-purple-400 active:scale-[0.98];
   }
 
   .card {
-    @apply bg-tg-secondary rounded-xl p-4;
+    @apply bg-white/5 backdrop-blur-lg rounded-3xl p-5 border border-white/10
+           shadow-lg transition-all duration-300;
+  }
+
+  .card-premium {
+    @apply bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-lg rounded-3xl p-5
+           border border-white/20 shadow-premium transition-all duration-300
+           hover:shadow-premium-lg hover:border-purple-500/30;
   }
 
   .input {
-    @apply w-full py-3 px-4 bg-tg-secondary text-tg-text rounded-xl border-0
-           placeholder:text-tg-hint focus:outline-none focus:ring-2 focus:ring-tg-button;
+    @apply w-full py-4 px-5 bg-white/10 backdrop-blur-sm text-white rounded-2xl
+           border border-white/20 placeholder:text-gray-500
+           focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500
+           transition-all duration-300;
   }
 
   .screen {
-    @apply min-h-screen flex flex-col p-4 pb-24;
+    @apply min-h-screen flex flex-col p-5 pb-28 animate-fade-in;
   }
 
   .screen-title {
-    @apply text-xl font-bold mb-4;
+    @apply text-2xl font-bold mb-2 bg-gradient-to-r from-white to-gray-300 
+           bg-clip-text text-transparent;
+  }
+
+  .screen-subtitle {
+    @apply text-gray-400 mb-6;
   }
 
   .option-card {
-    @apply card flex items-center gap-3 cursor-pointer transition-all
-           active:scale-[0.98] hover:bg-opacity-80;
+    @apply card-premium flex items-center gap-4 cursor-pointer
+           hover:scale-[1.02] active:scale-[0.98];
   }
 
   .option-card-selected {
-    @apply ring-2 ring-tg-button;
+    @apply ring-2 ring-purple-500 border-purple-500/50 bg-purple-500/10;
   }
+
+  .icon-circle {
+    @apply w-12 h-12 rounded-2xl flex items-center justify-center
+           bg-gradient-to-br from-purple-500/20 to-purple-600/20
+           text-purple-400 text-xl;
+  }
+
+  .icon-circle-gold {
+    @apply w-12 h-12 rounded-2xl flex items-center justify-center
+           bg-gradient-to-br from-amber-500/20 to-orange-500/20
+           text-amber-400 text-xl;
+  }
+
+  .badge {
+    @apply px-3 py-1 rounded-full text-xs font-medium
+           bg-purple-500/20 text-purple-300 border border-purple-500/30;
+  }
+
+  .badge-gold {
+    @apply px-3 py-1 rounded-full text-xs font-medium
+           bg-amber-500/20 text-amber-300 border border-amber-500/30;
+  }
+
+  .divider {
+    @apply h-px bg-gradient-to-r from-transparent via-white/20 to-transparent my-6;
+  }
+
+  .glass {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent;
+  }
+
+  .gradient-text-gold {
+    @apply bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent;
+  }
+
+  .floating-card {
+    @apply card-premium animate-float;
+  }
+
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full animate-shimmer
+           bg-gradient-to-r from-transparent via-white/10 to-transparent;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(124, 58, 237, 0.3);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.5);
 }
