@@ -40,6 +40,15 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     return;
   }
 
+  // MAX bot bypass - if maxUserId provided in body, use that instead of Telegram auth
+  const body = request.body as any;
+  if (body?.maxUserId) {
+    const maxUser: TelegramUser = { id: body.maxUserId, first_name: body.maxUserName || 'MAX User' };
+    request.telegramUser = maxUser;
+    request.dbUserId = await upsertUser(maxUser);
+    return;
+  }
+
   const initData = request.headers['x-telegram-init-data'];
   if (typeof initData !== 'string') {
     return reply.unauthorized('Missing Telegram initData');
