@@ -1,7 +1,7 @@
 import { InputFile } from 'grammy';
 import * as path from 'path';
 import { BotContext } from './types';
-import { mainMenuKeyboard, backToMainKeyboard, getMenuKeyboard } from './keyboards';
+import { mainMenuKeyboard, backToMainKeyboard, getMenuKeyboard, buildAllOrdersItemKeyboard } from './keyboards';
 import { ApiClient } from './api-client';
 
 export async function handleStart(ctx: BotContext) {
@@ -249,20 +249,29 @@ export async function handleAdminAllOrders(ctx: BotContext) {
     return;
   }
 
-  let message = '📊 <b>Все заказы:</b>\n\n';
-  for (const b of bookings.slice(0, 15)) {
+  await ctx.reply(`📊 <b>Все заказы (${bookings.length}):</b>`, { parse_mode: 'HTML' });
+
+  for (const b of bookings.slice(0, 10)) {
     const status = STATUS_LABELS[b.status] ?? b.status;
     const date = b.scheduledDate ?? '—';
     const user = b.user?.firstName ?? '—';
     const kit = b.kitNumber ? `№${b.kitNumber}` : '';
-    message += `${status} | ${date} ${kit} | ${user}\n`;
+    const addr = b.address ? `📍 ${b.address.addressLine}` : '';
+    
+    const message = `${status} | ${date} ${kit} | ${user}\n${addr}`;
+    
+    const keyboard = buildAllOrdersItemKeyboard(b.id, isSuperAdmin(role));
+    
+    if (isSuperAdmin(role)) {
+      await ctx.reply(message.trim(), { parse_mode: 'HTML', reply_markup: keyboard });
+    } else {
+      await ctx.reply(message.trim(), { parse_mode: 'HTML' });
+    }
   }
   
-  if (bookings.length > 15) {
-    message += `\n<i>...и ещё ${bookings.length - 15} заказов</i>`;
+  if (bookings.length > 10) {
+    await ctx.reply(`<i>...и ещё ${bookings.length - 10} заказов</i>`, { parse_mode: 'HTML' });
   }
-
-  await ctx.reply(message.trim(), { parse_mode: 'HTML' });
 }
 
 export async function handleAdminStats(ctx: BotContext) {

@@ -76,6 +76,14 @@ export function buildAdminOrderKeyboard(bookingId: string, isSuperAdmin: boolean
   return kb;
 }
 
+export function buildAllOrdersItemKeyboard(bookingId: string, isSuperAdmin: boolean): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  if (isSuperAdmin) {
+    kb.text('🗑 Удалить', `admin:delete:${bookingId}`);
+  }
+  return kb;
+}
+
 export function buildAdminListKeyboard(admins: Array<{ telegramId: string; name: string | null }>): InlineKeyboard {
   const kb = new InlineKeyboard();
   for (const admin of admins) {
