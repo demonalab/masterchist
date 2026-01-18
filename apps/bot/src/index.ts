@@ -3,6 +3,8 @@ import { createServer } from 'http';
 import { createBot } from './bot';
 import { config } from './config';
 
+const WEBAPP_URL = 'https://xn--80ahdblodqf4k.xn--p1ai';
+
 async function main() {
   const bot = createBot();
 
@@ -38,6 +40,20 @@ async function main() {
     });
   } else {
     console.log(`Starting bot in polling mode...`);
+
+    // Set Menu Button for Mini App
+    try {
+      await bot.api.setChatMenuButton({
+        menu_button: {
+          type: 'web_app',
+          text: '📱 Открыть приложение',
+          web_app: { url: WEBAPP_URL }
+        }
+      });
+      console.log('Menu button set successfully');
+    } catch (err) {
+      console.log('Failed to set menu button:', err);
+    }
 
     bot.start({
       onStart: (botInfo) => {
