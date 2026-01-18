@@ -21,6 +21,11 @@ export function createBot(): Bot<BotContext> {
   bot.use(
     session({
       initial: createInitialSessionData,
+      getSessionKey: (ctx) => {
+        const chatId = ctx.chat?.id ?? ctx.from?.id;
+        if (!chatId) return undefined;
+        return String(chatId);
+      },
     })
   );
 
