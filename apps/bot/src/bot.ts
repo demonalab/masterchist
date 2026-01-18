@@ -75,15 +75,6 @@ export function createBot(): Bot<BotContext> {
 
   bot.hears('🏠 Клининг', handleCleaning);
 
-  bot.hears('📱 Мини-приложение', async (ctx) => {
-    const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
-    await ctx.reply('Откройте мини-приложение:', {
-      reply_markup: {
-        inline_keyboard: [[{ text: '📱 Открыть', web_app: { url: WEBAPP_URL } }]],
-      },
-    });
-  });
-
   bot.hears('📋 Мои заказы', async (ctx) => {
     await ctx.reply('📋 Функция "Мои заказы" в разработке.');
   });

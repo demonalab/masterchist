@@ -4,8 +4,8 @@ import { TimeSlotAvailability } from './api-client';
 // Persistent reply keyboard (bottom menu)
 export const persistentMenuKeyboard = new Keyboard()
   .text('🧹 Химчистка').text('👔 Проф. химчистка').row()
-  .text('🏠 Клининг').text('📱 Мини-приложение').row()
-  .text('📋 Мои заказы').text('❓ Помощь')
+  .text('🏠 Клининг').text('� Мои заказы').row()
+  .text('❓ Помощь')
   .resized()
   .persistent();
 
