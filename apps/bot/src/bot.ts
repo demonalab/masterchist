@@ -66,20 +66,32 @@ export function createBot(): Bot<BotContext> {
 
   // Text button handlers (persistent keyboard)
   bot.hears('🧹 Химчистка (самообслуживание)', async (ctx) => {
+    await ctx.conversation.exit();
     await ctx.conversation.enter('selfCleaningConversation');
   });
 
   bot.hears('👔 Проф. химчистка', async (ctx) => {
+    await ctx.conversation.exit();
     await ctx.conversation.enter('proCleaningConversation');
   });
 
-  bot.hears('🏠 Клининг', handleCleaning);
+  bot.hears('🏠 Клининг', async (ctx) => {
+    await ctx.conversation.exit();
+    await handleCleaning(ctx);
+  });
 
-  bot.hears('📋 Мои заказы', handleMyOrders);
+  bot.hears('📋 Мои заказы', async (ctx) => {
+    await ctx.conversation.exit();
+    await handleMyOrders(ctx);
+  });
 
-  bot.hears('🏠 Главное меню', handleStart);
+  bot.hears('🏠 Главное меню', async (ctx) => {
+    await ctx.conversation.exit();
+    await handleStart(ctx);
+  });
 
   bot.hears('❓ Помощь', async (ctx) => {
+    await ctx.conversation.exit();
     await ctx.reply(
       `❓ <b>Помощь</b>
 
