@@ -43,6 +43,16 @@ export interface AdminActionResponse {
   userTelegramId: string;
 }
 
+export interface UserBooking {
+  id: string;
+  status: string;
+  scheduledDate: string | null;
+  createdAt: string;
+  kitNumber: number | null;
+  timeSlot: string | null;
+  service: string | null;
+}
+
 export interface ApiError {
   error: string;
   message: string;
@@ -221,6 +231,25 @@ export class ApiClient {
       }
 
       const data = (await res.json()) as AdminActionResponse;
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getMyBookings(): Promise<ApiResult<UserBooking[]>> {
+    try {
+      const res = await fetch(`${this.baseUrl}/api/v1/bookings`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const errBody = (await res.json().catch(() => ({ message: res.statusText }))) as { message?: string };
+        return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data = (await res.json()) as UserBooking[];
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };

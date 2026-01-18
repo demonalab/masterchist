@@ -2,7 +2,7 @@ import { Bot, session, BotError, GrammyError, HttpError } from 'grammy';
 import { conversations, createConversation } from '@grammyjs/conversations';
 import { BotContext, SessionData } from './types';
 import { config } from './config';
-import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel } from './handlers';
+import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel, handleMyOrders } from './handlers';
 import { selfCleaningConversation } from './conversations/self-cleaning';
 import { proCleaningConversation } from './conversations/pro-cleaning';
 import { handlePaymentProof, setBotInstance } from './handlers/payment-proof';
@@ -65,7 +65,7 @@ export function createBot(): Bot<BotContext> {
   bot.callbackQuery(/^admin:reject:/, handleAdminReject);
 
   // Text button handlers (persistent keyboard)
-  bot.hears('🧹 Химчистка', async (ctx) => {
+  bot.hears('🧹 Химчистка (самообслуживание)', async (ctx) => {
     await ctx.conversation.enter('selfCleaningConversation');
   });
 
@@ -75,9 +75,9 @@ export function createBot(): Bot<BotContext> {
 
   bot.hears('🏠 Клининг', handleCleaning);
 
-  bot.hears('📋 Мои заказы', async (ctx) => {
-    await ctx.reply('📋 Функция "Мои заказы" в разработке.');
-  });
+  bot.hears('📋 Мои заказы', handleMyOrders);
+
+  bot.hears('🏠 Главное меню', handleStart);
 
   bot.hears('❓ Помощь', async (ctx) => {
     await ctx.reply(

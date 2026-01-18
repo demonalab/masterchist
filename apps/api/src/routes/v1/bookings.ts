@@ -34,7 +34,35 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.addHook('preHandler', telegramAuthHook);
 
   fastify.get('/', async (request, reply) => {
-    return reply.notImplemented('GET /bookings - list user bookings');
+    const userId = request.dbUserId;
+    if (!userId) {
+      return reply.unauthorized('User not authenticated');
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        status: true,
+        scheduledDate: true,
+        createdAt: true,
+        cleaningKit: { select: { number: true } },
+        timeSlot: { select: { startTime: true, endTime: true } },
+        service: { select: { code: true, title: true } },
+      },
+    });
+
+    return bookings.map(b => ({
+      id: b.id,
+      status: b.status,
+      scheduledDate: b.scheduledDate?.toISOString().split('T')[0] ?? null,
+      createdAt: b.createdAt.toISOString(),
+      kitNumber: b.cleaningKit?.number ?? null,
+      timeSlot: b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : null,
+      service: b.service?.title ?? b.service?.code ?? null,
+    }));
   });
 
   fastify.get('/pending', async (request, reply) => {
