@@ -34,6 +34,7 @@ export interface UserState {
     contactPhone?: string;
     description?: string;
     weekOffset?: number;
+    photoUrl?: string;
   };
 }
 

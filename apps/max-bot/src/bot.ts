@@ -208,16 +208,24 @@ export function createBot() {
     const text = message?.body?.text || '';
     const attachments = message?.body?.attachments || [];
     
-    // Check for photo attachment (payment proof)
+    const state = getState(userId);
+    
+    // Check for photo attachment
     const photoAttachment = attachments.find((a: any) => a.type === 'image');
     if (photoAttachment) {
+      // If in pro_cleaning:photo step - handle as pollution photo
+      if (state.step === 'pro_cleaning:photo') {
+        const photoUrl = photoAttachment.payload?.url || photoAttachment.url || '';
+        updateStateData(userId, { photoUrl });
+        await createProCleaningBooking(ctx, userId, photoUrl);
+        return;
+      }
+      // Otherwise handle as payment proof
       await handlePhotoUpload(ctx, userId, photoAttachment);
       return;
     }
     
     if (text.startsWith('/')) return; // Skip commands
-    
-    const state = getState(userId);
     
     if (state.step === 'idle') {
       // Show menu for any text
@@ -458,7 +466,17 @@ async function handleTextInput(ctx: Context, userId: number, text: string, step:
 
     case 'pro_cleaning:description':
       updateStateData(userId, { description: text });
-      await createProCleaningBooking(ctx, userId);
+      setStep(userId, 'pro_cleaning:photo');
+      await ctx.reply('📸 <b>Отправьте фото загрязнений</b> (jpg, png):\n\n<i>Или напишите "пропустить" чтобы продолжить без фото</i>', { attachments: [cancelKeyboard()], format: 'html' });
+      break;
+
+    case 'pro_cleaning:photo':
+      // User typed text instead of sending photo - skip photo step
+      if (text.toLowerCase().includes('пропуст')) {
+        await createProCleaningBooking(ctx, userId);
+      } else {
+        await ctx.reply('📸 Отправьте фото или напишите "пропустить"', { attachments: [cancelKeyboard()] });
+      }
       break;
   }
 }
@@ -530,7 +548,7 @@ async function createSelfCleaningBooking(ctx: Context, userId: number) {
   resetState(userId);
 }
 
-async function createProCleaningBooking(ctx: Context, userId: number) {
+async function createProCleaningBooking(ctx: Context, userId: number, photoUrl?: string) {
   const state = getState(userId);
   const d = state.data;
 
