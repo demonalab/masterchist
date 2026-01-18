@@ -321,33 +321,12 @@ export async function handleExportPeriod(ctx: BotContext, period: string) {
     return;
   }
 
-  const { data, count } = result.data;
+  const buffer = result.data;
   
-  if (count === 0) {
+  if (buffer.length < 1000) {
     await ctx.reply('📋 Нет заказов за выбранный период.');
     return;
   }
-
-  // Create CSV content
-  const headers = ['ID', 'Статус', 'Дата', 'Создан', 'Услуга', 'Набор', 'Время', 'Город', 'Адрес', 'Имя', 'Телефон', 'TG ID', 'TG Имя'];
-  const rows = data.map(b => [
-    b.id,
-    b.status,
-    b.scheduledDate,
-    b.createdAt,
-    b.service,
-    b.kitNumber,
-    b.timeSlot,
-    b.city,
-    b.address,
-    b.contactName,
-    b.contactPhone,
-    b.userTelegramId,
-    b.userName
-  ].join(';'));
-
-  const csv = [headers.join(';'), ...rows].join('\n');
-  const buffer = Buffer.from('\ufeff' + csv, 'utf-8'); // BOM for Excel
 
   const periodLabels: Record<string, string> = {
     day: 'сегодня',
@@ -356,9 +335,11 @@ export async function handleExportPeriod(ctx: BotContext, period: string) {
     all: 'всё_время'
   };
 
+  const filename = `orders_${periodLabels[period] || 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
   await ctx.replyWithDocument(
-    new InputFile(buffer, `orders_${periodLabels[period] || 'all'}_${new Date().toISOString().split('T')[0]}.csv`),
-    { caption: `📊 Экспорт: ${count} заказов` }
+    new InputFile(buffer, filename),
+    { caption: `📊 Отчёт по заказам (${periodLabels[period] || 'всё время'})` }
   );
 }
 

@@ -467,7 +467,7 @@ export class ApiClient {
     }
   }
 
-  async exportBookings(period?: string): Promise<ApiResult<ExportData>> {
+  async exportBookings(period?: string): Promise<ApiResult<Buffer>> {
     try {
       const url = period
         ? `${this.baseUrl}/api/v1/admin/export?period=${period}`
@@ -482,7 +482,8 @@ export class ApiClient {
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
       }
 
-      const data = (await res.json()) as ExportData;
+      const arrayBuffer = await res.arrayBuffer();
+      const data = Buffer.from(arrayBuffer);
       return { ok: true, data };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
