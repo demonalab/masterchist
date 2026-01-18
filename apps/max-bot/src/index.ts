@@ -142,9 +142,11 @@ async function startPolling() {
   while (true) {
     try {
       const result = await api.getUpdates(marker, 30);
+      console.log(`Got ${result.updates?.length || 0} updates, marker: ${result.marker}`);
       
       if (result.updates && result.updates.length > 0) {
         for (const update of result.updates) {
+          console.log('Update:', JSON.stringify(update));
           await handleUpdate(update);
         }
       }
