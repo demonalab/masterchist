@@ -103,9 +103,9 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     const result: TimeSlotAvailability[] = timeSlots.map((slot) => {
       const bookedKitIds = new Set(bookedKitsPerSlot.get(slot.id) ?? []);
       
-      // Add kits blocked from yesterday's bookings
+      // Add kits blocked from yesterday's bookings (kit rented for 24h, available after same slot next day)
       for (const [kitId, blockedUntilOrder] of kitBlockedUntilSlot) {
-        if (slot.sortOrder < blockedUntilOrder) {
+        if (slot.sortOrder <= blockedUntilOrder) {
           bookedKitIds.add(kitId);
         }
       }
