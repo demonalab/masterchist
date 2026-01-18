@@ -10,8 +10,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Check if user is admin
   fastify.addHook('preHandler', async (request, reply) => {
-    const telegramId = (request as any).telegramUserId;
-    if (String(telegramId) !== ADMIN_TELEGRAM_ID) {
+    const telegramId = request.telegramUser?.id;
+    if (!telegramId || String(telegramId) !== ADMIN_TELEGRAM_ID) {
       return reply.forbidden('Admin access required');
     }
   });
