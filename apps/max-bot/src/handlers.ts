@@ -32,32 +32,44 @@ function getNext7Days(): { date: string; display: string }[] {
 }
 
 export async function handleStart(chatId: number, userId: number) {
-  resetState(userId);
-  
-  const welcomeText = `👋 <b>Добро пожаловать в МастерЧист!</b>
+  try {
+    console.log(`handleStart: chatId=${chatId}, userId=${userId}`);
+    resetState(userId);
+    
+    const welcomeText = `👋 <b>Добро пожаловать в МастерЧист!</b>
 
 <b>Сервис аренды наборов для химчистки.</b>
 
 Выберите услугу 👇`;
 
-  await api.sendMessage(chatId, welcomeText, mainMenuKeyboard);
+    await api.sendMessage(chatId, welcomeText, mainMenuKeyboard);
+    console.log('handleStart: message sent');
+  } catch (err) {
+    console.error('handleStart error:', err);
+  }
 }
 
 export async function handleSelfCleaning(chatId: number, userId: number) {
-  setState(userId, { step: 'self_cleaning:city', data: { serviceCode: 'self_cleaning' } });
-  
-  // Track conversation start
-  const apiClient = new ApiClient(userId);
-  await apiClient.trackConversationStart('self_cleaning');
+  try {
+    console.log(`handleSelfCleaning: chatId=${chatId}, userId=${userId}`);
+    setState(userId, { step: 'self_cleaning:city', data: { serviceCode: 'self_cleaning' } });
+    
+    // Track conversation start (don't await to avoid blocking)
+    const apiClient = new ApiClient(userId);
+    apiClient.trackConversationStart('self_cleaning').catch(e => console.error('Track error:', e));
 
-  const promoText = `🧹 <b>Химчистка самообслуживания</b>
+    const promoText = `🧹 <b>Химчистка самообслуживания</b>
 
 💰 <b>АКЦИЯ: 1500 ₽ за сутки</b>
 🎁 Сушилка и химия в подарок!
 
 📍 Выберите город:`;
 
-  await api.sendMessage(chatId, promoText, cityKeyboard);
+    await api.sendMessage(chatId, promoText, cityKeyboard);
+    console.log('handleSelfCleaning: message sent');
+  } catch (err) {
+    console.error('handleSelfCleaning error:', err);
+  }
 }
 
 export async function handleProCleaning(chatId: number, userId: number) {
