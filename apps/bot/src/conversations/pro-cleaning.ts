@@ -1,31 +1,68 @@
 import type { Conversation } from '@grammyjs/conversations';
 import type { BotContext } from '../types';
-import { mainMenuKeyboard } from '../keyboards';
+import { mainMenuKeyboard, cancelKeyboard, cityKeyboard } from '../keyboards';
 import { config } from '../config';
 import { botInstance } from '../handlers/payment-proof';
+
+const CITY_NAMES: Record<string, string> = {
+  ROSTOV_NA_DONU: 'Ростов-на-Дону',
+  BATAYSK: 'Батайск',
+  STAVROPOL: 'Ставрополь',
+};
 
 export async function proCleaningConversation(
   conversation: Conversation<BotContext>,
   ctx: BotContext
 ) {
+  // Reset draft
+  ctx.session.draft = {};
+
   await ctx.reply(
     `👔 <b>Профессиональная химчистка</b>
 
-Опишите загрязнения (что нужно почистить, тип пятен и т.д.):`,
+Мастер приедет к вам и профессионально почистит мебель, ковры или другие изделия.`,
     { parse_mode: 'HTML' }
   );
 
-  const descriptionCtx = await conversation.wait();
-  const description = descriptionCtx.message?.text;
+  // Step 1: City selection
+  await ctx.reply('📍 Выберите город:', { reply_markup: cityKeyboard });
 
-  if (!description) {
-    await ctx.reply('❌ Пожалуйста, отправьте текстовое описание.', {
-      reply_markup: mainMenuKeyboard,
-    });
+  const cityCtx = await conversation.waitForCallbackQuery(/^city:|^back:main$/);
+  await cityCtx.answerCallbackQuery();
+
+  if (cityCtx.callbackQuery.data === 'back:main') {
     return;
   }
 
-  await ctx.reply('📸 Теперь отправьте фото загрязнений:');
+  const city = cityCtx.callbackQuery.data.replace('city:', '');
+  const cityName = CITY_NAMES[city] ?? city;
+
+  // Step 2: Address input
+  await ctx.reply('🏠 Введите адрес (улица, дом, квартира):', { reply_markup: cancelKeyboard });
+
+  const addressCtx = await conversation.waitFor('message:text');
+  const address = addressCtx.message.text.trim();
+
+  // Step 3: Contact name
+  await ctx.reply('👤 Введите ваше имя:', { reply_markup: cancelKeyboard });
+
+  const nameCtx = await conversation.waitFor('message:text');
+  const contactName = nameCtx.message.text.trim();
+
+  // Step 4: Contact phone
+  await ctx.reply('📞 Введите номер телефона:', { reply_markup: cancelKeyboard });
+
+  const phoneCtx = await conversation.waitFor('message:text');
+  const contactPhone = phoneCtx.message.text.trim();
+
+  // Step 5: Description
+  await ctx.reply('📝 Опишите загрязнения (что нужно почистить, тип пятен и т.д.):', { reply_markup: cancelKeyboard });
+
+  const descriptionCtx = await conversation.waitFor('message:text');
+  const description = descriptionCtx.message.text.trim();
+
+  // Step 6: Photo
+  await ctx.reply('📸 Отправьте фото загрязнений:', { reply_markup: cancelKeyboard });
 
   const photoCtx = await conversation.wait();
   const photos = photoCtx.message?.photo;
@@ -48,15 +85,14 @@ export async function proCleaningConversation(
 
   // Send to admin
   if (config.ADMIN_TELEGRAM_ID && botInstance) {
-    const userName = ctx.from?.first_name || 'Клиент';
-    const userPhone = ctx.from?.username ? `@${ctx.from.username}` : 'не указан';
-
     try {
       await botInstance.api.sendPhoto(config.ADMIN_TELEGRAM_ID, fileId, {
-        caption: `🧹 <b>Заявка на проф. химчистку</b>
+        caption: `👔 <b>Заявка на проф. химчистку</b>
 
-👤 Клиент: ${userName}
-📱 Контакт: ${userPhone}
+🏙 Город: ${cityName}
+📍 Адрес: ${address}
+👤 Имя: ${contactName}
+📞 Телефон: ${contactPhone}
 🆔 Telegram ID: ${ctx.from?.id}
 
 📝 <b>Описание:</b>
@@ -70,6 +106,11 @@ ${description}`,
 
   await ctx.reply(
     `✅ <b>Заявка отправлена!</b>
+
+🏙 Город: ${cityName}
+📍 Адрес: ${address}
+👤 Имя: ${contactName}
+📞 Телефон: ${contactPhone}
 
 Мастер свяжется с вами для оценки стоимости и согласования времени.
 
