@@ -42,8 +42,12 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     // Previous day - kits booked yesterday are unavailable until their slot time today
     const prevDateObj = new Date(dateObj);
     prevDateObj.setUTCDate(prevDateObj.getUTCDate() - 1);
+    
+    // Next day - kits booked tomorrow block today's late slots (must return before tomorrow's booking)
+    const nextDateObj = new Date(dateObj);
+    nextDateObj.setUTCDate(nextDateObj.getUTCDate() + 1);
 
-    const [timeSlots, activeKits, todayBookings, yesterdayBookings] = await Promise.all([
+    const [timeSlots, activeKits, todayBookings, yesterdayBookings, tomorrowBookings] = await Promise.all([
       prisma.timeSlot.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
@@ -72,6 +76,15 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
         },
         select: { timeSlotId: true, cleaningKitId: true },
       }),
+      // Bookings for next day (need kit back before this)
+      prisma.booking.findMany({
+        where: {
+          scheduledDate: nextDateObj,
+          status: { in: [...BLOCKING_STATUSES] },
+          cleaningKitId: { not: null },
+        },
+        select: { timeSlotId: true, cleaningKitId: true },
+      }),
     ]);
 
     const totalKits = activeKits.length;
@@ -92,12 +105,25 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     }
     
     // Kits booked yesterday - blocked until same slot today
-    // Map: kitId -> slotSortOrder (kit is blocked for slots with sortOrder < this value)
+    // Map: kitId -> slotSortOrder (kit is blocked for slots with sortOrder <= this value)
     const kitBlockedUntilSlot = new Map<string, number>();
     for (const booking of yesterdayBookings) {
       if (!booking.timeSlotId || !booking.cleaningKitId) continue;
       const slotOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
       kitBlockedUntilSlot.set(booking.cleaningKitId, slotOrder);
+    }
+    
+    // Kits booked tomorrow - blocked from same slot today onwards
+    // Map: kitId -> slotSortOrder (kit is blocked for slots with sortOrder >= this value)
+    const kitBlockedFromSlot = new Map<string, number>();
+    for (const booking of tomorrowBookings) {
+      if (!booking.timeSlotId || !booking.cleaningKitId) continue;
+      const slotOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
+      // If same kit has multiple bookings tomorrow, use the earliest slot
+      const existing = kitBlockedFromSlot.get(booking.cleaningKitId);
+      if (existing === undefined || slotOrder < existing) {
+        kitBlockedFromSlot.set(booking.cleaningKitId, slotOrder);
+      }
     }
 
     const result: TimeSlotAvailability[] = timeSlots.map((slot) => {
@@ -106,6 +132,13 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
       // Add kits blocked from yesterday's bookings (kit rented for 24h, available after same slot next day)
       for (const [kitId, blockedUntilOrder] of kitBlockedUntilSlot) {
         if (slot.sortOrder <= blockedUntilOrder) {
+          bookedKitIds.add(kitId);
+        }
+      }
+      
+      // Add kits blocked by tomorrow's bookings (must return before tomorrow's use)
+      for (const [kitId, blockedFromOrder] of kitBlockedFromSlot) {
+        if (slot.sortOrder >= blockedFromOrder) {
           bookedKitIds.add(kitId);
         }
       }
