@@ -16,31 +16,17 @@ export async function handleStart(ctx: BotContext) {
     await ctx.replyWithAnimation(new InputFile(animationPath), {
       caption: `<b>Сервис аренды наборов для химчистки.</b>
 
-Выберите услугу:`,
+Выберите услугу в меню ниже 👇`,
       parse_mode: 'HTML',
-      reply_markup: mainMenuKeyboard,
     });
   } catch (err) {
-    console.error('Failed to send welcome animation, trying image:', err);
-    try {
-      const imagePath = path.join(__dirname, '../assets/welcome.png');
-      await ctx.replyWithPhoto(new InputFile(imagePath), {
-        caption: `<b>Сервис аренды наборов для химчистки.</b>
+    console.error('Failed to send welcome animation:', err);
+    await ctx.reply(
+      `<b>Сервис аренды наборов для химчистки.</b>
 
-Выберите услугу:`,
-        parse_mode: 'HTML',
-        reply_markup: mainMenuKeyboard,
-      });
-    } catch (imageErr) {
-      console.error('Failed to send welcome image:', imageErr);
-      // Fallback to text
-      await ctx.reply(
-        `<b>Сервис аренды наборов для химчистки.</b>
-
-Выберите услугу:`,
-        { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
-      );
-    }
+Выберите услугу в меню ниже 👇`,
+      { parse_mode: 'HTML' }
+    );
   }
 }
 
