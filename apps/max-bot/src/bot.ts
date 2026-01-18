@@ -84,6 +84,28 @@ async function notifyAdminAboutPayment(bookingId: string, userId: number, photoU
     if (!res.ok) {
       console.error('Failed to send admin notification:', await res.text());
     }
+    
+    // Send payment proof photo separately
+    if (photoUrl) {
+      try {
+        await fetch(`${config.MAX_API_URL}/messages?user_id=${config.ADMIN_USER_ID}`, {
+          method: 'POST',
+          headers: {
+            'Authorization': config.BOT_TOKEN,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: '📸 Фото чека:',
+            attachments: [{
+              type: 'image',
+              payload: { url: photoUrl },
+            }],
+          }),
+        });
+      } catch (err) {
+        console.error('Failed to send payment proof photo:', err);
+      }
+    }
   } catch (err) {
     console.error('Failed to notify admin:', err);
   }
@@ -745,8 +767,8 @@ async function handlePhotoUpload(ctx: Context, userId: number, photoAttachment: 
     { format: 'html' }
   );
 
-  // Notify admin about new payment
-  await notifyAdminAboutPayment(bookingId, userId);
+  // Notify admin about new payment with photo
+  await notifyAdminAboutPayment(bookingId, userId, photoUrl);
 }
 
 // Admin handlers
