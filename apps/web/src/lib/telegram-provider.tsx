@@ -1,31 +1,36 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { getTelegramWebApp, TelegramWebApp } from './telegram';
+import { getTelegramWebApp, TelegramWebApp, isTelegramWebApp } from './telegram';
 
 interface TelegramContextValue {
   webApp: TelegramWebApp | null;
   isReady: boolean;
   initData: string;
+  isTelegram: boolean;
 }
 
 const TelegramContext = createContext<TelegramContextValue>({
   webApp: null,
   isReady: false,
   initData: '',
+  isTelegram: false,
 });
 
 export function TelegramProvider({ children }: { children: ReactNode }) {
   const [webApp, setWebApp] = useState<TelegramWebApp | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [isTelegram, setIsTelegram] = useState(false);
 
   useEffect(() => {
     const tgWebApp = getTelegramWebApp();
+    const isRealTelegram = isTelegramWebApp();
 
-    if (tgWebApp) {
+    if (tgWebApp && isRealTelegram) {
       tgWebApp.ready();
       tgWebApp.expand();
       setWebApp(tgWebApp);
+      setIsTelegram(true);
       setIsReady(true);
 
       if (tgWebApp.themeParams) {
@@ -50,6 +55,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         webApp,
         isReady,
         initData: webApp?.initData ?? '',
+        isTelegram,
       }}
     >
       {children}

@@ -15,7 +15,7 @@ import { WebHomePage } from '@/components/web/WebHomePage';
 
 export default function HomePage() {
   const { step, error, setError } = useBookingStore();
-  const { isReady, webApp } = useTelegram();
+  const { isReady, isTelegram } = useTelegram();
 
   if (!isReady) {
     return (
@@ -25,7 +25,7 @@ export default function HomePage() {
     );
   }
 
-  if (!webApp) {
+  if (!isTelegram) {
     return <WebHomePage />;
   }
 
