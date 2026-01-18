@@ -1,5 +1,6 @@
 import { InlineKeyboard, Keyboard } from 'grammy';
 import { TimeSlotAvailability } from './api-client';
+import { config } from './config';
 
 // Persistent reply keyboard (bottom menu)
 export const persistentMenuKeyboard = new Keyboard()
@@ -9,6 +10,23 @@ export const persistentMenuKeyboard = new Keyboard()
   .text('🏠 Главное меню')
   .resized()
   .persistent();
+
+// Get keyboard based on user role
+export function getMenuKeyboard(telegramId?: number): Keyboard {
+  const isAdmin = telegramId && String(telegramId) === config.ADMIN_TELEGRAM_ID;
+  
+  if (isAdmin) {
+    return new Keyboard()
+      .text('🧹 Химчистка (самообслуживание)').row()
+      .text('👔 Проф. химчистка').text('🏠 Клининг').row()
+      .text('📋 Мои заказы').text('❓ Помощь').row()
+      .text('👨‍💼 Админка').text('🏠 Главное меню')
+      .resized()
+      .persistent();
+  }
+  
+  return persistentMenuKeyboard;
+}
 
 // Admin reply keyboard
 export const adminMenuKeyboard = new Keyboard()

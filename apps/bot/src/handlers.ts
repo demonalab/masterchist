@@ -1,15 +1,15 @@
 import { InputFile } from 'grammy';
 import * as path from 'path';
 import { BotContext } from './types';
-import { mainMenuKeyboard, backToMainKeyboard, persistentMenuKeyboard } from './keyboards';
+import { mainMenuKeyboard, backToMainKeyboard, getMenuKeyboard } from './keyboards';
 import { ApiClient } from './api-client';
 
 export async function handleStart(ctx: BotContext) {
   ctx.session.draft = {};
 
-  // Send persistent keyboard first
+  // Send persistent keyboard (with admin button for admins)
   await ctx.reply('👋 Добро пожаловать в МастерЧист!', {
-    reply_markup: persistentMenuKeyboard,
+    reply_markup: getMenuKeyboard(ctx.from?.id),
   });
 
   try {

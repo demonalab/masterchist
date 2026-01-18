@@ -108,6 +108,7 @@ export function createBot(): Bot<BotContext> {
 
   // Admin commands
   bot.command('admin', handleAdminMenu);
+  bot.hears('👨‍💼 Админка', handleAdminMenu);
 
   // Admin text buttons
   bot.hears('📋 Новые заказы', handleAdminNewOrders);
