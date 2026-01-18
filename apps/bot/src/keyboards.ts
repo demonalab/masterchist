@@ -4,10 +4,10 @@ import { config } from './config';
 
 // Persistent reply keyboard (bottom menu)
 export const persistentMenuKeyboard = new Keyboard()
-  .text('🧹 Химчистка (самообслуживание)').row()
-  .text('👔 Проф. химчистка').text('🏠 Клининг').row()
-  .text('📋 Мои заказы').text('❓ Помощь').row()
-  .text('🏠 Главное меню')
+  .text('🏠 Главное меню').row()
+  .text('🧹 Химчистка (самообслуживание)').text('👔 Проф. химчистка').row()
+  .text('🏠 Клининг').text('📋 Мои заказы').row()
+  .text('❓ Помощь')
   .resized()
   .persistent();
 
@@ -17,10 +17,10 @@ export function getMenuKeyboard(telegramId?: number): Keyboard {
   
   if (isAdmin) {
     return new Keyboard()
-      .text('🧹 Химчистка (самообслуживание)').row()
-      .text('👔 Проф. химчистка').text('🏠 Клининг').row()
-      .text('📋 Мои заказы').text('❓ Помощь').row()
-      .text('👨‍💼 Админка').text('🏠 Главное меню')
+      .text('🏠 Главное меню').text('👨‍💼 Админка').row()
+      .text('🧹 Химчистка (самообслуживание)').text('👔 Проф. химчистка').row()
+      .text('🏠 Клининг').text('📋 Мои заказы').row()
+      .text('❓ Помощь')
       .resized()
       .persistent();
   }
