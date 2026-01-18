@@ -19,8 +19,6 @@ export const adminMenuKeyboard = new Keyboard()
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
 export const mainMenuKeyboard = new InlineKeyboard()
-  .webApp('📱 Открыть приложение', WEBAPP_URL)
-  .row()
   .text('🧹 Химчистка самообслуживания', 'service:self_cleaning')
   .row()
   .text('👔 Проф. химчистка мастером', 'service:pro_cleaning')
