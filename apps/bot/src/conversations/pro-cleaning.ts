@@ -4,6 +4,7 @@ import { mainMenuKeyboard, cancelKeyboard, cityKeyboard } from '../keyboards';
 import { config } from '../config';
 import { botInstance } from '../handlers/payment-proof';
 import { ApiClient } from '../api-client';
+import { startConversationTracking, completeConversationTracking } from '../services/reminder';
 
 const CITY_NAMES: Record<string, string> = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
@@ -22,6 +23,9 @@ export async function proCleaningConversation(
   }
 
   const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+
+  // Track conversation start for reminders
+  await startConversationTracking(telegramId, 'pro_cleaning');
 
   // Reset draft
   ctx.session.draft = {};
@@ -109,6 +113,9 @@ export async function proCleaningConversation(
     await ctx.reply(`❌ Ошибка при создании заявки: ${bookingResult.error}`, { reply_markup: mainMenuKeyboard });
     return;
   }
+
+  // Mark conversation as completed (no more reminders)
+  await completeConversationTracking(telegramId, 'pro_cleaning');
 
   const caption = `👔 <b>Новая заявка на проф. химчистку</b>
 

@@ -12,6 +12,7 @@ import {
   retrySlotKeyboard,
 } from '../keyboards';
 import { getCurrentCalendar, buildCalendarKeyboard, parseCalendarCallback } from '../calendar';
+import { startConversationTracking, completeConversationTracking } from '../services/reminder';
 
 const CITY_NAMES: Record<string, string> = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
@@ -30,6 +31,9 @@ export async function selfCleaningConversation(
   }
 
   const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+
+  // Track conversation start for reminders
+  await startConversationTracking(telegramId, 'self_cleaning');
 
   // Reset draft
   ctx.session.draft = {};
@@ -249,6 +253,9 @@ export async function selfCleaningConversation(
   const booking = bookingResult.data;
   ctx.session.draft = {};
   ctx.session.pendingBookingId = booking.id;
+
+  // Mark conversation as completed (no more reminders)
+  await completeConversationTracking(telegramId, 'self_cleaning');
 
   await ctx.reply(
     `✅ <b>Бронирование создано!</b>

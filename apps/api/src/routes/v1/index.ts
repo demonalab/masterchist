@@ -4,6 +4,7 @@ import availabilityRoutes from './availability';
 import bookingsRoutes from './bookings';
 import paymentProofsRoutes from './payment-proofs';
 import adminRoutes from './admin';
+import conversationsRoutes from './conversations';
 
 const v1Routes: FastifyPluginAsync = async (fastify) => {
   fastify.register(servicesRoutes, { prefix: '/services' });
@@ -11,6 +12,7 @@ const v1Routes: FastifyPluginAsync = async (fastify) => {
   fastify.register(bookingsRoutes, { prefix: '/bookings' });
   fastify.register(paymentProofsRoutes, { prefix: '/payment-proofs' });
   fastify.register(adminRoutes, { prefix: '/admin' });
+  fastify.register(conversationsRoutes, { prefix: '/conversations' });
 };
 
 export default v1Routes;

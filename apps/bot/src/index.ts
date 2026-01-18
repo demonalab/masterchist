@@ -2,6 +2,7 @@ import { webhookCallback } from 'grammy';
 import { createServer } from 'http';
 import { createBot } from './bot';
 import { config } from './config';
+import { startReminderCron } from './services/reminder';
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
@@ -59,6 +60,7 @@ async function main() {
     const port = parseInt(config.WEBHOOK_PORT || '3003', 10);
     server.listen(port, () => {
       console.log(`Bot webhook server listening on port ${port}`);
+      startReminderCron(bot);
     });
   } else {
     console.log(`Starting bot in polling mode...`);
@@ -80,6 +82,7 @@ async function main() {
     bot.start({
       onStart: (botInfo) => {
         console.log(`Bot @${botInfo.username} started successfully (polling)`);
+        startReminderCron(bot);
       },
     });
   }
