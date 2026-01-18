@@ -19,9 +19,11 @@ const ALLOWED_MIME_TYPES = [
 ];
 
 export async function handlePaymentProof(ctx: BotContext) {
+  console.log('Payment proof handler - session:', JSON.stringify(ctx.session));
   const bookingId = ctx.session.pendingBookingId;
 
   if (!bookingId) {
+    console.log('No pendingBookingId in session for user:', ctx.from?.id);
     await ctx.reply(
       '❓ Нет активного бронирования.\n\nИспользуйте /start для создания нового.',
       { reply_markup: mainMenuKeyboard }
