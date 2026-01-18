@@ -45,13 +45,12 @@ async function handleUpdate(update: MaxUpdate) {
 
     if (update.update_type === 'message_callback' && update.callback) {
       const userId = update.callback.user.user_id;
-      // chatId can be in update.message (top level) or callback.message, fallback to userId
+      // chatId is in update.message.recipient.chat_id (top level for callbacks)
       const chatId = (update as any).message?.recipient?.chat_id 
-        || update.callback.message?.recipient?.chat_id 
-        || userId;
+        || update.callback.message?.recipient?.chat_id;
       
       if (!chatId) {
-        console.log('No chat_id in callback, userId:', userId);
+        console.log('No chat_id in callback, update:', JSON.stringify(update).slice(0, 200));
         return;
       }
 
