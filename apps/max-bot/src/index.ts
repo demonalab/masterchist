@@ -82,18 +82,26 @@ async function handleMyOrders(chatId: number) {
 
 async function handleUpdate(update: MaxUpdate) {
   try {
+    console.log('Processing update type:', update.update_type);
+    
     if (update.update_type === 'message_created' && update.message) {
       const chatId = update.message.recipient.chat_id;
-      const text = update.message.body.text?.toLowerCase() || '';
+      const text = update.message.body?.text?.toLowerCase() || '';
+      console.log(`Message from chat ${chatId}: "${text}"`);
 
       if (text === '/start' || text === 'start' || text === 'начать') {
+        console.log('Sending start message...');
         await handleStart(chatId);
+        console.log('Start message sent!');
       }
     }
 
     if (update.update_type === 'message_callback' && update.callback) {
-      const chatId = update.callback.message?.recipient.chat_id;
-      if (!chatId) return;
+      const chatId = update.callback.message?.recipient?.chat_id;
+      if (!chatId) {
+        console.log('No chat_id in callback');
+        return;
+      }
 
       await api.answerCallback(update.callback.callback_id);
 
