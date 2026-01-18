@@ -61,33 +61,15 @@ export async function proCleaningConversation(
   const descriptionCtx = await conversation.waitFor('message:text');
   const description = descriptionCtx.message.text.trim();
 
-  // Step 6: Photo
-  await ctx.reply('📸 Отправьте фото загрязнений:', { reply_markup: cancelKeyboard });
+  // Step 6: Photo/Video/Document
+  await ctx.reply('📸 Отправьте фото или видео загрязнений (jpg, png, mp4, mov и др.):', { reply_markup: cancelKeyboard });
 
-  const photoCtx = await conversation.wait();
-  const photos = photoCtx.message?.photo;
+  const mediaCtx = await conversation.wait();
+  const photos = mediaCtx.message?.photo;
+  const video = mediaCtx.message?.video;
+  const document = mediaCtx.message?.document;
 
-  if (!photos || photos.length === 0) {
-    await ctx.reply('❌ Пожалуйста, отправьте фото.', {
-      reply_markup: mainMenuKeyboard,
-    });
-    return;
-  }
-
-  const largestPhoto = photos[photos.length - 1];
-  if (!largestPhoto) {
-    await ctx.reply('❌ Ошибка при обработке фото.', {
-      reply_markup: mainMenuKeyboard,
-    });
-    return;
-  }
-  const fileId = largestPhoto.file_id;
-
-  // Send to admin
-  if (config.ADMIN_TELEGRAM_ID && botInstance) {
-    try {
-      await botInstance.api.sendPhoto(config.ADMIN_TELEGRAM_ID, fileId, {
-        caption: `👔 <b>Заявка на проф. химчистку</b>
+  const caption = `👔 <b>Заявка на проф. химчистку</b>
 
 🏙 Город: ${cityName}
 📍 Адрес: ${address}
@@ -96,9 +78,35 @@ export async function proCleaningConversation(
 🆔 Telegram ID: ${ctx.from?.id}
 
 📝 <b>Описание:</b>
-${description}`,
-        parse_mode: 'HTML',
-      });
+${description}`;
+
+  // Send to admin based on media type
+  if (config.ADMIN_TELEGRAM_ID && botInstance) {
+    try {
+      if (photos && photos.length > 0) {
+        const largestPhoto = photos[photos.length - 1];
+        if (largestPhoto) {
+          await botInstance.api.sendPhoto(config.ADMIN_TELEGRAM_ID, largestPhoto.file_id, {
+            caption,
+            parse_mode: 'HTML',
+          });
+        }
+      } else if (video) {
+        await botInstance.api.sendVideo(config.ADMIN_TELEGRAM_ID, video.file_id, {
+          caption,
+          parse_mode: 'HTML',
+        });
+      } else if (document) {
+        await botInstance.api.sendDocument(config.ADMIN_TELEGRAM_ID, document.file_id, {
+          caption,
+          parse_mode: 'HTML',
+        });
+      } else {
+        // No media - just send text
+        await botInstance.api.sendMessage(config.ADMIN_TELEGRAM_ID, caption, {
+          parse_mode: 'HTML',
+        });
+      }
     } catch (err) {
       console.error('Failed to send pro cleaning request to admin:', err);
     }
