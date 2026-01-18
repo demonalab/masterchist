@@ -153,25 +153,28 @@ export async function handleCitySelection(chatId: number, userId: number, city: 
 }
 
 export async function handleDateSelection(chatId: number, userId: number, date: string) {
-  const state = getState(userId);
-  
-  // Format display date
-  const d = new Date(date);
-  const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
-  const monthNames = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-  const displayDate = `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`;
-  
-  updateStateData(userId, { date, displayDate });
-  setStep(userId, 'self_cleaning:time');
+  try {
+    const state = getState(userId);
+    console.log(`handleDateSelection: city=${state.data.city}, date=${date}`);
+    
+    // Format display date
+    const d = new Date(date);
+    const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+    const monthNames = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    const displayDate = `${dayNames[d.getDay()]} ${d.getDate()} ${monthNames[d.getMonth()]}`;
+    
+    updateStateData(userId, { date, displayDate });
+    setStep(userId, 'self_cleaning:time');
 
-  // Get available slots
-  const apiClient = new ApiClient(userId);
-  const result = await apiClient.getAvailability(state.data.city!, date);
+    // Get available slots
+    const apiClient = new ApiClient(userId);
+    const result = await apiClient.getAvailability(state.data.city!, date);
+    console.log(`handleDateSelection: availability result ok=${result.ok}, data=${JSON.stringify(result.ok ? result.data.length : result.error)}`);
 
-  if (!result.ok || result.data.length === 0) {
-    await api.sendMessage(chatId, '❌ Нет доступных слотов на эту дату. Выберите другую.', buildDateKeyboard(getNext7Days()));
-    return;
-  }
+    if (!result.ok || result.data.length === 0) {
+      await api.sendMessage(chatId, '❌ Нет доступных слотов на эту дату. Выберите другую.', buildDateKeyboard(getNext7Days()));
+      return;
+    }
 
   const slots = result.data.map(s => ({
     slotId: s.slotId,
@@ -182,6 +185,9 @@ export async function handleDateSelection(chatId: number, userId: number, date: 
 
   const text = `🕐 Выберите время:\n\n🏙 ${state.data.cityName}\n📅 ${displayDate}`;
   await api.sendMessage(chatId, text, buildTimeSlotsKeyboard(slots));
+  } catch (err) {
+    console.error('handleDateSelection error:', err);
+  }
 }
 
 export async function handleSlotSelection(chatId: number, userId: number, slotId: string, timeDisplay: string) {
