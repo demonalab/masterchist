@@ -20,10 +20,11 @@ COPY apps/api ./apps/api
 RUN pnpm install --frozen-lockfile
 
 # Generate Prisma client
-RUN pnpm --filter @himchistka/db db:generate
+RUN pnpm --filter @himchistka/db generate
 
 # Build packages and app
 RUN pnpm --filter @himchistka/shared build
+RUN pnpm --filter @himchistka/db build
 RUN pnpm --filter @himchistka/api build
 
 # Stage 2: Production
@@ -44,7 +45,7 @@ COPY --from=builder /app/packages/shared/package.json ./packages/shared/
 COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 
 COPY --from=builder /app/packages/db/package.json ./packages/db/
-COPY --from=builder /app/packages/db/src ./packages/db/src
+COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
 COPY --from=builder /app/packages/db/node_modules/.prisma ./packages/db/node_modules/.prisma
 

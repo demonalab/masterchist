@@ -183,7 +183,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
         address: { select: { addressLine: true, contactName: true, contactPhone: true } },
-        service: { select: { code: true, name: true } },
+        service: { select: { code: true, title: true } },
       },
     });
 
