@@ -2,7 +2,7 @@ import { BotContext } from './types';
 import { mainMenuKeyboard, backToMainKeyboard } from './keyboards';
 
 export async function handleStart(ctx: BotContext) {
-  ctx.session.step = 'idle';
+  ctx.session.draft = {};
 
   await ctx.reply(
     `👋 <b>Добро пожаловать!</b>
@@ -19,7 +19,8 @@ export async function handleProCleaning(ctx: BotContext) {
   await ctx.reply(
     `👔 <b>Профессиональная химчистка</b>
 
-⚠️ Каркас. В production здесь будет форма описания загрязнений.`,
+Опишите загрязнения и отправьте фото.
+Мастер свяжется с вами для оценки.`,
     { parse_mode: 'HTML', reply_markup: backToMainKeyboard }
   );
 }
@@ -36,12 +37,12 @@ export async function handleCleaning(ctx: BotContext) {
 
 export async function handleBackToMain(ctx: BotContext) {
   await ctx.answerCallbackQuery();
-  ctx.session.step = 'idle';
+  ctx.session.draft = {};
   await ctx.reply('Выберите услугу:', { reply_markup: mainMenuKeyboard });
 }
 
 export async function handleCancel(ctx: BotContext) {
   await ctx.answerCallbackQuery('Отменено');
-  ctx.session.step = 'idle';
+  ctx.session.draft = {};
   await ctx.reply('❌ Отменено.', { reply_markup: mainMenuKeyboard });
 }

@@ -4,15 +4,19 @@ import { BotContext, SessionData } from './types';
 import { config } from './config';
 import { handleStart, handleProCleaning, handleCleaning, handleBackToMain, handleCancel } from './handlers';
 import { selfCleaningConversation } from './conversations/self-cleaning';
+import { handlePaymentProof, setBotInstance } from './handlers/payment-proof';
+import { handleAdminConfirm, handleAdminReject } from './handlers/admin';
 
 function createInitialSessionData(): SessionData {
   return {
-    step: 'idle',
+    draft: {},
   };
 }
 
 export function createBot(): Bot<BotContext> {
   const bot = new Bot<BotContext>(config.BOT_TOKEN);
+
+  setBotInstance(bot);
 
   bot.use(
     session({
@@ -43,6 +47,12 @@ export function createBot(): Bot<BotContext> {
   bot.callbackQuery(/^slot:/, async (ctx) => {
     await ctx.answerCallbackQuery('Используйте /start для начала');
   });
+
+  bot.on('message:photo', handlePaymentProof);
+  bot.on('message:document', handlePaymentProof);
+
+  bot.callbackQuery(/^admin:confirm:/, handleAdminConfirm);
+  bot.callbackQuery(/^admin:reject:/, handleAdminReject);
 
   bot.catch((err: BotError<BotContext>) => {
     const ctx = err.ctx;

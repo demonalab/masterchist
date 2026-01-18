@@ -1,17 +1,36 @@
 import { Conversation } from '@grammyjs/conversations';
 import { BotContext } from '../types';
+import { ApiClient } from '../api-client';
 import {
   cityKeyboard,
-  mockTimeSlotsKeyboard,
+  buildTimeSlotsKeyboard,
   cancelKeyboard,
   confirmKeyboard,
   backToMainKeyboard,
+  retrySlotKeyboard,
 } from '../keyboards';
+
+const CITY_NAMES: Record<string, string> = {
+  ROSTOV_NA_DONU: 'Ростов-на-Дону',
+  BATAYSK: 'Батайск',
+  STAVROPOL: 'Ставрополь',
+};
 
 export async function selfCleaningConversation(
   conversation: Conversation<BotContext>,
   ctx: BotContext
 ) {
+  const telegramId = ctx.from?.id;
+  if (!telegramId) {
+    await ctx.reply('❌ Ошибка: не удалось определить пользователя.');
+    return;
+  }
+
+  const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+
+  // Reset draft
+  ctx.session.draft = {};
+
   // Step 1: City selection
   await ctx.reply('📍 Выберите город:', { reply_markup: cityKeyboard });
 
@@ -23,23 +42,43 @@ export async function selfCleaningConversation(
   }
 
   const city = cityCtx.callbackQuery.data.replace('city:', '');
-  ctx.session.step = 'awaiting_date';
+  ctx.session.draft.city = city;
 
   // Step 2: Date input
   await ctx.reply('📅 Введите дату (ГГГГ-ММ-ДД):', { reply_markup: cancelKeyboard });
 
   const dateCtx = await conversation.waitFor('message:text');
-  const dateText = dateCtx.message.text.trim();
+  const scheduledDate = dateCtx.message.text.trim();
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
     await ctx.reply('❌ Неверный формат даты.', { reply_markup: backToMainKeyboard });
     return;
   }
 
-  ctx.session.step = 'awaiting_slot';
+  ctx.session.draft.scheduledDate = scheduledDate;
 
-  // Step 3: Time slot selection (mock data)
-  await ctx.reply('🕐 Выберите время:', { reply_markup: mockTimeSlotsKeyboard });
+  // Step 3: Fetch availability from API
+  await ctx.reply('⏳ Загружаю доступные слоты...');
+
+  const availResult = await api.getAvailability(city, scheduledDate, 'self_cleaning');
+
+  if (!availResult.ok) {
+    const errorMsg = availResult.status >= 500
+      ? '⚠️ Сервер временно недоступен. Попробуйте позже.'
+      : `❌ Ошибка: ${availResult.error}`;
+    await ctx.reply(errorMsg, { reply_markup: backToMainKeyboard });
+    return;
+  }
+
+  const slots = availResult.data;
+  const availableSlots = slots.filter((s) => s.available);
+
+  if (availableSlots.length === 0) {
+    await ctx.reply('😔 На эту дату нет свободных слотов.', { reply_markup: backToMainKeyboard });
+    return;
+  }
+
+  await ctx.reply('🕐 Выберите время:', { reply_markup: buildTimeSlotsKeyboard(slots) });
 
   const slotCtx = await conversation.waitForCallbackQuery(/^slot:|^back:date$/);
   await slotCtx.answerCallbackQuery();
@@ -49,47 +88,52 @@ export async function selfCleaningConversation(
   }
 
   if (slotCtx.callbackQuery.data === 'slot:unavailable') {
-    await ctx.reply('❌ Этот слот недоступен.', { reply_markup: backToMainKeyboard });
+    await ctx.reply('❌ Этот слот недоступен. Выберите другой.');
     return;
   }
 
-  ctx.session.step = 'awaiting_address';
+  // Parse slot data: slot:uuid:HH:MM-HH:MM
+  const slotParts = slotCtx.callbackQuery.data.split(':');
+  const timeSlotId = slotParts[1]!;
+  const timeSlotLabel = slotParts[2] ?? '';
+
+  ctx.session.draft.timeSlotId = timeSlotId;
+  ctx.session.draft.timeSlotLabel = timeSlotLabel;
 
   // Step 4: Address input
   await ctx.reply('🏠 Введите адрес (улица, дом, квартира):', { reply_markup: cancelKeyboard });
 
   const addressCtx = await conversation.waitFor('message:text');
   const address = addressCtx.message.text.trim();
-
-  ctx.session.step = 'awaiting_contact_name';
+  ctx.session.draft.address = address;
 
   // Step 5: Contact name
   await ctx.reply('👤 Введите ваше имя:', { reply_markup: cancelKeyboard });
 
   const nameCtx = await conversation.waitFor('message:text');
   const contactName = nameCtx.message.text.trim();
-
-  ctx.session.step = 'awaiting_contact_phone';
+  ctx.session.draft.contactName = contactName;
 
   // Step 6: Contact phone
   await ctx.reply('📞 Введите номер телефона:', { reply_markup: cancelKeyboard });
 
   const phoneCtx = await conversation.waitFor('message:text');
   const contactPhone = phoneCtx.message.text.trim();
-
-  ctx.session.step = 'awaiting_confirmation';
+  ctx.session.draft.contactPhone = contactPhone;
 
   // Step 7: Confirmation
+  const cityName = CITY_NAMES[city] ?? city;
   await ctx.reply(
     `📋 <b>Проверьте данные:</b>
 
-🏙 Город: ${city}
-📅 Дата: ${dateText}
+🏙 Город: ${cityName}
+📅 Дата: ${scheduledDate}
+🕐 Время: ${timeSlotLabel}
 📍 Адрес: ${address}
 👤 Имя: ${contactName}
 📞 Телефон: ${contactPhone}
 
-Всё верно?`,
+Подтвердить бронирование?`,
     { parse_mode: 'HTML', reply_markup: confirmKeyboard }
   );
 
@@ -98,18 +142,66 @@ export async function selfCleaningConversation(
 
   if (confirmCtx.callbackQuery.data === 'confirm:no') {
     await ctx.reply('❌ Бронирование отменено.', { reply_markup: backToMainKeyboard });
-    ctx.session.step = 'idle';
+    ctx.session.draft = {};
     return;
   }
 
-  // Step 8: Success (skeleton - no API call)
-  ctx.session.step = 'idle';
+  // Step 8: Create booking via API
+  await ctx.reply('⏳ Создаю бронирование...');
+
+  const addressParts = address.split(',').map((p) => p.trim());
+  const street = addressParts[0] ?? address;
+  const house = addressParts[1] ?? '1';
+  const apartment = addressParts[2];
+
+  const bookingResult = await api.createBooking({
+    serviceCode: 'self_cleaning',
+    city,
+    scheduledDate,
+    timeSlotId,
+    address: {
+      city: cityName,
+      street,
+      house,
+      apartment,
+    },
+    contact: {
+      name: contactName,
+      phone: contactPhone,
+    },
+  });
+
+  if (!bookingResult.ok) {
+    if (bookingResult.status === 409) {
+      await ctx.reply('⚠️ Слот уже занят. Выберите другой.', { reply_markup: retrySlotKeyboard });
+    } else if (bookingResult.status >= 500) {
+      await ctx.reply('⚠️ Сервер временно недоступен. Попробуйте позже.', { reply_markup: backToMainKeyboard });
+    } else {
+      await ctx.reply(`❌ Ошибка: ${bookingResult.error}`, { reply_markup: backToMainKeyboard });
+    }
+    return;
+  }
+
+  const booking = bookingResult.data;
+  ctx.session.draft = {};
+  ctx.session.pendingBookingId = booking.id;
 
   await ctx.reply(
-    `✅ <b>Данные приняты!</b>
+    `✅ <b>Бронирование создано!</b>
 
-⚠️ Это каркас бота. Бронирование НЕ создано.
-В production здесь будет вызов API.`,
-    { parse_mode: 'HTML', reply_markup: backToMainKeyboard }
+📋 ID: <code>${booking.id}</code>
+🧹 Набор: #${booking.kitNumber}
+📅 Дата: ${scheduledDate}
+🕐 Время: ${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}
+📍 Адрес: ${booking.address.addressLine}
+
+💳 <b>Для подтверждения внесите предоплату 500₽</b>
+
+Реквизиты:
+• Сбербанк: 1234 5678 9012 3456
+• СБП: +7 (999) 123-45-67
+
+📎 <b>Отправьте фото или PDF чека в этот чат.</b>`,
+    { parse_mode: 'HTML' }
   );
 }

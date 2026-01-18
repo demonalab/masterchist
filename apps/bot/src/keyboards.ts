@@ -1,4 +1,5 @@
 import { InlineKeyboard } from 'grammy';
+import { TimeSlotAvailability } from './api-client';
 
 export const mainMenuKeyboard = new InlineKeyboard()
   .text('🧹 Химчистка самообслуживания', 'service:self_cleaning')
@@ -16,20 +17,28 @@ export const cityKeyboard = new InlineKeyboard()
   .row()
   .text('« Назад', 'back:main');
 
-export const mockTimeSlotsKeyboard = new InlineKeyboard()
-  .text('✅ 07:00 - 08:00', 'slot:1')
-  .row()
-  .text('✅ 08:00 - 09:00', 'slot:2')
-  .row()
-  .text('❌ 09:00 - 10:00', 'slot:unavailable')
-  .row()
-  .text('« Назад', 'back:date');
+export function buildTimeSlotsKeyboard(slots: TimeSlotAvailability[]): InlineKeyboard {
+  const kb = new InlineKeyboard();
+  for (const slot of slots) {
+    const icon = slot.available ? '✅' : '❌';
+    const label = `${icon} ${slot.startTime} - ${slot.endTime}`;
+    const data = slot.available ? `slot:${slot.timeSlotId}:${slot.startTime}-${slot.endTime}` : 'slot:unavailable';
+    kb.text(label, data).row();
+  }
+  kb.text('« Выбрать другую дату', 'back:date');
+  return kb;
+}
 
 export const confirmKeyboard = new InlineKeyboard()
-  .text('✅ Подтвердить', 'confirm:yes')
+  .text('✅ Подтвердить бронирование', 'confirm:yes')
   .row()
   .text('❌ Отмена', 'confirm:no');
 
 export const cancelKeyboard = new InlineKeyboard().text('❌ Отмена', 'cancel');
 
 export const backToMainKeyboard = new InlineKeyboard().text('« В главное меню', 'back:main');
+
+export const retrySlotKeyboard = new InlineKeyboard()
+  .text('🔄 Выбрать другой слот', 'retry:slot')
+  .row()
+  .text('« В главное меню', 'back:main');

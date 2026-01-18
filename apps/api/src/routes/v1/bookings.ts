@@ -166,11 +166,101 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.get('/:id', async (request, reply) => {
-    return reply.notImplemented('GET /bookings/:id - get booking details');
+    const { id } = request.params as { id: string };
+    const userId = request.dbUserId;
+    if (!userId) {
+      return reply.unauthorized('User not authenticated');
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        scheduledDate: true,
+        createdAt: true,
+        user: { select: { telegramId: true, firstName: true } },
+        cleaningKit: { select: { number: true } },
+        timeSlot: { select: { startTime: true, endTime: true } },
+        address: { select: { addressLine: true, contactName: true, contactPhone: true } },
+        service: { select: { code: true, name: true } },
+      },
+    });
+
+    if (!booking) {
+      return reply.notFound('Booking not found');
+    }
+
+    return booking;
   });
 
-  fastify.patch('/:id', async (request, reply) => {
-    return reply.notImplemented('PATCH /bookings/:id - update booking');
+  fastify.patch('/:id/confirm', async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, status: true, userId: true },
+    });
+
+    if (!booking) {
+      return reply.notFound('Booking not found');
+    }
+
+    if (booking.status !== BookingStatuses.PREPAID) {
+      return reply.badRequest(`Cannot confirm booking with status: ${booking.status}`);
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: { status: BookingStatuses.CONFIRMED },
+      select: {
+        id: true,
+        status: true,
+        user: { select: { telegramId: true } },
+      },
+    });
+
+    return {
+      id: updated.id,
+      status: updated.status,
+      userTelegramId: updated.user.telegramId,
+    };
+  });
+
+  fastify.patch('/:id/reject', async (request, reply) => {
+    const { id } = request.params as { id: string };
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, status: true, userId: true, cleaningKitId: true },
+    });
+
+    if (!booking) {
+      return reply.notFound('Booking not found');
+    }
+
+    if (booking.status !== BookingStatuses.PREPAID) {
+      return reply.badRequest(`Cannot reject booking with status: ${booking.status}`);
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        status: BookingStatuses.CANCELLED,
+        cleaningKitId: null,
+      },
+      select: {
+        id: true,
+        status: true,
+        user: { select: { telegramId: true } },
+      },
+    });
+
+    return {
+      id: updated.id,
+      status: updated.status,
+      userTelegramId: updated.user.telegramId,
+    };
   });
 
   fastify.post('/:id/cancel', async (request, reply) => {
