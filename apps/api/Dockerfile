@@ -47,13 +47,13 @@ COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
 COPY --from=builder /app/packages/db/package.json ./packages/db/
 COPY --from=builder /app/packages/db/dist ./packages/db/dist
 COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
-COPY --from=builder /app/packages/db/node_modules/.prisma ./packages/db/node_modules/.prisma
 
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-# Install production dependencies only
+# Install production dependencies and regenerate Prisma client
 RUN pnpm install --prod --frozen-lockfile
+RUN pnpm --filter @himchistka/db generate
 
 EXPOSE 3001
 
