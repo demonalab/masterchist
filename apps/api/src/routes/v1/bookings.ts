@@ -349,7 +349,11 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.notFound('Booking not found');
     }
 
-    return booking;
+    return {
+      ...booking,
+      scheduledDate: booking.scheduledDate?.toISOString().split('T')[0] ?? null,
+      kitNumber: booking.cleaningKit?.number ?? null,
+    };
   });
 
   fastify.patch('/:id/confirm', async (request, reply) => {
