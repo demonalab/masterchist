@@ -268,30 +268,11 @@ export function createBot() {
     
     const showAdmin = await isUserAdmin(userId);
     
-    // Send welcome message with menu (GIF sent separately)
+    // Send welcome message with menu
     await ctx.reply(
       `👋 <b>Добро пожаловать в МастерЧист!</b>\n\n<b>Сервис аренды наборов для химчистки.</b>\n\nВыберите услугу 👇`,
       { attachments: [mainMenuKeyboard(showAdmin)], format: 'html' }
     );
-    
-    // Send welcome GIF separately via direct API call
-    try {
-      await fetch(`${config.MAX_API_URL}/messages?user_id=${userId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': config.BOT_TOKEN,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          attachments: [{
-            type: 'image',
-            payload: { url: 'https://masterchist.ru/welcome.gif' },
-          }],
-        }),
-      });
-    } catch (err) {
-      console.error('Failed to send welcome GIF:', err);
-    }
   });
 
   // /admin command
