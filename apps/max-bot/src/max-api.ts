@@ -81,12 +81,10 @@ export class MaxApi {
 
   async sendMessage(chatId: number, text: string, keyboard?: InlineButton[][]): Promise<void> {
     const body: {
-      chat_id: number;
       text: string;
       format?: string;
       attachments?: InlineKeyboard[];
     } = {
-      chat_id: chatId,
       text,
       format: 'html',
     };
@@ -98,11 +96,16 @@ export class MaxApi {
       }];
     }
 
-    await fetch(`${this.baseUrl}/messages`, {
+    const res = await fetch(`${this.baseUrl}/messages?chat_id=${chatId}`, {
       method: 'POST',
       headers: this.headers,
       body: JSON.stringify(body),
     });
+    
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('sendMessage error:', err);
+    }
   }
 
   async sendPhoto(chatId: number, photoUrl: string, caption?: string): Promise<void> {
