@@ -51,12 +51,9 @@ COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 
-# Install production dependencies
+# Install production dependencies and generate Prisma client
 RUN pnpm install --prod --frozen-lockfile
-
-# Copy generated Prisma client from builder (prisma CLI is devDependency)
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/.pnpm/@prisma+client@*/node_modules/@prisma ./node_modules/@prisma
+RUN pnpm --filter @himchistka/db generate
 
 EXPOSE 3001
 
