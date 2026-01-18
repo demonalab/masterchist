@@ -165,8 +165,8 @@ export class ApiClient {
   async createBooking(body: {
     serviceCode: string;
     city: string;
-    scheduledDate: string;
-    timeSlotId: string;
+    scheduledDate?: string;
+    timeSlotId?: string;
     address: {
       city: string;
       street: string;
@@ -177,6 +177,7 @@ export class ApiClient {
       name: string;
       phone: string;
     };
+    proCleaningDetails?: string;
   }): Promise<ApiResult<BookingResponse>> {
     try {
       const res = await fetch(`${this.baseUrl}/api/v1/bookings`, {

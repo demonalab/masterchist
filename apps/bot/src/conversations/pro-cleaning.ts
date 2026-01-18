@@ -3,6 +3,7 @@ import type { BotContext } from '../types';
 import { mainMenuKeyboard, cancelKeyboard, cityKeyboard } from '../keyboards';
 import { config } from '../config';
 import { botInstance } from '../handlers/payment-proof';
+import { ApiClient } from '../api-client';
 
 const CITY_NAMES: Record<string, string> = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
@@ -14,6 +15,14 @@ export async function proCleaningConversation(
   conversation: Conversation<BotContext>,
   ctx: BotContext
 ) {
+  const telegramId = ctx.from?.id;
+  if (!telegramId) {
+    await ctx.reply('❌ Ошибка: не удалось определить пользователя.');
+    return;
+  }
+
+  const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
+
   // Reset draft
   ctx.session.draft = {};
 
@@ -72,8 +81,38 @@ export async function proCleaningConversation(
   const animation = mediaCtx.message?.animation;
   const document = mediaCtx.message?.document;
 
-  const caption = `👔 <b>Заявка на проф. химчистку</b>
+  // Create booking in database
+  await ctx.reply('⏳ Создаю заявку...');
 
+  const addressParts = address.split(',').map((p) => p.trim());
+  const street = addressParts[0] ?? address;
+  const house = addressParts[1] ?? '1';
+  const apartment = addressParts[2];
+
+  const bookingResult = await api.createBooking({
+    serviceCode: 'pro_cleaning',
+    city,
+    address: {
+      city: cityName,
+      street,
+      house,
+      apartment,
+    },
+    contact: {
+      name: contactName,
+      phone: contactPhone,
+    },
+    proCleaningDetails: description,
+  });
+
+  if (!bookingResult.ok) {
+    await ctx.reply(`❌ Ошибка при создании заявки: ${bookingResult.error}`, { reply_markup: mainMenuKeyboard });
+    return;
+  }
+
+  const caption = `👔 <b>Новая заявка на проф. химчистку</b>
+
+🆔 ID: <code>${bookingResult.data.id}</code>
 🏙 Город: ${cityName}
 📍 Адрес: ${address}
 👤 Имя: ${contactName}
@@ -119,8 +158,9 @@ ${description}`;
   }
 
   await ctx.reply(
-    `✅ <b>Заявка отправлена!</b>
+    `✅ <b>Заявка создана!</b>
 
+📋 ID: <code>${bookingResult.data.id}</code>
 🏙 Город: ${cityName}
 📍 Адрес: ${address}
 👤 Имя: ${contactName}

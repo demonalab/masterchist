@@ -4,7 +4,7 @@ import { prisma } from '@himchistka/db';
 import { Cities, ServiceCodes, BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 
-const createBookingSchema = z.object({
+const createSelfCleaningSchema = z.object({
   serviceCode: z.literal(ServiceCodes.SELF_CLEANING),
   city: z.enum([Cities.ROSTOV_NA_DONU, Cities.BATAYSK, Cities.STAVROPOL]),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
@@ -21,7 +21,24 @@ const createBookingSchema = z.object({
   }),
 });
 
-type CreateBookingBody = z.infer<typeof createBookingSchema>;
+const createProCleaningSchema = z.object({
+  serviceCode: z.literal(ServiceCodes.PRO_CLEANING),
+  city: z.enum([Cities.ROSTOV_NA_DONU, Cities.BATAYSK, Cities.STAVROPOL]),
+  address: z.object({
+    city: z.string().min(1).max(128),
+    street: z.string().min(1).max(256),
+    house: z.string().min(1).max(32),
+    apartment: z.string().max(32).optional(),
+  }),
+  contact: z.object({
+    name: z.string().min(1).max(128),
+    phone: z.string().min(5).max(32),
+  }),
+  proCleaningDetails: z.string().max(2000).optional(),
+});
+
+type CreateSelfCleaningBody = z.infer<typeof createSelfCleaningSchema>;
+type CreateProCleaningBody = z.infer<typeof createProCleaningSchema>;
 
 const BLOCKING_STATUSES = [
   BookingStatuses.NEW,
@@ -93,8 +110,79 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
     return booking;
   });
 
-  fastify.post<{ Body: CreateBookingBody }>('/', async (request, reply) => {
-    const parseResult = createBookingSchema.safeParse(request.body);
+  // Self-cleaning booking (with time slot and kit)
+  fastify.post<{ Body: CreateSelfCleaningBody }>('/', async (request, reply) => {
+    const body = request.body as any;
+    
+    // Check if it's a pro_cleaning request
+    if (body.serviceCode === ServiceCodes.PRO_CLEANING) {
+      const parseResult = createProCleaningSchema.safeParse(body);
+      if (!parseResult.success) {
+        return reply.badRequest(parseResult.error.errors[0]?.message ?? 'Invalid request body');
+      }
+
+      const { city, address, contact, proCleaningDetails } = parseResult.data;
+      const userId = request.dbUserId;
+      if (!userId) {
+        return reply.unauthorized('User not authenticated');
+      }
+
+      const service = await prisma.service.findUnique({
+        where: { code: ServiceCodes.PRO_CLEANING },
+        select: { id: true, isActive: true },
+      });
+
+      if (!service || !service.isActive) {
+        return reply.badRequest('Service not available');
+      }
+
+      const addressLine = [
+        address.street,
+        `д. ${address.house}`,
+        address.apartment ? `кв. ${address.apartment}` : null,
+      ]
+        .filter(Boolean)
+        .join(', ');
+
+      const newAddress = await prisma.address.create({
+        data: {
+          userId,
+          city: city,
+          addressLine,
+          contactName: contact.name,
+          contactPhone: contact.phone,
+        },
+        select: { id: true },
+      });
+
+      const newBooking = await prisma.booking.create({
+        data: {
+          userId,
+          serviceId: service.id,
+          status: BookingStatuses.NEW,
+          addressId: newAddress.id,
+          proCleaningDetails: proCleaningDetails,
+        },
+        select: {
+          id: true,
+          status: true,
+          createdAt: true,
+          address: { select: { addressLine: true, contactName: true, contactPhone: true } },
+          service: { select: { title: true } },
+        },
+      });
+
+      return reply.status(201).send({
+        id: newBooking.id,
+        status: newBooking.status,
+        service: newBooking.service?.title,
+        address: newBooking.address,
+        createdAt: newBooking.createdAt.toISOString(),
+      });
+    }
+
+    // Self-cleaning booking
+    const parseResult = createSelfCleaningSchema.safeParse(body);
     if (!parseResult.success) {
       return reply.badRequest(parseResult.error.errors[0]?.message ?? 'Invalid request body');
     }
