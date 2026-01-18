@@ -67,6 +67,7 @@ export async function handleCancel(ctx: BotContext) {
 }
 
 const STATUS_LABELS: Record<string, string> = {
+  // Upper case (from constants)
   NEW: '🆕 Новый',
   AWAITING_PREPAYMENT: '⏳ Ожидает предоплаты',
   PREPAID: '💳 Предоплачен',
@@ -74,6 +75,14 @@ const STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: '🔄 В работе',
   COMPLETED: '✔️ Завершён',
   CANCELLED: '❌ Отменён',
+  // Lower case (from API)
+  new: '🆕 Новый',
+  awaiting_prepayment: '⏳ Ожидает предоплаты',
+  prepaid: '💳 Предоплачен',
+  confirmed: '✅ Подтверждён',
+  in_progress: '🔄 В работе',
+  completed: '✔️ Завершён',
+  cancelled: '❌ Отменён',
 };
 
 export async function handleMyOrders(ctx: BotContext) {
@@ -141,31 +150,38 @@ export async function handleAdminNewOrders(ctx: BotContext) {
   if (!telegramId) return;
 
   const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
-  const result = await api.getAdminBookings('new');
+  
+  // Get orders that need attention: new, awaiting_prepayment, prepaid
+  const result = await api.getAdminBookings();
 
   if (!result.ok) {
     await ctx.reply('❌ Ошибка при загрузке заказов.');
     return;
   }
 
-  const bookings = result.data;
+  const pendingStatuses = ['new', 'awaiting_prepayment', 'prepaid'];
+  const bookings = result.data.filter(b => pendingStatuses.includes(b.status));
+  
   if (bookings.length === 0) {
-    await ctx.reply('📋 Новых заказов нет.');
+    await ctx.reply('📋 Нет заказов, требующих внимания.');
     return;
   }
 
-  for (const b of bookings) {
+  await ctx.reply(`📋 <b>Заказы, требующие внимания (${bookings.length}):</b>`, { parse_mode: 'HTML' });
+
+  for (const b of bookings.slice(0, 10)) {
+    const status = STATUS_LABELS[b.status] ?? b.status;
     const date = b.scheduledDate ?? '—';
     const time = b.timeSlot ?? '';
-    const kit = b.kitNumber ? `набор №${b.kitNumber}` : '';
-    const user = b.user ? `${b.user.firstName} (${b.user.telegramId})` : '—';
-    const addr = b.address ? `${b.address.addressLine}\n📞 ${b.address.contactPhone}` : '—';
+    const kit = b.kitNumber ? `🧹 Набор №${b.kitNumber}` : '';
+    const user = b.user ? `${b.user.firstName}` : '—';
+    const addr = b.address ? `📍 ${b.address.addressLine}\n📞 ${b.address.contactPhone}\n👤 ${b.address.contactName}` : '';
 
-    const message = `🆕 <b>Новый заказ</b>
+    const message = `${status}
 
-👤 ${user}
+👤 Клиент: ${user}
 📅 ${date} ${time}
-${kit ? `🧹 ${kit}\n` : ''}📍 ${addr}`;
+${kit ? kit + '\n' : ''}${addr}`;
 
     await ctx.reply(message, { parse_mode: 'HTML', reply_markup: buildAdminOrderKeyboard(b.id) });
   }
@@ -191,12 +207,17 @@ export async function handleAdminAllOrders(ctx: BotContext) {
     return;
   }
 
-  let message = '📊 <b>Все заказы (последние 50):</b>\n\n';
-  for (const b of bookings.slice(0, 20)) {
+  let message = '📊 <b>Все заказы:</b>\n\n';
+  for (const b of bookings.slice(0, 15)) {
     const status = STATUS_LABELS[b.status] ?? b.status;
     const date = b.scheduledDate ?? '—';
     const user = b.user?.firstName ?? '—';
-    message += `${status} | ${date} | ${user}\n`;
+    const kit = b.kitNumber ? `№${b.kitNumber}` : '';
+    message += `${status} | ${date} ${kit} | ${user}\n`;
+  }
+  
+  if (bookings.length > 15) {
+    message += `\n<i>...и ещё ${bookings.length - 15} заказов</i>`;
   }
 
   await ctx.reply(message.trim(), { parse_mode: 'HTML' });
