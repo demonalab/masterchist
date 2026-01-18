@@ -191,6 +191,7 @@ export class ApiClient {
       const res = await fetch(`${this.baseUrl}/api/v1/bookings/${bookingId}/confirm`, {
         method: 'PATCH',
         headers: this.headers,
+        body: JSON.stringify({}),
       });
 
       if (!res.ok) {
@@ -210,6 +211,7 @@ export class ApiClient {
       const res = await fetch(`${this.baseUrl}/api/v1/bookings/${bookingId}/reject`, {
         method: 'PATCH',
         headers: this.headers,
+        body: JSON.stringify({}),
       });
 
       if (!res.ok) {
