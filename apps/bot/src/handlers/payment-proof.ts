@@ -25,15 +25,13 @@ export async function handlePaymentProof(ctx: BotContext) {
     return;
   }
 
-  // Find pending booking from API instead of session (session may be lost on restart)
+  // Find pending booking from API - only handle as payment proof if status is AWAITING_PREPAYMENT
   const api = new ApiClient(telegramId, ctx.from?.first_name, ctx.from?.username);
   const pendingResult = await api.getPendingBooking();
   
-  if (!pendingResult.ok || !pendingResult.data) {
-    await ctx.reply(
-      '❓ Нет активного бронирования.\n\nИспользуйте /start для создания нового.',
-      { reply_markup: mainMenuKeyboard }
-    );
+  // Only process as payment proof if there's a booking awaiting prepayment
+  if (!pendingResult.ok || !pendingResult.data || pendingResult.data.status !== 'awaiting_prepayment') {
+    // Not a payment proof - ignore silently (might be photo for pro cleaning description)
     return;
   }
 
