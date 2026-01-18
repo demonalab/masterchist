@@ -160,3 +160,16 @@ model Admin {
 
   @@index([telegramId])
 }
+
+model AbandonedConversation {
+  id              String      @id @default(uuid())
+  telegramId      String      @db.VarChar(32)
+  serviceCode     ServiceCode
+  startedAt       DateTime    @default(now())
+  completedAt     DateTime?
+  reminder2hSent  Boolean     @default(false)
+  reminderNextDay Boolean     @default(false)
+  
+  @@index([telegramId, completedAt])
+  @@index([startedAt, completedAt])
+}
