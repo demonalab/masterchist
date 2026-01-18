@@ -483,23 +483,29 @@ async function handlePhotoUpload(ctx: Context, userId: number, photoAttachment: 
   const pendingResult = await api.getPendingBooking();
   
   if (!pendingResult.ok || !pendingResult.data) {
+    // No pending booking - just acknowledge photo silently or show help
     await ctx.reply(
-      '📷 Фото получено, но у вас нет активных бронирований, ожидающих оплаты.\n\nСоздайте бронирование и отправьте фото чека после оплаты.',
-      { attachments: [mainMenuKeyboard()] }
+      '📷 Фото получено.\n\nЕсли это чек оплаты - сначала создайте бронирование.',
+      { attachments: [backKeyboard()] }
     );
     return;
   }
 
-  if (pendingResult.data.status !== 'awaiting_prepayment') {
+  // Accept payment proof for new or awaiting_prepayment status
+  const validStatuses = ['new', 'awaiting_prepayment'];
+  if (!validStatuses.includes(pendingResult.data.status)) {
     await ctx.reply(
-      '📷 Фото получено, но ваше бронирование не ожидает оплаты.\n\nСтатус: ' + pendingResult.data.status,
-      { attachments: [mainMenuKeyboard()] }
+      `📷 Фото получено.\n\nВаше бронирование уже в статусе: ${STATUS_LABELS[pendingResult.data.status] || pendingResult.data.status}`,
+      { attachments: [backKeyboard()] }
     );
     return;
   }
 
   const bookingId = pendingResult.data.id;
+  
+  // Get photo URL from attachment
   const photoUrl = photoAttachment.payload?.url || photoAttachment.url || '';
+  console.log('Photo attachment:', JSON.stringify(photoAttachment));
 
   if (!photoUrl) {
     await ctx.reply('❌ Не удалось получить фото. Попробуйте ещё раз.');
@@ -517,6 +523,6 @@ async function handlePhotoUpload(ctx: Context, userId: number, photoAttachment: 
 
   await ctx.reply(
     `✅ <b>Чек получен!</b>\n\nВаше бронирование переведено в статус "Оплачено".\nОжидайте подтверждения от администратора.\n\nМы свяжемся с вами для уточнения деталей доставки.\n\nСпасибо! 🙏`,
-    { attachments: [mainMenuKeyboard()], format: 'html' }
+    { format: 'html' }
   );
 }

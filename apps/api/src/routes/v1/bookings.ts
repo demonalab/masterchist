@@ -426,6 +426,54 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post('/:id/cancel', async (request, reply) => {
     return reply.notImplemented('POST /bookings/:id/cancel - cancel booking');
   });
+
+  // Payment proof upload (for MAX bot - accepts photo URL)
+  fastify.post<{ Params: { id: string }; Body: { photoUrl?: string; maxUserId?: number } }>(
+    '/:id/payment-proof',
+    async (request, reply) => {
+      const { id } = request.params;
+      const { photoUrl, maxUserId } = request.body;
+
+      // Get userId from auth or maxUserId
+      let userId = request.dbUserId;
+      if (!userId && maxUserId) {
+        const user = await prisma.user.findUnique({
+          where: { telegramId: String(maxUserId) },
+          select: { id: true },
+        });
+        userId = user?.id;
+      }
+
+      if (!userId) {
+        return reply.unauthorized('User not authenticated');
+      }
+
+      const booking = await prisma.booking.findUnique({
+        where: { id },
+        select: { id: true, status: true, userId: true },
+      });
+
+      if (!booking) {
+        return reply.notFound('Booking not found');
+      }
+
+      if (booking.userId !== userId) {
+        return reply.forbidden('Not your booking');
+      }
+
+      // Update status to prepaid (payment proof received)
+      const updated = await prisma.booking.update({
+        where: { id },
+        data: { 
+          status: BookingStatuses.PREPAID,
+          // Store photo URL in notes or separate field if needed
+        },
+        select: { id: true, status: true },
+      });
+
+      return { success: true, id: updated.id, status: updated.status };
+    }
+  );
 };
 
 export default bookingsRoutes;
