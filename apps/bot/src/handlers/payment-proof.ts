@@ -21,7 +21,12 @@ const ALLOWED_MIME_TYPES = [
 export async function handlePaymentProof(ctx: BotContext) {
   const telegramId = ctx.from?.id;
   if (!telegramId) {
-    await ctx.reply('❌ Ошибка: не удалось определить пользователя.');
+    return;
+  }
+
+  // Skip if there's an active conversation (let conversation handle it)
+  const activeConversations = await ctx.conversation.active();
+  if (activeConversations && Object.keys(activeConversations).length > 0) {
     return;
   }
 
