@@ -69,7 +69,7 @@ export interface AdminStats {
   totalBookings: number;
   newBookings: number;
   confirmedBookings: number;
-  completedBookings: number;
+  prepaidBookings: number;
   cancelledBookings: number;
 }
 

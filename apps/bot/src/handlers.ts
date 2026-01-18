@@ -221,7 +221,7 @@ export async function handleAdminStats(ctx: BotContext) {
 
 📊 Всего заказов: ${stats.totalBookings}
 🆕 Новых: ${stats.newBookings}
-💳 Предоплачено: ${stats.prepaidBookings ?? 0}
+💳 Предоплачено: ${stats.prepaidBookings}
 ✅ Подтверждено: ${stats.confirmedBookings}
 ❌ Отменено: ${stats.cancelledBookings}`;
 
