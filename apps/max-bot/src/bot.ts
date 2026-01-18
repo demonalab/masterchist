@@ -433,7 +433,7 @@ async function createSelfCleaningBooking(ctx: Context, userId: number) {
   const booking = result.data;
   await ctx.reply(
     `✅ <b>Бронирование создано!</b>\n\n📋 ID: <code>${booking.id}</code>\n🧹 Набор: #${booking.kitNumber}\n📅 Дата: ${d.displayDate}\n🕐 Время: ${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}\n📍 Адрес: ${booking.address.addressLine}\n\n💳 <b>Для подтверждения внесите предоплату 500₽</b>\n\nРеквизиты:\n• Сбербанк: 1234 5678 9012 3456\n• СБП: +7 (999) 123-45-67\n\n📸 <b>После оплаты отправьте фото чека в этот чат!</b>`,
-    { attachments: [mainMenuKeyboard()], format: 'html' }
+    { format: 'html' }
   );
   resetState(userId);
 }
