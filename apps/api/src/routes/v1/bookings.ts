@@ -86,7 +86,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           select: { cleaningKitId: true },
         });
 
-        const bookedSet = new Set(bookedKitIds.map((b) => b.cleaningKitId));
+        const bookedSet = new Set(bookedKitIds.map((b) => b.cleaningKitId).filter((id: string | null): id is string => id !== null));
         const availableKit = activeKits.find((kit) => !bookedSet.has(kit.id));
 
         if (!availableKit) {

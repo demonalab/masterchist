@@ -1,5 +1,5 @@
 import { FastifyPluginAsync } from 'fastify';
-import { prisma } from '@himchistka/db';
+import { prisma, ServiceCode } from '@himchistka/db';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 
 const servicesRoutes: FastifyPluginAsync = async (fastify) => {
@@ -15,7 +15,7 @@ const servicesRoutes: FastifyPluginAsync = async (fastify) => {
 
   fastify.get<{ Params: { code: string } }>('/:code', async (request, reply) => {
     const service = await prisma.service.findUnique({
-      where: { code: request.params.code },
+      where: { code: request.params.code as ServiceCode },
     });
     if (!service) {
       return reply.notFound('Service not found');

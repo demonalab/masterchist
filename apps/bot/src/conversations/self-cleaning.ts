@@ -45,15 +45,20 @@ export async function selfCleaningConversation(
   ctx.session.draft.city = city;
 
   // Step 2: Date input
-  await ctx.reply('📅 Введите дату (ГГГГ-ММ-ДД):', { reply_markup: cancelKeyboard });
+  await ctx.reply('📅 Введите дату (ДД.ММ.ГГГГ):', { reply_markup: cancelKeyboard });
 
   const dateCtx = await conversation.waitFor('message:text');
-  const scheduledDate = dateCtx.message.text.trim();
+  const dateInput = dateCtx.message.text.trim();
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(scheduledDate)) {
-    await ctx.reply('❌ Неверный формат даты.', { reply_markup: backToMainKeyboard });
+  // Parse DD.MM.YYYY format
+  const dateMatch = dateInput.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+  if (!dateMatch) {
+    await ctx.reply('❌ Неверный формат даты. Используйте ДД.ММ.ГГГГ', { reply_markup: backToMainKeyboard });
     return;
   }
+
+  const [, day, month, year] = dateMatch;
+  const scheduledDate = `${year}-${month!.padStart(2, '0')}-${day!.padStart(2, '0')}`;
 
   ctx.session.draft.scheduledDate = scheduledDate;
 
@@ -123,11 +128,12 @@ export async function selfCleaningConversation(
 
   // Step 7: Confirmation
   const cityName = CITY_NAMES[city] ?? city;
+  const displayDate = `${day!.padStart(2, '0')}.${month!.padStart(2, '0')}.${year}`;
   await ctx.reply(
     `📋 <b>Проверьте данные:</b>
 
 🏙 Город: ${cityName}
-📅 Дата: ${scheduledDate}
+📅 Дата: ${displayDate}
 🕐 Время: ${timeSlotLabel}
 📍 Адрес: ${address}
 👤 Имя: ${contactName}
@@ -191,7 +197,7 @@ export async function selfCleaningConversation(
 
 📋 ID: <code>${booking.id}</code>
 🧹 Набор: #${booking.kitNumber}
-📅 Дата: ${scheduledDate}
+📅 Дата: ${displayDate}
 🕐 Время: ${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}
 📍 Адрес: ${booking.address.addressLine}
 
