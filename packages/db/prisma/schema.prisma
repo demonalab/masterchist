@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum City {
+  ROSTOV_NA_DONU
+  BATAYSK
+  STAVROPOL
+}
+
+enum ServiceCode {
+  self_cleaning
+  pro_cleaning
+  cleaning
+}
+
+enum BookingStatus {
+  new
+  awaiting_prepayment
+  prepaid
+  confirmed
+  cancelled
+}
+
+model User {
+  id           String   @id @default(uuid())
+  telegramId   String   @unique @db.VarChar(32)
+  username     String?  @db.VarChar(64)
+  firstName    String?  @db.VarChar(128)
+  lastName     String?  @db.VarChar(128)
+  languageCode String?  @db.VarChar(16)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  addresses Address[]
+  bookings  Booking[]
+
+  @@index([telegramId])
+}
+
+model Service {
+  id           String      @id @default(uuid())
+  code         ServiceCode @unique
+  title        String      @db.VarChar(128)
+  priceRub     Int
+  prepaymentRub Int?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  bookings Booking[]
+}
+
+model CleaningKit {
+  id        String   @id @default(uuid())
+  number    Int      @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+}
+
+model TimeSlot {
+  id        String   @id @default(uuid())
+  code      String   @unique @db.VarChar(16)
+  startTime String   @db.VarChar(5)
+  endTime   String   @db.VarChar(5)
+  sortOrder Int
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings Booking[]
+
+  @@index([sortOrder])
+}
+
+model Address {
+  id           String   @id @default(uuid())
+  userId       String
+  city         City
+  addressLine  String   @db.Text
+  contactName  String   @db.VarChar(128)
+  contactPhone String   @db.VarChar(32)
+  comment      String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+
+  @@index([userId])
+  @@index([city])
+}
+
+model Booking {
+  id                    String        @id @default(uuid())
+  userId                String
+  serviceId             String
+  status                BookingStatus @default(new)
+
+  addressId             String?
+  scheduledDate         DateTime?     @db.Date
+  timeSlotId            String?
+  cleaningKitId         String?
+
+  kitLockKey            String        @default("active") @db.VarChar(64)
+
+  proCleaningDetails    String?       @db.Text
+  proCleaningPhotoFileIds String[]    @default([])
+
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  service    Service     @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  address    Address?    @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  timeSlot   TimeSlot?   @relation(fields: [timeSlotId], references: [id], onDelete: Restrict)
+  cleaningKit CleaningKit? @relation(fields: [cleaningKitId], references: [id], onDelete: Restrict)
+
+  paymentProofs PaymentProof[]
+
+  @@index([userId, createdAt])
+  @@index([serviceId, status])
+  @@index([scheduledDate, timeSlotId])
+
+  @@unique([scheduledDate, timeSlotId, cleaningKitId, kitLockKey], map: "uniq_booking_kit_slot_active")
+}
+
+model PaymentProof {
+  id            String   @id @default(uuid())
+  bookingId     String
+  telegramFileId String  @db.VarChar(256)
+  mimeType      String?  @db.VarChar(64)
+  fileName      String?  @db.VarChar(256)
+  createdAt     DateTime @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
