@@ -75,6 +75,7 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
 
   const validated = validateInitData(initData, config.BOT_TOKEN);
   if (!validated) {
+    console.error('InitData validation failed. initData:', initData.substring(0, 200), '... BOT_TOKEN exists:', !!config.BOT_TOKEN);
     return reply.unauthorized('Invalid Telegram initData signature');
   }
 
