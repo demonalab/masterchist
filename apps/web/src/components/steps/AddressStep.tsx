@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
+import { motion } from 'framer-motion';
+import { CaretLeft, MapPin, User, Phone } from '@phosphor-icons/react';
 
 export function AddressStep() {
   const { draft, updateDraft, setStep } = useBookingStore();
@@ -13,23 +15,10 @@ export function AddressStep() {
   const [error, setError] = useState('');
 
   const handleContinue = () => {
-    if (!street.trim()) {
-      setError('Введите улицу');
-      return;
-    }
-    if (!house.trim()) {
-      setError('Введите номер дома');
-      return;
-    }
-    if (!contactName.trim()) {
-      setError('Введите имя');
-      return;
-    }
-    if (!contactPhone.trim()) {
-      setError('Введите телефон');
-      return;
-    }
-
+    if (!street.trim()) { setError('Введите улицу'); return; }
+    if (!house.trim()) { setError('Введите номер дома'); return; }
+    if (!contactName.trim()) { setError('Введите имя'); return; }
+    if (!contactPhone.trim()) { setError('Введите телефон'); return; }
     updateDraft({
       street: street.trim(),
       house: house.trim(),
@@ -40,118 +29,127 @@ export function AddressStep() {
     setStep('confirm');
   };
 
-  const handleBack = () => {
-    setStep('time');
-  };
+  const handleBack = () => setStep('time');
 
   return (
-    <div className="screen">
-      {/* Header */}
-      <div className="mb-8">
-        <button 
-          onClick={handleBack}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
-        >
-          <span>←</span>
-          <span>Назад</span>
-        </button>
-        <h1 className="screen-title">Адрес доставки</h1>
-        <p className="screen-subtitle">Куда привезти набор?</p>
-      </div>
+    <div className="screen relative overflow-hidden">
+      <div className="floating-glow bg-accent-blue top-60 -left-20 animate-glow-pulse" />
+
+      {/* Back */}
+      <motion.button 
+        onClick={handleBack}
+        className="btn-ghost flex items-center gap-2 -ml-4 mb-6"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <CaretLeft weight="bold" className="w-4 h-4" />
+        <span>Назад</span>
+      </motion.button>
+
+      {/* Hero */}
+      <motion.div className="mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+        <p className="label-sm">Шаг 5 из 6</p>
+        <h1 className="text-hero">
+          Куда <span className="text-hero-accent">доставить?</span>
+        </h1>
+      </motion.div>
 
       <div className="flex flex-col gap-4">
-        {/* Address section */}
-        <div className="card-premium animate-slide-up">
+        {/* Address */}
+        <motion.div 
+          className="glass-card-static p-5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+        >
           <div className="flex items-center gap-3 mb-4">
-            <div className="icon-circle">
-              <span>📍</span>
+            <div className="icon-box w-10 h-10">
+              <MapPin weight="duotone" className="w-5 h-5 text-accent-green" />
             </div>
-            <div className="font-semibold text-white">Адрес</div>
+            <p className="font-medium text-white">Адрес</p>
           </div>
-          
           <div className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Улица *</label>
-              <input
-                type="text"
-                value={street}
-                onChange={(e) => { setStreet(e.target.value); setError(''); }}
-                placeholder="ул. Ленина"
-                className="input"
-              />
-            </div>
-
+            <input
+              type="text"
+              value={street}
+              onChange={(e) => { setStreet(e.target.value); setError(''); }}
+              placeholder="Улица"
+              className="input"
+            />
             <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Дом *</label>
-                <input
-                  type="text"
-                  value={house}
-                  onChange={(e) => { setHouse(e.target.value); setError(''); }}
-                  placeholder="15"
-                  className="input"
-                />
-              </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-2">Квартира</label>
-                <input
-                  type="text"
-                  value={apartment}
-                  onChange={(e) => setApartment(e.target.value)}
-                  placeholder="42"
-                  className="input"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact section */}
-        <div className="card-premium animate-slide-up" style={{ animationDelay: '100ms' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="icon-circle-gold">
-              <span>👤</span>
-            </div>
-            <div className="font-semibold text-white">Контактные данные</div>
-          </div>
-          
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Ваше имя *</label>
               <input
                 type="text"
-                value={contactName}
-                onChange={(e) => { setContactName(e.target.value); setError(''); }}
-                placeholder="Иван"
+                value={house}
+                onChange={(e) => { setHouse(e.target.value); setError(''); }}
+                placeholder="Дом"
+                className="input"
+              />
+              <input
+                type="text"
+                value={apartment}
+                onChange={(e) => setApartment(e.target.value)}
+                placeholder="Квартира"
                 className="input"
               />
             </div>
+          </div>
+        </motion.div>
 
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Телефон *</label>
+        {/* Contact */}
+        <motion.div 
+          className="glass-card-static p-5"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="icon-box w-10 h-10">
+              <User weight="duotone" className="w-5 h-5 text-accent-purple" />
+            </div>
+            <p className="font-medium text-white">Контакт</p>
+          </div>
+          <div className="space-y-3">
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => { setContactName(e.target.value); setError(''); }}
+              placeholder="Ваше имя"
+              className="input"
+            />
+            <div className="relative">
+              <Phone weight="duotone" className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/30" />
               <input
                 type="tel"
                 value={contactPhone}
                 onChange={(e) => { setContactPhone(e.target.value); setError(''); }}
                 placeholder="+7 (999) 123-45-67"
-                className="input"
+                className="input pl-12"
               />
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {error && (
-          <div className="card bg-red-500/10 border-red-500/30 text-red-400 text-center animate-fade-in">
+          <motion.div 
+            className="glass-card-static p-4 border-accent-red/30 text-accent-red text-center text-sm"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
             {error}
-          </div>
+          </motion.div>
         )}
       </div>
 
-      {/* Continue button */}
+      {/* Button */}
       <div className="mt-auto pt-6">
-        <button onClick={handleContinue} className="btn-primary">
+        <motion.button 
+          onClick={handleContinue} 
+          className="btn-primary"
+          whileTap={{ scale: 0.98 }}
+        >
           Продолжить
-        </button>
+        </motion.button>
       </div>
     </div>
   );

@@ -33,8 +33,9 @@ async function upsertUser(tgUser: TelegramUser): Promise<string> {
 }
 
 export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyReply) => {
-  // Dev mode bypass - create mock user
-  if (config.NODE_ENV === 'development' && !request.headers['x-telegram-init-data']) {
+  // Dev mode bypass - create mock user (local dev or ?dev=1 mode)
+  const devHeader = request.headers['x-dev-mode'];
+  if ((config.NODE_ENV === 'development' || devHeader === '1') && !request.headers['x-telegram-init-data']) {
     request.telegramUser = { id: 123456789, first_name: 'Dev', username: 'devuser' };
     request.dbUserId = await upsertUser(request.telegramUser);
     return;

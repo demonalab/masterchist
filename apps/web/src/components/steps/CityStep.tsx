@@ -2,23 +2,13 @@
 
 import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
-import { MapPin, Building2, ChevronRight, Package, ArrowLeft } from 'lucide-react';
+import { MapPin, Buildings, CaretRight, CaretLeft, Truck } from '@phosphor-icons/react';
 
 const cities = [
-  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', Icon: Building2 },
-  { code: 'BATAYSK', name: 'Батайск', Icon: MapPin },
-  { code: 'STAVROPOL', name: 'Ставрополь', Icon: Building2 },
+  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', available: true },
+  { code: 'BATAYSK', name: 'Батайск', available: true },
+  { code: 'STAVROPOL', name: 'Ставрополь', available: true },
 ];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, x: -20 },
-  visible: { opacity: 1, x: 0 }
-};
 
 export function CityStep() {
   const { updateDraft, setStep } = useBookingStore();
@@ -33,67 +23,80 @@ export function CityStep() {
   };
 
   return (
-    <motion.div 
-      className="screen"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      {/* Header */}
-      <div className="mb-8">
-        <motion.button 
-          onClick={handleBack}
-          className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
-          whileTap={{ scale: 0.95 }}
-        >
-          <ArrowLeft className="w-4 h-4" />
-          <span>Назад</span>
-        </motion.button>
-        <h1 className="screen-title">Выберите город</h1>
-        <p className="screen-subtitle">Мы работаем в этих городах</p>
-      </div>
+    <div className="screen relative overflow-hidden">
+      {/* Background glow */}
+      <div className="floating-glow bg-accent-blue top-40 -right-20 animate-glow-pulse" />
+
+      {/* Back button */}
+      <motion.button 
+        onClick={handleBack}
+        className="btn-ghost flex items-center gap-2 -ml-4 mb-6"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        <CaretLeft weight="bold" className="w-4 h-4" />
+        <span>Назад</span>
+      </motion.button>
+
+      {/* Hero text */}
+      <motion.div 
+        className="mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <p className="label-sm">Шаг 2 из 6</p>
+        <h1 className="text-hero">
+          Выберите <span className="text-hero-accent">город</span>
+        </h1>
+      </motion.div>
 
       {/* Cities */}
-      <motion.div 
-        className="flex flex-col gap-4"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {cities.map((city) => (
+      <div className="flex flex-col gap-3">
+        {cities.map((city, index) => (
           <motion.button
             key={city.code}
             onClick={() => handleSelect(city.code, city.name)}
-            className="option-card"
-            variants={itemVariants}
-            whileHover={{ scale: 1.02, x: 4 }}
+            className="glass-card p-5 flex items-center gap-4 text-left"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="icon-circle">
-              <city.Icon className="w-6 h-6" />
+            <div className="icon-box">
+              {index === 0 ? (
+                <Buildings weight="duotone" className="w-5 h-5 text-accent-green" />
+              ) : (
+                <MapPin weight="duotone" className="w-5 h-5 text-white/60" />
+              )}
             </div>
             <div className="flex-1">
-              <div className="font-semibold text-white">{city.name}</div>
-              <div className="text-sm text-gray-400">Доставка доступна</div>
+              <p className="font-medium text-white">{city.name}</p>
+              <p className="text-sm text-white/40">Доставка доступна</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-purple-400" />
+            <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
           </motion.button>
         ))}
-      </motion.div>
+      </div>
 
-      {/* Info */}
+      {/* Bottom info */}
       <motion.div 
         className="mt-auto pt-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.4 }}
       >
-        <div className="card text-center">
-          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-            <Package className="w-4 h-4" />
-            <span>Доставка в день заказа</span>
+        <div className="glass-card-static p-4 flex items-center gap-3">
+          <div className="icon-box w-10 h-10">
+            <Truck weight="duotone" className="w-5 h-5 text-accent-green" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">Быстрая доставка</p>
+            <p className="text-xs text-white/40">В течение 2 часов после заказа</p>
           </div>
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

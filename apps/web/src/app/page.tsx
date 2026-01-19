@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, Suspense } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
+import { useSearchParams } from 'next/navigation';
+import { api } from '@/lib/api';
 import {
   ServiceStep,
   CityStep,
@@ -13,9 +16,24 @@ import {
 } from '@/components/steps';
 import { WebHomePage } from '@/components/web/WebHomePage';
 
-export default function HomePage() {
+function HomeContent() {
   const { step, error, setError } = useBookingStore();
   const { isReady, isTelegram } = useTelegram();
+  const searchParams = useSearchParams();
+  const devMode = searchParams.get('dev') === '1';
+
+  // Scroll to top on mount and step change
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    document.body.scrollTop = 0;
+    document.documentElement.scrollTop = 0;
+  }, [step]);
+
+  useEffect(() => {
+    if (devMode) {
+      api.setDevMode(true);
+    }
+  }, [devMode]);
 
   if (!isReady) {
     return (
@@ -25,7 +43,7 @@ export default function HomePage() {
     );
   }
 
-  if (!isTelegram) {
+  if (!isTelegram && !devMode) {
     return <WebHomePage />;
   }
 
@@ -55,4 +73,16 @@ export default function HomePage() {
   }[step];
 
   return <StepComponent />;
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="screen items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-tg-button" />
+      </div>
+    }>
+      <HomeContent />
+    </Suspense>
+  );
 }

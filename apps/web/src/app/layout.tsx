@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { TelegramProvider } from '@/lib/telegram-provider';
+import { WaveAnimation } from '@/components/ui/WaveAnimation';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -25,7 +26,10 @@ export default function RootLayout({
         <script src="https://telegram.org/js/telegram-web-app.js" />
       </head>
       <body>
-        <TelegramProvider>{children}</TelegramProvider>
+        <TelegramProvider>
+          {children}
+          <WaveAnimation />
+        </TelegramProvider>
       </body>
     </html>
   );

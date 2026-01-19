@@ -48,16 +48,26 @@ export type ApiResult<T> =
 
 class ApiClient {
   private initData: string = '';
+  private devMode: boolean = false;
 
   setInitData(initData: string) {
     this.initData = initData;
   }
 
+  setDevMode(enabled: boolean) {
+    this.devMode = enabled;
+  }
+
   private get headers(): Record<string, string> {
-    return {
+    const h: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-Telegram-Init-Data': this.initData,
     };
+    if (this.devMode) {
+      h['X-Dev-Mode'] = '1';
+    } else if (this.initData) {
+      h['X-Telegram-Init-Data'] = this.initData;
+    }
+    return h;
   }
 
   async getAvailability(

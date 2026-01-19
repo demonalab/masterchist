@@ -29,6 +29,17 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
     if (tgWebApp && isRealTelegram) {
       tgWebApp.ready();
       tgWebApp.expand();
+      
+      // Force scroll to top after expand
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+      }, 0);
+      setTimeout(() => {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      }, 100);
+      
       setWebApp(tgWebApp);
       setIsTelegram(true);
       setIsReady(true);
