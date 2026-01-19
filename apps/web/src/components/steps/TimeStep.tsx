@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
 import { api, TimeSlotAvailability } from '@/lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, Clock, Package, CheckCircle, XCircle } from 'lucide-react';
 
 export function TimeStep() {
   const { draft, updateDraft, setStep, setError } = useBookingStore();
@@ -43,7 +45,6 @@ export function TimeStep() {
       timeSlotId: slot.timeSlotId,
       timeSlotLabel: `${slot.startTime} - ${slot.endTime}`,
     });
-    // Auto-continue after selection
     setTimeout(() => setStep('address'), 300);
   };
 
@@ -54,16 +55,21 @@ export function TimeStep() {
   const availableSlots = slots.filter((s) => s.available);
 
   return (
-    <div className="screen">
+    <motion.div 
+      className="screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
       {/* Header */}
-      <div className="mb-8">
-        <button 
+      <div className="mb-6">
+        <motion.button 
           onClick={handleBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+          whileTap={{ scale: 0.95 }}
         >
-          <span>←</span>
+          <ArrowLeft className="w-4 h-4" />
           <span>Назад</span>
-        </button>
+        </motion.button>
         <h1 className="screen-title">Выберите время</h1>
         <p className="screen-subtitle">
           {draft.scheduledDate && new Date(draft.scheduledDate).toLocaleDateString('ru', { 
@@ -80,52 +86,87 @@ export function TimeStep() {
           <p className="text-gray-400 mt-4">Загружаем доступные слоты...</p>
         </div>
       ) : availableSlots.length === 0 ? (
-        <div className="card-premium text-center py-12 animate-fade-in">
+        <motion.div 
+          className="card-premium text-center py-12"
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+        >
           <div className="text-5xl mb-4">😔</div>
           <h3 className="text-xl font-semibold text-white mb-2">Нет свободных слотов</h3>
           <p className="text-gray-400 mb-6">На выбранную дату все наборы заняты</p>
           <button onClick={handleBack} className="btn-primary">
             Выбрать другую дату
           </button>
-        </div>
+        </motion.div>
       ) : (
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-3">
           {slots.map((slot, index) => (
-            <button
+            <motion.button
               key={slot.timeSlotId}
               onClick={() => handleSelect(slot)}
               disabled={!slot.available}
-              className={`card-premium text-center py-5 animate-scale-in
-                ${slot.available ? 'hover:scale-[1.02]' : 'opacity-30 cursor-not-allowed'}
+              className={`card-premium flex items-center gap-4 text-left
+                ${slot.available ? '' : 'opacity-40 cursor-not-allowed'}
                 ${selectedSlot === slot.timeSlotId ? 'ring-2 ring-purple-500 bg-purple-500/20' : ''}`}
-              style={{ animationDelay: `${index * 50}ms` }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+              whileHover={slot.available ? { scale: 1.02 } : {}}
+              whileTap={slot.available ? { scale: 0.98 } : {}}
             >
-              <div className={`w-10 h-10 rounded-xl mx-auto mb-3 flex items-center justify-center
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center
                 ${slot.available 
-                  ? 'bg-gradient-to-br from-green-500/20 to-emerald-500/20 text-green-400' 
-                  : 'bg-red-500/10 text-red-400'}`}
+                  ? 'bg-gradient-to-br from-green-500/20 to-emerald-500/20' 
+                  : 'bg-red-500/10'}`}
               >
-                <span className="text-lg">{slot.available ? '✓' : '✕'}</span>
+                {slot.available ? (
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                ) : (
+                  <XCircle className="w-6 h-6 text-red-400" />
+                )}
               </div>
-              <div className={`text-lg font-semibold ${slot.available ? 'text-white' : 'text-gray-500 line-through'}`}>
-                {slot.startTime} - {slot.endTime}
+              
+              <div className="flex-1">
+                <div className={`text-lg font-semibold ${slot.available ? 'text-white' : 'text-gray-500 line-through'}`}>
+                  {slot.startTime} - {slot.endTime}
+                </div>
+                {slot.available && slot.availableKitNumber && (
+                  <div className="flex items-center gap-1 text-sm text-purple-400 mt-1">
+                    <Package className="w-3 h-3" />
+                    <span>Набор №{slot.availableKitNumber}</span>
+                  </div>
+                )}
+                {!slot.available && (
+                  <div className="text-xs text-gray-500 mt-1">Занято</div>
+                )}
               </div>
+
               {slot.available && (
-                <div className="text-xs text-gray-500 mt-1">Набор доступен</div>
+                <div className="text-purple-400">
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
               )}
-            </button>
+            </motion.button>
           ))}
         </div>
       )}
 
       {/* Info */}
-      <div className="mt-auto pt-8">
+      <motion.div 
+        className="mt-auto pt-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
         <div className="card text-center">
-          <div className="text-gray-400 text-sm">
-            <span>⏰</span> Аренда на 24 часа
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+            <Clock className="w-4 h-4" />
+            <span>Аренда на 24 часа</span>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

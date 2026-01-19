@@ -2,7 +2,7 @@
 
 import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
-import { Sparkles, Shirt, Home, Clock, Truck, ChevronRight, Star } from 'lucide-react';
+import { Sparkles, Shirt, Home, Clock, Truck, ChevronRight, Star, Gift, Percent } from 'lucide-react';
 
 const services = [
   {
@@ -10,10 +10,12 @@ const services = [
     Icon: Sparkles,
     name: 'Химчистка самообслуживания',
     description: 'Профессиональный набор для самостоятельной чистки мебели и ковров',
-    price: '500 ₽',
+    price: '1500 ₽',
+    oldPrice: '2500 ₽',
     duration: '24 часа',
     active: true,
     popular: true,
+    promo: 'Сушилка и химия в подарок!',
   },
   {
     code: 'pro_cleaning',
@@ -123,16 +125,25 @@ export function ServiceStep() {
               <div className="font-semibold text-white mb-1">{service.name}</div>
               <div className="text-sm text-gray-400 line-clamp-2">{service.description}</div>
               {service.active && (
-                <div className="flex items-center gap-3 mt-2">
+                <div className="flex flex-wrap items-center gap-2 mt-2">
                   <span className="text-xs text-gray-500 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {service.duration}
                   </span>
+                  {'promo' in service && service.promo && (
+                    <span className="text-xs text-green-400 flex items-center gap-1">
+                      <Gift className="w-3 h-3" />
+                      {service.promo}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
             
             <div className="text-right flex flex-col items-end">
+              {'oldPrice' in service && service.oldPrice && (
+                <div className="text-xs text-gray-500 line-through">{service.oldPrice}</div>
+              )}
               <div className="text-lg font-bold gradient-text">{service.price}</div>
               {service.active ? (
                 <ChevronRight className="w-5 h-5 text-purple-400 mt-1" />

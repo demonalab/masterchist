@@ -142,9 +142,9 @@ export function ConfirmStep() {
             <span>💰</span>
           </div>
           <div>
-            <div className="font-semibold text-amber-400">Предоплата 500 ₽</div>
-            <div className="text-sm text-gray-400 mt-1">
-              После создания заказа потребуется внести предоплату
+            <div className="font-semibold text-amber-400">Стоимость: 1500 ₽ за сутки</div>
+            <div className="text-sm text-green-400 mt-1">
+              🎁 Сушилка и химия в подарок!
             </div>
           </div>
         </div>

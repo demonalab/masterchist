@@ -88,8 +88,9 @@ export function SuccessStep() {
         </div>
         
         <div className="bg-white/5 rounded-2xl p-4 mb-4">
-          <div className="text-2xl font-bold gradient-text-gold text-center mb-2">500 ₽</div>
-          <div className="text-xs text-gray-500 text-center">Сумма предоплаты</div>
+          <div className="text-2xl font-bold gradient-text-gold text-center mb-2">1500 ₽</div>
+          <div className="text-xs text-gray-500 text-center">Стоимость аренды за сутки</div>
+          <div className="text-xs text-green-400 text-center mt-1">🎁 Сушилка и химия в подарок!</div>
         </div>
 
         <div className="space-y-3 text-sm">
