@@ -6,7 +6,7 @@ import { DayPicker } from 'react-day-picker';
 import { ru } from 'date-fns/locale';
 import { format, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Calendar, ArrowLeft } from 'lucide-react';
 import 'react-day-picker/dist/style.css';
 
 export function DateStep() {
@@ -134,10 +134,6 @@ export function DateStep() {
           disabled={disabledDays}
           locale={ru}
           showOutsideDays={false}
-          components={{
-            IconLeft: () => <ChevronLeft className="w-5 h-5" />,
-            IconRight: () => <ChevronRight className="w-5 h-5" />,
-          }}
         />
       </motion.div>
 
