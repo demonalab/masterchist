@@ -1,12 +1,24 @@
 'use client';
 
 import { useBookingStore } from '@/lib/booking-store';
+import { motion } from 'framer-motion';
+import { MapPin, Building2, ChevronRight, Package, ArrowLeft } from 'lucide-react';
 
 const cities = [
-  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', icon: '🏙️', available: true },
-  { code: 'BATAYSK', name: 'Батайск', icon: '🌆', available: true },
-  { code: 'STAVROPOL', name: 'Ставрополь', icon: '🏛️', available: true },
+  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', Icon: Building2 },
+  { code: 'BATAYSK', name: 'Батайск', Icon: MapPin },
+  { code: 'STAVROPOL', name: 'Ставрополь', Icon: Building2 },
 ];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: { opacity: 1, x: 0 }
+};
 
 export function CityStep() {
   const { updateDraft, setStep } = useBookingStore();
@@ -21,53 +33,67 @@ export function CityStep() {
   };
 
   return (
-    <div className="screen">
+    <motion.div 
+      className="screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+    >
       {/* Header */}
       <div className="mb-8">
-        <button 
+        <motion.button 
           onClick={handleBack}
           className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+          whileTap={{ scale: 0.95 }}
         >
-          <span>←</span>
+          <ArrowLeft className="w-4 h-4" />
           <span>Назад</span>
-        </button>
+        </motion.button>
         <h1 className="screen-title">Выберите город</h1>
         <p className="screen-subtitle">Мы работаем в этих городах</p>
       </div>
 
       {/* Cities */}
-      <div className="flex flex-col gap-4">
-        {cities.map((city, index) => (
-          <button
+      <motion.div 
+        className="flex flex-col gap-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {cities.map((city) => (
+          <motion.button
             key={city.code}
             onClick={() => handleSelect(city.code, city.name)}
-            className="option-card animate-slide-up"
-            style={{ animationDelay: `${index * 100}ms` }}
+            className="option-card"
+            variants={itemVariants}
+            whileHover={{ scale: 1.02, x: 4 }}
+            whileTap={{ scale: 0.98 }}
           >
             <div className="icon-circle">
-              <span>{city.icon}</span>
+              <city.Icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
               <div className="font-semibold text-white">{city.name}</div>
               <div className="text-sm text-gray-400">Доставка доступна</div>
             </div>
-            <div className="text-purple-400">
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </button>
+            <ChevronRight className="w-5 h-5 text-purple-400" />
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
       {/* Info */}
-      <div className="mt-auto pt-8">
+      <motion.div 
+        className="mt-auto pt-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+      >
         <div className="card text-center">
-          <div className="text-gray-400 text-sm">
-            <span>📦</span> Доставка в день заказа
+          <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
+            <Package className="w-4 h-4" />
+            <span>Доставка в день заказа</span>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

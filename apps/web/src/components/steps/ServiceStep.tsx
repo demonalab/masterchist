@@ -1,11 +1,13 @@
 'use client';
 
 import { useBookingStore } from '@/lib/booking-store';
+import { motion } from 'framer-motion';
+import { Sparkles, Shirt, Home, Clock, Truck, ChevronRight, Star } from 'lucide-react';
 
 const services = [
   {
     code: 'self_cleaning',
-    icon: '✨',
+    Icon: Sparkles,
     name: 'Химчистка самообслуживания',
     description: 'Профессиональный набор для самостоятельной чистки мебели и ковров',
     price: '500 ₽',
@@ -15,7 +17,7 @@ const services = [
   },
   {
     code: 'pro_cleaning',
-    icon: '👔',
+    Icon: Shirt,
     name: 'Проф. химчистка мастером',
     description: 'Опытный мастер приедет и выполнит химчистку',
     price: 'от 1500 ₽',
@@ -25,7 +27,7 @@ const services = [
   },
   {
     code: 'cleaning',
-    icon: '🏠',
+    Icon: Home,
     name: 'Клининг помещений',
     description: 'Комплексная уборка квартир и офисов',
     price: 'от 2000 ₽',
@@ -34,6 +36,19 @@ const services = [
     popular: false,
   },
 ];
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1 }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 }
+};
 
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
@@ -44,36 +59,64 @@ export function ServiceStep() {
   };
 
   return (
-    <div className="screen">
+    <motion.div 
+      className="screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
       {/* Header */}
-      <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-premium mb-4">
-          <span className="text-3xl">🧹</span>
-        </div>
+      <motion.div 
+        className="text-center mb-8"
+        initial={{ y: -20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: 0.1 }}
+      >
+        <motion.div 
+          className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-premium mb-4"
+          whileHover={{ scale: 1.05, rotate: 5 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Sparkles className="w-10 h-10 text-white" />
+        </motion.div>
         <h1 className="screen-title">МастерЧист</h1>
         <p className="screen-subtitle">Премиум сервис аренды наборов для химчистки</p>
-      </div>
+      </motion.div>
 
       {/* Services */}
-      <div className="flex flex-col gap-4">
-        {services.map((service, index) => (
-          <button
+      <motion.div 
+        className="flex flex-col gap-4"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
+        {services.map((service) => (
+          <motion.button
             key={service.code}
             onClick={() => service.active && handleSelect(service.code)}
             disabled={!service.active}
             className={`option-card text-left relative overflow-hidden
-              ${!service.active ? 'opacity-40 cursor-not-allowed' : ''}
-              animate-slide-up`}
-            style={{ animationDelay: `${index * 100}ms` }}
+              ${!service.active ? 'opacity-40 cursor-not-allowed' : ''}`}
+            variants={itemVariants}
+            whileHover={service.active ? { scale: 1.02, y: -2 } : {}}
+            whileTap={service.active ? { scale: 0.98 } : {}}
           >
             {service.popular && (
-              <div className="absolute top-3 right-3">
-                <span className="badge-gold">Популярное</span>
-              </div>
+              <motion.div 
+                className="absolute top-3 right-3"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.3, type: "spring" }}
+              >
+                <span className="badge-gold flex items-center gap-1">
+                  <Star className="w-3 h-3" />
+                  Популярное
+                </span>
+              </motion.div>
             )}
             
             <div className="icon-circle">
-              <span>{service.icon}</span>
+              <service.Icon className="w-6 h-6" />
             </div>
             
             <div className="flex-1 min-w-0">
@@ -81,30 +124,40 @@ export function ServiceStep() {
               <div className="text-sm text-gray-400 line-clamp-2">{service.description}</div>
               {service.active && (
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-xs text-gray-500">⏱ {service.duration}</span>
+                  <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {service.duration}
+                  </span>
                 </div>
               )}
             </div>
             
-            <div className="text-right">
+            <div className="text-right flex flex-col items-end">
               <div className="text-lg font-bold gradient-text">{service.price}</div>
-              {!service.active && (
+              {service.active ? (
+                <ChevronRight className="w-5 h-5 text-purple-400 mt-1" />
+              ) : (
                 <span className="text-xs text-gray-500">Скоро</span>
               )}
             </div>
-          </button>
+          </motion.button>
         ))}
-      </div>
+      </motion.div>
 
       {/* Footer info */}
-      <div className="mt-auto pt-8">
+      <motion.div 
+        className="mt-auto pt-8"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.4 }}
+      >
         <div className="card text-center">
           <div className="flex items-center justify-center gap-2 text-gray-400 text-sm">
-            <span>🚀</span>
+            <Truck className="w-4 h-4" />
             <span>Быстрая доставка по городу</span>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
