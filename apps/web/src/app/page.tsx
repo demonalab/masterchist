@@ -14,10 +14,12 @@ import {
   ConfirmStep,
   SuccessStep,
 } from '@/components/steps';
+import { MyOrdersStep } from '@/components/steps/MyOrdersStep';
+import { HelpStep } from '@/components/steps/HelpStep';
 import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
-  const { step, error, setError } = useBookingStore();
+  const { step, error, setError, setStep } = useBookingStore();
   const { isReady, isTelegram } = useTelegram();
   const searchParams = useSearchParams();
   const devMode = searchParams.get('dev') === '1';
@@ -62,6 +64,16 @@ function HomeContent() {
     );
   }
 
+  const handleBackToService = () => setStep('service');
+
+  if (step === 'orders') {
+    return <MyOrdersStep onBack={handleBackToService} />;
+  }
+  
+  if (step === 'help') {
+    return <HelpStep onBack={handleBackToService} />;
+  }
+
   const StepComponent = {
     service: ServiceStep,
     city: CityStep,
@@ -71,6 +83,10 @@ function HomeContent() {
     confirm: ConfirmStep,
     success: SuccessStep,
   }[step];
+
+  if (!StepComponent) {
+    return <ServiceStep />;
+  }
 
   return <StepComponent />;
 }

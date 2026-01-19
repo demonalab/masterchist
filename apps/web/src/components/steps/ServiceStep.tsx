@@ -2,7 +2,7 @@
 
 import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
-import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star } from '@phosphor-icons/react';
+import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question } from '@phosphor-icons/react';
 
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
@@ -112,9 +112,32 @@ export function ServiceStep() {
         </div>
       </motion.div>
 
+      {/* Navigation buttons */}
+      <motion.div 
+        className="mt-6 flex gap-3"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.45 }}
+      >
+        <button 
+          onClick={() => setStep('orders')}
+          className="flex-1 glass-card-static p-4 flex items-center gap-3 hover:bg-white/10 transition-colors"
+        >
+          <ClipboardText weight="duotone" className="w-5 h-5 text-accent-blue" />
+          <span className="text-sm text-white/70">Мои заказы</span>
+        </button>
+        <button 
+          onClick={() => setStep('help')}
+          className="flex-1 glass-card-static p-4 flex items-center gap-3 hover:bg-white/10 transition-colors"
+        >
+          <Question weight="duotone" className="w-5 h-5 text-accent-purple" />
+          <span className="text-sm text-white/70">Помощь</span>
+        </button>
+      </motion.div>
+
       {/* Bottom stats */}
       <motion.div 
-        className="mt-auto pt-8"
+        className="mt-auto pt-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}

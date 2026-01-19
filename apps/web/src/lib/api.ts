@@ -25,6 +25,15 @@ export interface BookingResponse {
   createdAt: string;
 }
 
+export interface MyBooking {
+  id: string;
+  status: string;
+  scheduledDate: string;
+  timeSlot: string;
+  kitNumber?: number;
+  service?: string;
+}
+
 export interface CreateBookingRequest {
   serviceCode: string;
   city: string;
@@ -105,6 +114,77 @@ class ApiClient {
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({ message: res.statusText }));
         return { ok: false, status: res.status, error: errBody.message ?? res.statusText };
+      }
+
+      const data: BookingResponse = await res.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getMyBookings(): Promise<ApiResult<MyBooking[]>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/my`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      const data: MyBooking[] = await res.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async uploadReceipt(bookingId: string, file: File): Promise<ApiResult<{ message: string }>> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers: Record<string, string> = {};
+      if (this.devMode) {
+        headers['X-Dev-Mode'] = '1';
+      } else if (this.initData) {
+        headers['X-Telegram-Init-Data'] = this.initData;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/receipt`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      const data = await res.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getPendingBooking(): Promise<ApiResult<BookingResponse | null>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/pending`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        if (res.status === 404) {
+          return { ok: true, data: null };
+        }
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
       }
 
       const data: BookingResponse = await res.json();

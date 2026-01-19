@@ -10,7 +10,9 @@ export type BookingStep =
   | 'time'
   | 'address'
   | 'confirm'
-  | 'success';
+  | 'success'
+  | 'orders'
+  | 'help';
 
 export interface BookingDraft {
   serviceCode?: string;

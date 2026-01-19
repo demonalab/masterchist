@@ -1,16 +1,49 @@
 'use client';
 
+import { useState, useRef } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
+import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy } from '@phosphor-icons/react';
+import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy, Upload, SpinnerGap, Check } from '@phosphor-icons/react';
 
 export function SuccessStep() {
   const { booking, reset } = useBookingStore();
   const { webApp } = useTelegram();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const handleClose = () => { reset(); webApp?.close(); };
   const handleNewBooking = () => { reset(); };
+  
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+  
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !booking) return;
+    
+    setUploading(true);
+    setUploadError(null);
+    
+    const result = await api.uploadReceipt(booking.id, file);
+    
+    if (result.ok) {
+      setUploaded(true);
+    } else {
+      setUploadError(result.error);
+    }
+    
+    setUploading(false);
+  };
+  
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+  };
 
   if (!booking) {
     return (
@@ -109,10 +142,46 @@ export function SuccessStep() {
           </div>
         </div>
 
-        <div className="mt-4 p-3 bg-accent-purple/10 border border-accent-purple/20 rounded-xl flex items-center gap-2">
-          <Camera weight="duotone" className="w-4 h-4 text-accent-purple" />
-          <p className="text-xs text-accent-purple">Отправьте фото чека боту после оплаты</p>
-        </div>
+        {/* Upload receipt section */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*,.pdf"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+        
+        {uploaded ? (
+          <div className="mt-4 p-4 bg-accent-green/10 border border-accent-green/20 rounded-xl flex items-center gap-3">
+            <Check weight="bold" className="w-5 h-5 text-accent-green" />
+            <div>
+              <p className="text-sm text-accent-green font-medium">Чек загружен!</p>
+              <p className="text-xs text-white/40">Ожидайте подтверждения</p>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={handleUploadClick}
+            disabled={uploading}
+            className="mt-4 w-full p-4 bg-accent-purple/10 border border-accent-purple/20 rounded-xl flex items-center justify-center gap-3 hover:bg-accent-purple/20 transition-colors disabled:opacity-50"
+          >
+            {uploading ? (
+              <>
+                <SpinnerGap weight="bold" className="w-5 h-5 text-accent-purple animate-spin" />
+                <span className="text-sm text-accent-purple">Загрузка...</span>
+              </>
+            ) : (
+              <>
+                <Upload weight="duotone" className="w-5 h-5 text-accent-purple" />
+                <span className="text-sm text-accent-purple font-medium">Загрузить фото чека</span>
+              </>
+            )}
+          </button>
+        )}
+        
+        {uploadError && (
+          <p className="mt-2 text-xs text-red-400 text-center">{uploadError}</p>
+        )}
       </motion.div>
 
       {/* Buttons */}
