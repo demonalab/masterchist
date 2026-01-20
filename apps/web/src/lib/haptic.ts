@@ -11,18 +11,30 @@ interface HapticFeedback {
   selectionChanged: () => void;
 }
 
+function isVersionAtLeast(version: string, minVersion: string): boolean {
+  const v1 = version.split('.').map(Number);
+  const v2 = minVersion.split('.').map(Number);
+  for (let i = 0; i < Math.max(v1.length, v2.length); i++) {
+    const a = v1[i] || 0;
+    const b = v2[i] || 0;
+    if (a > b) return true;
+    if (a < b) return false;
+  }
+  return true;
+}
+
 function getHapticFeedback(): HapticFeedback | null {
   if (typeof window === 'undefined') return null;
   
-  // Try Telegram WebApp
+  // Try Telegram WebApp - HapticFeedback requires version 6.1+
   const tgWebApp = (window as any).Telegram?.WebApp;
-  if (tgWebApp?.HapticFeedback) {
+  if (tgWebApp?.HapticFeedback && tgWebApp.version && isVersionAtLeast(tgWebApp.version, '6.1')) {
     return tgWebApp.HapticFeedback;
   }
   
   // Try MAX WebApp
   const maxWebApp = (window as any).WebApp;
-  if (maxWebApp?.HapticFeedback) {
+  if (maxWebApp?.HapticFeedback && (!maxWebApp.version || isVersionAtLeast(maxWebApp.version, '6.1'))) {
     return maxWebApp.HapticFeedback;
   }
   
