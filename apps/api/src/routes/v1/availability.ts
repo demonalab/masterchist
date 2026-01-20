@@ -209,8 +209,8 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     const bookingsPerDay = new Map<string, number>();
     for (const booking of bookingsInMonth) {
       if (!booking.scheduledDate) continue;
-      const dateStr = booking.scheduledDate.toISOString().split('T')[0];
-      bookingsPerDay.set(dateStr, (bookingsPerDay.get(dateStr) || 0) + 1);
+      const dateStr = booking.scheduledDate.toISOString().split('T')[0] as string;
+      bookingsPerDay.set(dateStr, (bookingsPerDay.get(dateStr) ?? 0) + 1);
     }
     
     // Build result for each day
