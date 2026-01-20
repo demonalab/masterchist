@@ -320,6 +320,80 @@ class ApiClientExtended extends ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  // ============ ADMIN API ============
+
+  async getAdminRole(): Promise<ApiResult<{ role: string }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/role`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdminStats(): Promise<ApiResult<{
+    totalBookings: number;
+    newBookings: number;
+    awaitingPrepaymentBookings: number;
+    prepaidBookings: number;
+    confirmedBookings: number;
+    cancelledBookings: number;
+  }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdminBookings(status?: string): Promise<ApiResult<Array<{
+    id: string;
+    status: string;
+    scheduledDate: string | null;
+    createdAt: string;
+    kitNumber: number | null;
+    timeSlot: string | null;
+    service: string | null;
+    user: { telegramId: string; firstName: string } | null;
+    address: { addressLine: string; contactName: string; contactPhone: string } | null;
+  }>>> {
+    try {
+      const params = status ? new URLSearchParams({ status }) : '';
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings${params ? `?${params}` : ''}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }
 
 export const api = new ApiClientExtended();

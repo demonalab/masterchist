@@ -1,11 +1,22 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
-import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question, User } from '@phosphor-icons/react';
+import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question, User, GearSix } from '@phosphor-icons/react';
+import { api } from '@/lib/api';
 
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    api.getAdminRole().then(res => {
+      if (res.ok && res.data.role) {
+        setIsAdmin(true);
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleSelect = () => {
     updateDraft({ serviceCode: 'self_cleaning' });
@@ -117,7 +128,7 @@ export function ServiceStep() {
 
       {/* Navigation buttons */}
       <motion.div 
-        className="mt-6 grid grid-cols-3 gap-3"
+        className={`mt-6 grid gap-3 ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'}`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.45 }}
@@ -143,6 +154,15 @@ export function ServiceStep() {
           <Question weight="duotone" className="w-6 h-6 text-accent-purple" />
           <span className="text-xs text-white/70">Помощь</span>
         </button>
+        {isAdmin && (
+          <button 
+            onClick={() => setStep('admin')}
+            className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
+          >
+            <GearSix weight="duotone" className="w-6 h-6 text-yellow-400" />
+            <span className="text-xs text-white/70">Админ</span>
+          </button>
+        )}
       </motion.div>
 
       {/* Bottom stats */}
