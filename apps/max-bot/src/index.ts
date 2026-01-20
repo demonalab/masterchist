@@ -28,9 +28,11 @@ async function setMiniApp() {
 const bot = createBot();
 
 console.log('MAX Bot starting with official library...');
-bot.start().then(() => {
-  setMiniApp();
-}).catch(console.error);
+
+// Set Mini App URL before starting bot
+setMiniApp();
+
+bot.start().catch(console.error);
 
 // Start reminder cron
 startReminderCron();
