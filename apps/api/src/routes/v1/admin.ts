@@ -4,13 +4,23 @@ import { BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import ExcelJS from 'exceljs';
 
-const SUPER_ADMIN_TELEGRAM_ID = process.env.ADMIN_TELEGRAM_ID || '';
+// Support multiple admin IDs via comma-separated list
+const SUPER_ADMIN_IDS = (process.env.ADMIN_TELEGRAM_ID || '')
+  .split(',')
+  .map(id => id.trim())
+  .filter(Boolean);
+
 const MAX_ADMIN_USER_ID = process.env.MAX_ADMIN_USER_ID || '';
+
+// Fallback hardcoded super admin IDs (in case env is not set)
+// Telegram IDs: 8468584965, 1152185834, 1447933960
+// MAX ID: 18782420
+const FALLBACK_SUPER_ADMINS = ['8468584965', '1152185834', '1447933960', '18782420'];
 
 // Helper to check admin status
 async function getAdminRole(telegramId: string): Promise<'super_admin' | 'admin' | null> {
-  // Super admin from env (Telegram or MAX)
-  if (telegramId === SUPER_ADMIN_TELEGRAM_ID || telegramId === MAX_ADMIN_USER_ID) {
+  // Super admin from env (Telegram or MAX) - supports multiple IDs
+  if (SUPER_ADMIN_IDS.includes(telegramId) || telegramId === MAX_ADMIN_USER_ID || FALLBACK_SUPER_ADMINS.includes(telegramId)) {
     return 'super_admin';
   }
   
