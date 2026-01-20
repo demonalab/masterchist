@@ -125,7 +125,7 @@ class ApiClient {
 
   async getMyBookings(): Promise<ApiResult<MyBooking[]>> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/my`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings`, {
         method: 'GET',
         headers: this.headers,
       });
