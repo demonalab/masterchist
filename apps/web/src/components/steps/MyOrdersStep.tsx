@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap } from '@phosphor-icons/react';
+import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin } from '@phosphor-icons/react';
 import { api, MyBooking } from '@/lib/api';
+import { useBookingStore } from '@/lib/booking-store';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new: { label: 'Новый', color: 'text-blue-400' },
@@ -23,6 +24,7 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
   const [bookings, setBookings] = useState<MyBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { updateDraft, setStep } = useBookingStore();
 
   useEffect(() => {
     async function fetchBookings() {
@@ -37,6 +39,14 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
     }
     fetchBookings();
   }, []);
+
+  const handleRepeatOrder = (booking: MyBooking) => {
+    // Pre-fill draft with service code and start new booking flow
+    updateDraft({
+      serviceCode: 'self_cleaning',
+    });
+    setStep('city');
+  };
 
   const formatDate = (dateStr: string) => {
     try {
@@ -138,10 +148,19 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                   )}
                 </div>
 
-                <div className="mt-3 pt-3 border-t border-white/5">
+                <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
                   <p className="text-xs text-white/30 font-mono">
                     ID: {booking.id.slice(0, 8).toUpperCase()}
                   </p>
+                  {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                    <button
+                      onClick={() => handleRepeatOrder(booking)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-green/10 hover:bg-accent-green/20 text-accent-green text-xs font-medium rounded-lg transition-colors"
+                    >
+                      <ArrowClockwise weight="bold" className="w-3.5 h-3.5" />
+                      Повторить
+                    </button>
+                  )}
                 </div>
               </motion.div>
             );
