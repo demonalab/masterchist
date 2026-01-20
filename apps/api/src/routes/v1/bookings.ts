@@ -431,12 +431,15 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
     return reply.notImplemented('POST /bookings/:id/cancel - cancel booking');
   });
 
-  // Payment proof upload (for MAX bot - accepts photo URL)
+  // Payment proof upload (supports both FormData from web and JSON from MAX bot)
   fastify.post<{ Params: { id: string }; Body: { photoUrl?: string; maxUserId?: number } }>(
     '/:id/payment-proof',
     async (request, reply) => {
       const { id } = request.params;
-      const { photoUrl, maxUserId } = request.body;
+      
+      // Handle both FormData and JSON body
+      const body = request.body || {};
+      const { photoUrl, maxUserId } = body as { photoUrl?: string; maxUserId?: number };
 
       // Get userId from auth or maxUserId
       let userId = request.dbUserId;
@@ -470,7 +473,6 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         where: { id },
         data: { 
           status: BookingStatuses.PREPAID,
-          // Store photo URL in notes or separate field if needed
         },
         select: { id: true, status: true },
       });
