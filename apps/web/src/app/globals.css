@@ -29,6 +29,7 @@
 html {
   height: 100%;
   overflow: hidden;
+  --tg-viewport-stable-height: 100vh;
 }
 
 body {
@@ -84,9 +85,9 @@ body {
   .screen {
     @apply flex flex-col p-5 pb-28;
     min-height: 100dvh;
-    min-height: -webkit-fill-available;
-    padding-top: calc(20px + env(safe-area-inset-top, 0px));
-    padding-top: calc(20px + var(--tg-content-safe-area-inset-top, 0px));
+    min-height: var(--tg-viewport-stable-height, 100dvh);
+    padding-top: max(20px, calc(env(safe-area-inset-top, 0px) + 12px));
+    padding-top: max(20px, calc(var(--tg-content-safe-area-inset-top, 0px) + 12px));
   }
 
   .label-sm {

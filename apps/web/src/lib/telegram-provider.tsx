@@ -67,8 +67,21 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         setPlatform('telegram');
         setIsReady(true);
 
+        const root = document.documentElement;
+        
+        // Set viewport height
+        const viewportHeight = (tgWebApp as any).viewportStableHeight;
+        if (viewportHeight) {
+          root.style.setProperty('--tg-viewport-stable-height', `${viewportHeight}px`);
+        }
+        
+        // Set safe area insets
+        const safeArea = (tgWebApp as any).contentSafeAreaInset || (tgWebApp as any).safeAreaInset;
+        if (safeArea?.top) {
+          root.style.setProperty('--tg-content-safe-area-inset-top', `${safeArea.top}px`);
+        }
+
         if (tgWebApp.themeParams) {
-          const root = document.documentElement;
           const tp = tgWebApp.themeParams;
           if (tp.bg_color) root.style.setProperty('--tg-theme-bg-color', tp.bg_color);
           if (tp.text_color) root.style.setProperty('--tg-theme-text-color', tp.text_color);
