@@ -154,7 +154,7 @@ class ApiClient {
         headers['X-Telegram-Init-Data'] = this.initData;
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/receipt`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/payment-proof`, {
         method: 'POST',
         headers,
         body: formData,
