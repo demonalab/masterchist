@@ -1,24 +1,60 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
-import { DayPicker } from 'react-day-picker';
+import { DayPicker, DayProps } from 'react-day-picker';
 import { ru } from 'date-fns/locale';
-import { format, addDays } from 'date-fns';
+import { format, addDays, startOfMonth, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CalendarBlank, CaretLeft, Check } from '@phosphor-icons/react';
+import { CalendarBlank, CaretLeft, Check, Circle } from '@phosphor-icons/react';
+import { api, DayAvailability } from '@/lib/api';
 import 'react-day-picker/dist/style.css';
 
 export function DateStep() {
-  const { updateDraft, setStep } = useBookingStore();
+  const { draft, updateDraft, setStep } = useBookingStore();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [error, setError] = useState('');
+  const [month, setMonth] = useState(new Date());
+  const [availability, setAvailability] = useState<Map<string, DayAvailability>>(new Map());
+  const [loading, setLoading] = useState(true);
+
+  // Fetch availability for current month
+  const fetchAvailability = useCallback(async (monthDate: Date) => {
+    if (!draft.city) return;
+    
+    setLoading(true);
+    const monthStr = format(monthDate, 'yyyy-MM');
+    const result = await api.getMonthlyAvailability(draft.city, monthStr, 'self_cleaning');
+    
+    if (result.ok) {
+      const map = new Map<string, DayAvailability>();
+      for (const day of result.data) {
+        map.set(day.date, day);
+      }
+      setAvailability(map);
+    }
+    setLoading(false);
+  }, [draft.city]);
+
+  useEffect(() => {
+    fetchAvailability(month);
+  }, [month, fetchAvailability]);
 
   const handleBack = () => setStep('city');
   const handleSelect = (date: Date | undefined) => {
+    if (!date) return;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayInfo = availability.get(dateStr);
+    
+    // Don't allow selecting full or past days
+    if (dayInfo?.status === 'full' || dayInfo?.status === 'past') {
+      return;
+    }
+    
     setSelectedDate(date);
     setError('');
   };
+  
   const handleContinue = () => {
     if (!selectedDate) {
       setError('Выберите дату');
@@ -30,6 +66,33 @@ export function DateStep() {
 
   const today = new Date();
   const disabledDays = { before: addDays(today, 1) };
+
+  // Custom day render with availability colors
+  const getDayClassName = (date: Date): string => {
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const dayInfo = availability.get(dateStr);
+    
+    if (!dayInfo) return '';
+    
+    switch (dayInfo.status) {
+      case 'available':
+        return 'day-available';
+      case 'limited':
+        return 'day-limited';
+      case 'full':
+        return 'day-full';
+      case 'past':
+        return 'day-past';
+      default:
+        return '';
+    }
+  };
+
+  const modifiers = {
+    available: (date: Date) => availability.get(format(date, 'yyyy-MM-dd'))?.status === 'available',
+    limited: (date: Date) => availability.get(format(date, 'yyyy-MM-dd'))?.status === 'limited',
+    full: (date: Date) => availability.get(format(date, 'yyyy-MM-dd'))?.status === 'full',
+  };
 
   return (
     <div className="screen relative overflow-hidden">
@@ -75,20 +138,58 @@ export function DateStep() {
           .rdp-nav_button:hover { background: rgba(255,255,255,0.1); }
           .rdp-head_cell { color: rgba(255,255,255,0.4); font-weight: 500; font-size: 0.7rem; text-transform: uppercase; }
           .rdp-cell { padding: 2px; }
-          .rdp-day { color: white; border-radius: 10px; font-weight: 500; transition: all 0.2s; }
-          .rdp-day:hover:not(.rdp-day_disabled):not(.rdp-day_selected) { background: rgba(255,255,255,0.08); }
+          .rdp-day { color: white; border-radius: 10px; font-weight: 500; transition: all 0.2s; position: relative; }
+          .rdp-day:hover:not(.rdp-day_disabled):not(.rdp-day_selected):not(.rdp-day_full) { background: rgba(255,255,255,0.08); }
           .rdp-day_selected { background: #22c55e !important; color: black !important; font-weight: 600; }
           .rdp-day_disabled { color: rgba(255,255,255,0.2); }
           .rdp-day_today { border: 1px solid rgba(34,197,94,0.5); }
+          
+          /* Availability colors */
+          .rdp-day_available { background: rgba(34, 197, 94, 0.15); }
+          .rdp-day_available:hover { background: rgba(34, 197, 94, 0.25) !important; }
+          .rdp-day_limited { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+          .rdp-day_limited:hover { background: rgba(251, 191, 36, 0.3) !important; }
+          .rdp-day_full { background: rgba(239, 68, 68, 0.15); color: rgba(255,255,255,0.3); cursor: not-allowed; }
         `}</style>
-        <DayPicker
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleSelect}
-          disabled={disabledDays}
-          locale={ru}
-          showOutsideDays={false}
-        />
+        
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="w-6 h-6 border-2 border-accent-green/30 border-t-accent-green rounded-full animate-spin" />
+          </div>
+        ) : (
+          <DayPicker
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleSelect}
+            disabled={disabledDays}
+            locale={ru}
+            showOutsideDays={false}
+            month={month}
+            onMonthChange={setMonth}
+            modifiers={modifiers}
+            modifiersClassNames={{
+              available: 'rdp-day_available',
+              limited: 'rdp-day_limited',
+              full: 'rdp-day_full',
+            }}
+          />
+        )}
+        
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-white/5">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-green-500/30" />
+            <span className="text-xs text-white/50">Свободно</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-yellow-500/40" />
+            <span className="text-xs text-white/50">Мало мест</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded-full bg-red-500/30" />
+            <span className="text-xs text-white/50">Занято</span>
+          </div>
+        </div>
       </motion.div>
 
       <AnimatePresence>

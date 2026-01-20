@@ -163,6 +163,83 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
 
     return result;
   });
+
+  // Monthly availability - for calendar view
+  fastify.get<{ Querystring: { city: string; month: string; serviceCode: string } }>('/monthly', async (request, reply) => {
+    const { city, month, serviceCode } = request.query;
+    
+    if (!city || !month || !serviceCode) {
+      return reply.badRequest('city, month, and serviceCode are required');
+    }
+    
+    // Parse month (YYYY-MM format)
+    const [year, monthNum] = month.split('-').map(Number);
+    if (!year || !monthNum || monthNum < 1 || monthNum > 12) {
+      return reply.badRequest('month must be YYYY-MM format');
+    }
+    
+    // Get first and last day of month
+    const startDate = new Date(Date.UTC(year, monthNum - 1, 1));
+    const endDate = new Date(Date.UTC(year, monthNum, 0)); // Last day of month
+    
+    const [timeSlots, activeKits, bookingsInMonth] = await Promise.all([
+      prisma.timeSlot.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      }),
+      prisma.cleaningKit.findMany({
+        where: { isActive: true },
+        select: { id: true },
+      }),
+      prisma.booking.findMany({
+        where: {
+          scheduledDate: { gte: startDate, lte: endDate },
+          status: { in: [...BLOCKING_STATUSES] },
+          cleaningKitId: { not: null },
+        },
+        select: { scheduledDate: true, timeSlotId: true, cleaningKitId: true },
+      }),
+    ]);
+    
+    const totalKits = activeKits.length;
+    const totalSlots = timeSlots.length;
+    const maxBookingsPerDay = totalKits * totalSlots;
+    
+    // Count bookings per day
+    const bookingsPerDay = new Map<string, number>();
+    for (const booking of bookingsInMonth) {
+      if (!booking.scheduledDate) continue;
+      const dateStr = booking.scheduledDate.toISOString().split('T')[0];
+      bookingsPerDay.set(dateStr, (bookingsPerDay.get(dateStr) || 0) + 1);
+    }
+    
+    // Build result for each day
+    const result: { date: string; status: 'available' | 'limited' | 'full' | 'past'; slotsLeft: number }[] = [];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0] as string;
+      const bookingsCount = bookingsPerDay.get(dateStr) || 0;
+      const slotsLeft = maxBookingsPerDay - bookingsCount;
+      
+      let status: 'available' | 'limited' | 'full' | 'past';
+      
+      if (d < today) {
+        status = 'past';
+      } else if (slotsLeft === 0) {
+        status = 'full';
+      } else if (slotsLeft <= Math.ceil(maxBookingsPerDay * 0.3)) {
+        status = 'limited';
+      } else {
+        status = 'available';
+      }
+      
+      result.push({ date: dateStr, status, slotsLeft });
+    }
+    
+    return result;
+  });
 };
 
 export default availabilityRoutes;

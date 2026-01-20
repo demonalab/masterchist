@@ -195,4 +195,36 @@ class ApiClient {
   }
 }
 
-export const api = new ApiClient();
+export interface DayAvailability {
+  date: string;
+  status: 'available' | 'limited' | 'full' | 'past';
+  slotsLeft: number;
+}
+
+class ApiClientExtended extends ApiClient {
+  async getMonthlyAvailability(
+    city: string,
+    month: string,
+    serviceCode: string
+  ): Promise<ApiResult<DayAvailability[]>> {
+    try {
+      const params = new URLSearchParams({ city, month, serviceCode });
+      const res = await fetch(`${API_BASE_URL}/api/v1/availability/monthly?${params}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      const data: DayAvailability[] = await res.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+}
+
+export const api = new ApiClientExtended();
