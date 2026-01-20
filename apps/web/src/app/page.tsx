@@ -20,9 +20,12 @@ import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
   const { step, error, setError, setStep } = useBookingStore();
-  const { isReady, isTelegram } = useTelegram();
+  const { isReady, isTelegram, isMax } = useTelegram();
   const searchParams = useSearchParams();
   const devMode = searchParams.get('dev') === '1';
+  
+  // Show Mini App interface for Telegram, MAX, or dev mode
+  const showMiniApp = isTelegram || isMax || devMode;
 
   // Scroll to top on mount and step change
   useEffect(() => {
@@ -45,7 +48,7 @@ function HomeContent() {
     );
   }
 
-  if (!isTelegram && !devMode) {
+  if (!showMiniApp) {
     return <WebHomePage />;
   }
 
