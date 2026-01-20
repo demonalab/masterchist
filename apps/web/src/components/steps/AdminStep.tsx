@@ -5,9 +5,10 @@ import { useBookingStore } from '@/lib/booking-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CaretLeft, ChartBar, ClipboardText, Clock, Check, X, Phone,
-  SpinnerGap, User, MapPin, Package, Warning, Export
+  SpinnerGap, User, MapPin, Package, Warning, Export, Trash, UserPlus, Users
 } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
+import { useHaptic } from '@/lib/haptic';
 
 interface AdminBooking {
   id: string;
@@ -50,11 +51,18 @@ const STATUS_LABELS: Record<string, string> = {
   CANCELLED: 'Отменён',
 };
 
-type Tab = 'stats' | 'orders';
+type Tab = 'stats' | 'orders' | 'admins';
 type StatusFilter = 'all' | 'NEW' | 'AWAITING_PREPAYMENT' | 'PREPAID' | 'CONFIRMED';
+
+interface Admin {
+  id: string;
+  telegramId: string;
+  role: string;
+}
 
 export function AdminStep() {
   const { setStep } = useBookingStore();
+  const haptic = useHaptic();
   const [tab, setTab] = useState<Tab>('stats');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [loading, setLoading] = useState(true);
@@ -63,6 +71,10 @@ export function AdminStep() {
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [role, setRole] = useState<string | null>(null);
   const [selectedBooking, setSelectedBooking] = useState<AdminBooking | null>(null);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [newAdminId, setNewAdminId] = useState('');
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -71,8 +83,10 @@ export function AdminStep() {
   useEffect(() => {
     if (tab === 'orders') {
       loadBookings();
+    } else if (tab === 'admins' && role === 'super_admin') {
+      loadAdmins();
     }
-  }, [tab, statusFilter]);
+  }, [tab, statusFilter, role]);
 
   const loadData = async () => {
     setLoading(true);
@@ -102,6 +116,109 @@ export function AdminStep() {
       if (res.ok) setBookings(res.data);
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const loadAdmins = async () => {
+    try {
+      const res = await api.getAdmins();
+      if (res.ok) setAdmins(res.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleConfirm = async (bookingId: string) => {
+    haptic.medium();
+    setActionLoading(true);
+    const res = await api.confirmBooking(bookingId);
+    setActionLoading(false);
+    if (res.ok) {
+      haptic.success();
+      setSelectedBooking(null);
+      loadBookings();
+      loadData();
+    } else {
+      haptic.error();
+      alert(res.error);
+    }
+  };
+
+  const handleReject = async (bookingId: string) => {
+    haptic.medium();
+    setActionLoading(true);
+    const res = await api.rejectBooking(bookingId);
+    setActionLoading(false);
+    if (res.ok) {
+      haptic.success();
+      setSelectedBooking(null);
+      loadBookings();
+      loadData();
+    } else {
+      haptic.error();
+      alert(res.error);
+    }
+  };
+
+  const handleDelete = async (bookingId: string) => {
+    if (!confirm('Удалить заказ?')) return;
+    haptic.heavy();
+    setActionLoading(true);
+    const res = await api.deleteBooking(bookingId);
+    setActionLoading(false);
+    if (res.ok) {
+      haptic.success();
+      setSelectedBooking(null);
+      loadBookings();
+      loadData();
+    } else {
+      haptic.error();
+      alert(res.error);
+    }
+  };
+
+  const handleExport = async (period: string) => {
+    haptic.light();
+    const res = await api.exportBookings(period === 'all' ? undefined : period);
+    if (res.ok) {
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `orders_${period}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      haptic.success();
+    } else {
+      haptic.error();
+      alert(res.error);
+    }
+  };
+
+  const handleAddAdmin = async () => {
+    if (!newAdminId.trim()) return;
+    haptic.medium();
+    const res = await api.addAdmin(newAdminId.trim());
+    if (res.ok) {
+      haptic.success();
+      setNewAdminId('');
+      setShowAddAdmin(false);
+      loadAdmins();
+    } else {
+      haptic.error();
+      alert(res.error);
+    }
+  };
+
+  const handleRemoveAdmin = async (telegramId: string) => {
+    if (!confirm('Удалить админа?')) return;
+    haptic.heavy();
+    const res = await api.removeAdmin(telegramId);
+    if (res.ok) {
+      haptic.success();
+      loadAdmins();
+    } else {
+      haptic.error();
+      alert(res.error);
     }
   };
 
@@ -159,19 +276,19 @@ export function AdminStep() {
         transition={{ delay: 0.1 }}
       >
         <button
-          onClick={() => setTab('stats')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+          onClick={() => { haptic.light(); setTab('stats'); }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
             tab === 'stats' 
               ? 'bg-accent-green text-black' 
               : 'bg-white/5 text-white/60 hover:bg-white/10'
           }`}
         >
           <ChartBar weight="duotone" className="w-4 h-4" />
-          Статистика
+          Стат
         </button>
         <button
-          onClick={() => setTab('orders')}
-          className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+          onClick={() => { haptic.light(); setTab('orders'); }}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
             tab === 'orders' 
               ? 'bg-accent-green text-black' 
               : 'bg-white/5 text-white/60 hover:bg-white/10'
@@ -180,6 +297,19 @@ export function AdminStep() {
           <ClipboardText weight="duotone" className="w-4 h-4" />
           Заказы
         </button>
+        {role === 'super_admin' && (
+          <button
+            onClick={() => { haptic.light(); setTab('admins'); }}
+            className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+              tab === 'admins' 
+                ? 'bg-accent-green text-black' 
+                : 'bg-white/5 text-white/60 hover:bg-white/10'
+            }`}
+          >
+            <Users weight="duotone" className="w-4 h-4" />
+            Админы
+          </button>
+        )}
       </motion.div>
 
       {/* Stats Tab */}
@@ -231,6 +361,30 @@ export function AdminStep() {
               <p className="text-xs text-white/40">Отменено</p>
             </div>
             <p className="text-2xl font-bold text-white">{stats.cancelledBookings}</p>
+          </div>
+
+          {/* Export */}
+          <div className="glass-card-static p-4">
+            <p className="text-sm font-medium text-white mb-3 flex items-center gap-2">
+              <Export weight="duotone" className="w-4 h-4" />
+              Экспорт в Excel
+            </p>
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { key: 'day', label: 'День' },
+                { key: 'week', label: 'Неделя' },
+                { key: 'month', label: 'Месяц' },
+                { key: 'all', label: 'Всё' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => handleExport(key)}
+                  className="py-2 px-3 bg-white/5 hover:bg-white/10 rounded-lg text-xs text-white/70 transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
       )}
@@ -404,16 +558,132 @@ export function AdminStep() {
                 )}
               </div>
 
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="btn-primary mt-5"
-              >
-                Закрыть
-              </button>
+              {/* Action buttons */}
+              <div className="mt-5 space-y-2">
+                {['NEW', 'AWAITING_PREPAYMENT', 'PREPAID'].includes(selectedBooking.status) && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => handleConfirm(selectedBooking.id)}
+                      disabled={actionLoading}
+                      className="py-3 px-4 bg-accent-green text-black font-medium rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {actionLoading ? (
+                        <SpinnerGap className="w-5 h-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Check weight="bold" className="w-5 h-5" />
+                          Подтвердить
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleReject(selectedBooking.id)}
+                      disabled={actionLoading}
+                      className="py-3 px-4 bg-red-500/20 text-red-400 font-medium rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <X weight="bold" className="w-5 h-5" />
+                      Отклонить
+                    </button>
+                  </div>
+                )}
+
+                {role === 'super_admin' && (
+                  <button
+                    onClick={() => handleDelete(selectedBooking.id)}
+                    disabled={actionLoading}
+                    className="w-full py-3 px-4 bg-red-500/10 border border-red-500/20 text-red-400 font-medium rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Trash weight="duotone" className="w-5 h-5" />
+                    Удалить заказ
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setSelectedBooking(null)}
+                  className="w-full py-3 px-4 bg-white/5 text-white/60 font-medium rounded-xl"
+                >
+                  Закрыть
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Admins Tab */}
+      {tab === 'admins' && role === 'super_admin' && (
+        <motion.div 
+          className="flex-1 flex flex-col overflow-hidden"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setShowAddAdmin(true)}
+              className="flex-1 py-2.5 px-4 bg-accent-green text-black rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+            >
+              <UserPlus weight="bold" className="w-4 h-4" />
+              Добавить админа
+            </button>
+          </div>
+
+          {/* Add Admin Modal */}
+          {showAddAdmin && (
+            <div className="glass-card-static p-4 mb-4">
+              <p className="text-sm text-white/60 mb-3">Введите Telegram ID:</p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newAdminId}
+                  onChange={(e) => setNewAdminId(e.target.value)}
+                  placeholder="123456789"
+                  className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-accent-green/50"
+                />
+                <button
+                  onClick={handleAddAdmin}
+                  className="px-4 py-2.5 bg-accent-green text-black rounded-xl font-medium"
+                >
+                  Добавить
+                </button>
+                <button
+                  onClick={() => { setShowAddAdmin(false); setNewAdminId(''); }}
+                  className="px-4 py-2.5 bg-white/5 text-white/60 rounded-xl"
+                >
+                  Отмена
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Admins List */}
+          <div className="flex-1 overflow-y-auto space-y-2">
+            {admins.length === 0 ? (
+              <div className="text-center text-white/40 py-8">
+                <p>Нет добавленных админов</p>
+                <p className="text-xs mt-1">Вы — супер-админ (из настроек)</p>
+              </div>
+            ) : (
+              admins.map((admin) => (
+                <div
+                  key={admin.id}
+                  className="glass-card-static p-4 flex items-center justify-between"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-white">ID: {admin.telegramId}</p>
+                    <p className="text-xs text-white/40">{admin.role}</p>
+                  </div>
+                  <button
+                    onClick={() => handleRemoveAdmin(admin.telegramId)}
+                    className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                  >
+                    <Trash weight="duotone" className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

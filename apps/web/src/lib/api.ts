@@ -394,6 +394,134 @@ class ApiClientExtended extends ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  async confirmBooking(bookingId: string): Promise<ApiResult<{ success: boolean; userTelegramId: string }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings/${bookingId}/confirm`, {
+        method: 'POST',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async rejectBooking(bookingId: string): Promise<ApiResult<{ success: boolean; userTelegramId: string }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings/${bookingId}/reject`, {
+        method: 'POST',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async deleteBooking(bookingId: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings/${bookingId}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async exportBookings(period?: string): Promise<ApiResult<Blob>> {
+    try {
+      const params = period ? new URLSearchParams({ period }) : '';
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/export${params ? `?${params}` : ''}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.blob() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getAdmins(): Promise<ApiResult<Array<{ id: string; telegramId: string; role: string }>>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async addAdmin(telegramId: string): Promise<ApiResult<{ id: string; telegramId: string }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins`, {
+        method: 'POST',
+        headers: { ...this.headers, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async removeAdmin(telegramId: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins/${telegramId}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }
 
 export const api = new ApiClientExtended();

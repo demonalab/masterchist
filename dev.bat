@@ -14,6 +14,11 @@ docker compose up postgres -d
 echo Waiting for Postgres...
 timeout /t 3 /nobreak >nul
 
+:: Generate Prisma Client
+echo Generating Prisma Client...
+call pnpm --filter @himchistka/db prisma generate
+call pnpm --filter @himchistka/db build
+
 :: Open terminals for API and Web
 start "API Server" cmd /k "cd /d %~dp0 && pnpm --filter @himchistka/api dev"
 timeout /t 3 /nobreak >nul

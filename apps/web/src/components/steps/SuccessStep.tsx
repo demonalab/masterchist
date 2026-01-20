@@ -6,21 +6,35 @@ import { useTelegram } from '@/lib/telegram-provider';
 import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy, Upload, SpinnerGap, Check } from '@phosphor-icons/react';
+import { useHaptic } from '@/lib/haptic';
 
 export function SuccessStep() {
   const { booking, reset } = useBookingStore();
   const { webApp } = useTelegram();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const haptic = useHaptic();
   
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const handleClose = () => { reset(); webApp?.close(); };
   const handleNewBooking = () => { reset(); };
   
   const handleUploadClick = () => {
     fileInputRef.current?.click();
+  };
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      haptic.light();
+      setCopiedField(field);
+      setTimeout(() => setCopiedField(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
   };
   
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,10 +53,6 @@ export function SuccessStep() {
     }
     
     setUploading(false);
-  };
-  
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
   };
 
   if (!booking) {
@@ -124,22 +134,36 @@ export function SuccessStep() {
         </div>
 
         <div className="space-y-2">
-          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+          <button 
+            onClick={() => copyToClipboard('1234567890123456', 'card')}
+            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl w-full text-left hover:bg-white/10 transition-colors"
+          >
             <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 text-sm">₽</div>
             <div className="flex-1">
               <p className="text-xs text-white/40">Сбербанк</p>
               <p className="text-sm text-white font-mono">1234 5678 9012 3456</p>
             </div>
-            <Copy weight="regular" className="w-4 h-4 text-white/30" />
-          </div>
-          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+            {copiedField === 'card' ? (
+              <Check weight="bold" className="w-4 h-4 text-accent-green" />
+            ) : (
+              <Copy weight="regular" className="w-4 h-4 text-white/30" />
+            )}
+          </button>
+          <button 
+            onClick={() => copyToClipboard('+79991234567', 'phone')}
+            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl w-full text-left hover:bg-white/10 transition-colors"
+          >
             <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm">⚡</div>
             <div className="flex-1">
               <p className="text-xs text-white/40">СБП</p>
               <p className="text-sm text-white font-mono">+7 999 123-45-67</p>
             </div>
-            <Copy weight="regular" className="w-4 h-4 text-white/30" />
-          </div>
+            {copiedField === 'phone' ? (
+              <Check weight="bold" className="w-4 h-4 text-accent-green" />
+            ) : (
+              <Copy weight="regular" className="w-4 h-4 text-white/30" />
+            )}
+          </button>
         </div>
 
         {/* Upload receipt section */}
