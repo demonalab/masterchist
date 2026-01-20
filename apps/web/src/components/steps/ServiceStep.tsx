@@ -17,7 +17,9 @@ export function ServiceStep() {
       if (res.ok && res.data.role) {
         setIsAdmin(true);
       }
-    }).catch(() => {});
+    }).catch(() => {
+      // User is not admin - expected behavior, no action needed
+    });
   }, []);
 
   const handleSelect = () => {

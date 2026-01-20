@@ -103,7 +103,7 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         setPlatform('max');
         setIsReady(true);
         
-        console.log('MAX WebApp initialized:', maxApp.initDataUnsafe);
+        // MAX WebApp initialized successfully
       } else {
         // Regular web browser
         setPlatform('web');
