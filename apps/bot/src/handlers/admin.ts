@@ -6,7 +6,8 @@ import { mainMenuKeyboard } from '../keyboards';
 
 export function isAdmin(telegramId: number): boolean {
   if (!config.ADMIN_TELEGRAM_ID) return false;
-  return String(telegramId) === config.ADMIN_TELEGRAM_ID;
+  const superAdminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
+  return superAdminIds.includes(String(telegramId));
 }
 
 export function buildAdminBookingKeyboard(bookingId: string): InlineKeyboard {

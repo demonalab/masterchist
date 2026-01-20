@@ -148,8 +148,9 @@ async function getAdminRole(ctx: BotContext): Promise<string | null> {
     return cached.role;
   }
 
-  // Super admin from env always works
-  if (String(telegramId) === config.ADMIN_TELEGRAM_ID) {
+  // Super admin from env always works (supports comma-separated list)
+  const superAdminIds = config.ADMIN_TELEGRAM_ID?.split(',').map(id => id.trim()) || [];
+  if (superAdminIds.includes(String(telegramId))) {
     adminRoleCache.set(telegramId, { role: 'super_admin', expires: Date.now() + 60000 });
     return 'super_admin';
   }
