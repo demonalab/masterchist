@@ -6,6 +6,7 @@ const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
 async function setMiniApp() {
   try {
+    console.log('Setting Mini App URL:', WEBAPP_URL);
     // Try to set mini app via API
     const res = await fetch(`${config.MAX_API_URL}/me`, {
       method: 'PATCH',
@@ -17,12 +18,8 @@ async function setMiniApp() {
         mini_app: { url: WEBAPP_URL },
       }),
     });
-    if (res.ok) {
-      console.log('Mini App configured successfully');
-    } else {
-      const text = await res.text();
-      console.log('Mini App config response:', text);
-    }
+    const text = await res.text();
+    console.log('Mini App config response:', res.status, text);
   } catch (err) {
     console.error('Failed to set Mini App:', err);
   }
