@@ -2,7 +2,7 @@
 
 import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
-import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question } from '@phosphor-icons/react';
+import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question, User } from '@phosphor-icons/react';
 
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
@@ -114,24 +114,31 @@ export function ServiceStep() {
 
       {/* Navigation buttons */}
       <motion.div 
-        className="mt-6 flex gap-3"
+        className="mt-6 grid grid-cols-3 gap-3"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.45 }}
       >
         <button 
           onClick={() => setStep('orders')}
-          className="flex-1 glass-card-static p-4 flex items-center gap-3 hover:bg-white/10 transition-colors"
+          className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
-          <ClipboardText weight="duotone" className="w-5 h-5 text-accent-blue" />
-          <span className="text-sm text-white/70">Мои заказы</span>
+          <ClipboardText weight="duotone" className="w-6 h-6 text-accent-blue" />
+          <span className="text-xs text-white/70">Заказы</span>
+        </button>
+        <button 
+          onClick={() => setStep('profile')}
+          className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
+        >
+          <User weight="duotone" className="w-6 h-6 text-accent-green" />
+          <span className="text-xs text-white/70">Профиль</span>
         </button>
         <button 
           onClick={() => setStep('help')}
-          className="flex-1 glass-card-static p-4 flex items-center gap-3 hover:bg-white/10 transition-colors"
+          className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
-          <Question weight="duotone" className="w-5 h-5 text-accent-purple" />
-          <span className="text-sm text-white/70">Помощь</span>
+          <Question weight="duotone" className="w-6 h-6 text-accent-purple" />
+          <span className="text-xs text-white/70">Помощь</span>
         </button>
       </motion.div>
 

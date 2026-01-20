@@ -16,6 +16,7 @@ import {
 } from '@/components/steps';
 import { MyOrdersStep } from '@/components/steps/MyOrdersStep';
 import { HelpStep } from '@/components/steps/HelpStep';
+import { ProfileStep } from '@/components/steps/ProfileStep';
 import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
@@ -75,6 +76,10 @@ function HomeContent() {
   
   if (step === 'help') {
     return <HelpStep onBack={handleBackToService} />;
+  }
+  
+  if (step === 'profile') {
+    return <ProfileStep onBack={handleBackToService} />;
   }
 
   const StepComponent = {

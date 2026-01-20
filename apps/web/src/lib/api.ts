@@ -67,7 +67,7 @@ class ApiClient {
     this.devMode = enabled;
   }
 
-  private get headers(): Record<string, string> {
+  protected get headers(): Record<string, string> {
     const h: Record<string, string> = {
       'Content-Type': 'application/json',
     };
@@ -201,7 +201,102 @@ export interface DayAvailability {
   slotsLeft: number;
 }
 
+export interface SavedAddress {
+  id: string;
+  city: string;
+  addressLine: string;
+  contactName: string;
+  contactPhone: string;
+  label?: string;
+  isDefault: boolean;
+}
+
+export interface CreateAddressRequest {
+  city: string;
+  addressLine: string;
+  contactName: string;
+  contactPhone: string;
+  label?: string;
+  isDefault?: boolean;
+}
+
 class ApiClientExtended extends ApiClient {
+  // Saved addresses
+  async getSavedAddresses(): Promise<ApiResult<SavedAddress[]>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/addresses`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      const data: SavedAddress[] = await res.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async createSavedAddress(address: CreateAddressRequest): Promise<ApiResult<SavedAddress>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/addresses`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify(address),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      const data: SavedAddress = await res.json();
+      return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async deleteSavedAddress(id: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/addresses/${id}`, {
+        method: 'DELETE',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: { success: true } };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async setDefaultAddress(id: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/addresses/${id}/default`, {
+        method: 'POST',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: { success: true } };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
   async getMonthlyAvailability(
     city: string,
     month: string,

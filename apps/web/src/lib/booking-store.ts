@@ -12,7 +12,8 @@ export type BookingStep =
   | 'confirm'
   | 'success'
   | 'orders'
-  | 'help';
+  | 'help'
+  | 'profile';
 
 export interface BookingDraft {
   serviceCode?: string;

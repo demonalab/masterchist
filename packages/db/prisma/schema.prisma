@@ -90,6 +90,9 @@ model Address {
   contactName  String   @db.VarChar(128)
   contactPhone String   @db.VarChar(32)
   comment      String?  @db.Text
+  label        String?  @db.VarChar(50)  // "Дом", "Офис", etc.
+  isDefault    Boolean  @default(false)
+  isSaved      Boolean  @default(false)  // true = saved address, false = one-time booking address
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -98,6 +101,7 @@ model Address {
 
   @@index([userId])
   @@index([city])
+  @@index([userId, isSaved])
 }
 
 model Booking {
