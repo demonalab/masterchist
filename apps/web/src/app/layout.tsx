@@ -23,7 +23,10 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <head>
+        {/* Telegram Web App SDK */}
         <script src="https://telegram.org/js/telegram-web-app.js" />
+        {/* MAX Web App SDK */}
+        <script src="https://st.max.ru/js/max-web-app.js" />
       </head>
       <body>
         <TelegramProvider>
