@@ -6,18 +6,22 @@ import { useTelegram } from '@/lib/telegram-provider';
 import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { CaretLeft, Gift, Check, MapPin, CalendarBlank, Clock, User } from '@phosphor-icons/react';
+import { useHaptic } from '@/lib/haptic';
 
 export function ConfirmStep() {
   const { draft, setStep, setBooking, setError } = useBookingStore();
   const { initData, webApp } = useTelegram();
   const [loading, setLoading] = useState(false);
+  const haptic = useHaptic();
 
   const handleConfirm = async () => {
     if (!draft.serviceCode || !draft.city || !draft.cityName || !draft.scheduledDate || 
         !draft.timeSlotId || !draft.street || !draft.house || !draft.contactName || !draft.contactPhone) {
+      haptic.error();
       setError('Не все данные заполнены');
       return;
     }
+    haptic.medium();
     setLoading(true);
     api.setInitData(initData);
     const result = await api.createBooking({
@@ -28,11 +32,12 @@ export function ConfirmStep() {
     });
     setLoading(false);
     if (!result.ok) {
+      haptic.error();
       if (result.status === 409) { webApp?.showAlert('Слот уже занят'); setStep('time'); }
       else { setError(result.error); }
       return;
     }
-    webApp?.HapticFeedback?.notificationOccurred('success');
+    haptic.success();
     setBooking(result.data);
     setStep('success');
   };

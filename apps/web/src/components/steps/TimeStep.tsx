@@ -6,6 +6,7 @@ import { useTelegram } from '@/lib/telegram-provider';
 import { api, TimeSlotAvailability } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { CaretLeft, Clock, Package, CheckCircle, XCircle, CaretRight } from '@phosphor-icons/react';
+import { useHaptic } from '@/lib/haptic';
 
 export function TimeStep() {
   const { draft, updateDraft, setStep, setError } = useBookingStore();
@@ -13,6 +14,7 @@ export function TimeStep() {
   const [slots, setSlots] = useState<TimeSlotAvailability[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+  const haptic = useHaptic();
 
   useEffect(() => {
     async function loadSlots() {
@@ -28,6 +30,7 @@ export function TimeStep() {
 
   const handleSelect = (slot: TimeSlotAvailability) => {
     if (!slot.available) return;
+    haptic.selection();
     setSelectedSlot(slot.timeSlotId);
     updateDraft({ timeSlotId: slot.timeSlotId, timeSlotLabel: `${slot.startTime} - ${slot.endTime}` });
     setTimeout(() => setStep('address'), 300);

@@ -3,6 +3,7 @@
 import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
 import { MapPin, Buildings, CaretRight, CaretLeft, Truck } from '@phosphor-icons/react';
+import { useHaptic } from '@/lib/haptic';
 
 const cities = [
   { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', available: true },
@@ -12,8 +13,10 @@ const cities = [
 
 export function CityStep() {
   const { updateDraft, setStep } = useBookingStore();
+  const haptic = useHaptic();
 
   const handleSelect = (code: string, name: string) => {
+    haptic.light();
     updateDraft({ city: code, cityName: name });
     setStep('date');
   };

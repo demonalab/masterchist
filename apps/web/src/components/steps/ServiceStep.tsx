@@ -5,10 +5,12 @@ import { useBookingStore } from '@/lib/booking-store';
 import { motion } from 'framer-motion';
 import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question, User, GearSix } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
+import { useHaptic } from '@/lib/haptic';
 
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
   const [isAdmin, setIsAdmin] = useState(false);
+  const haptic = useHaptic();
 
   useEffect(() => {
     api.getAdminRole().then(res => {
@@ -19,8 +21,14 @@ export function ServiceStep() {
   }, []);
 
   const handleSelect = () => {
+    haptic.medium();
     updateDraft({ serviceCode: 'self_cleaning' });
     setStep('city');
+  };
+  
+  const handleNavClick = (step: 'orders' | 'profile' | 'help' | 'admin' | 'pro_cleaning') => {
+    haptic.light();
+    setStep(step);
   };
 
   return (
@@ -108,7 +116,7 @@ export function ServiceStep() {
         transition={{ delay: 0.4 }}
       >
         <button 
-          onClick={() => setStep('pro_cleaning')}
+          onClick={() => handleNavClick('pro_cleaning')}
           className="glass-card-static p-4 text-left hover:bg-white/10 transition-colors"
         >
           <div className="icon-box w-10 h-10 mb-3">
@@ -134,21 +142,21 @@ export function ServiceStep() {
         transition={{ delay: 0.45 }}
       >
         <button 
-          onClick={() => setStep('orders')}
+          onClick={() => handleNavClick('orders')}
           className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
           <ClipboardText weight="duotone" className="w-6 h-6 text-accent-blue" />
           <span className="text-xs text-white/70">Заказы</span>
         </button>
         <button 
-          onClick={() => setStep('profile')}
+          onClick={() => handleNavClick('profile')}
           className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
           <User weight="duotone" className="w-6 h-6 text-accent-green" />
           <span className="text-xs text-white/70">Профиль</span>
         </button>
         <button 
-          onClick={() => setStep('help')}
+          onClick={() => handleNavClick('help')}
           className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
         >
           <Question weight="duotone" className="w-6 h-6 text-accent-purple" />
@@ -156,7 +164,7 @@ export function ServiceStep() {
         </button>
         {isAdmin && (
           <button 
-            onClick={() => setStep('admin')}
+            onClick={() => handleNavClick('admin')}
             className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
           >
             <GearSix weight="duotone" className="w-6 h-6 text-yellow-400" />
