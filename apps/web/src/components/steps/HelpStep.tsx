@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Question, SprayBottle, Broom, Phone, TelegramLogo } from '@phosphor-icons/react';
+import { ArrowLeft, Question, SprayBottle, Sparkle, Phone, TelegramLogo } from '@phosphor-icons/react';
 
 interface HelpStepProps {
   onBack: () => void;
@@ -57,7 +57,7 @@ export function HelpStep({ onBack }: HelpStepProps) {
         >
           <div className="flex items-center gap-3 mb-3">
             <div className="icon-box">
-              <Broom weight="duotone" className="w-5 h-5 text-accent-purple" />
+              <Sparkle weight="duotone" className="w-5 h-5 text-accent-purple" />
             </div>
             <h3 className="font-semibold text-white">Проф. химчистка</h3>
           </div>
