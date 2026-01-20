@@ -126,6 +126,58 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return { role };
   });
 
+  // Confirm booking (any admin)
+  fastify.post<{ Params: { id: string } }>('/bookings/:id/confirm', async (request, reply) => {
+    const { id } = request.params;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, status: true, user: { select: { telegramId: true } } },
+    });
+
+    if (!booking) {
+      return reply.notFound('Заказ не найден');
+    }
+
+    const confirmableStatuses = [BookingStatuses.NEW, BookingStatuses.AWAITING_PREPAYMENT, BookingStatuses.PREPAID];
+    if (!confirmableStatuses.includes(booking.status as any)) {
+      return reply.badRequest(`Нельзя подтвердить заказ со статусом: ${booking.status}`);
+    }
+
+    await prisma.booking.update({
+      where: { id },
+      data: { status: BookingStatuses.CONFIRMED },
+    });
+
+    return { success: true, userTelegramId: booking.user.telegramId };
+  });
+
+  // Reject booking (any admin)
+  fastify.post<{ Params: { id: string } }>('/bookings/:id/reject', async (request, reply) => {
+    const { id } = request.params;
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, status: true, user: { select: { telegramId: true } } },
+    });
+
+    if (!booking) {
+      return reply.notFound('Заказ не найден');
+    }
+
+    const rejectableStatuses = [BookingStatuses.NEW, BookingStatuses.AWAITING_PREPAYMENT, BookingStatuses.PREPAID];
+    if (!rejectableStatuses.includes(booking.status as any)) {
+      return reply.badRequest(`Нельзя отклонить заказ со статусом: ${booking.status}`);
+    }
+
+    await prisma.booking.update({
+      where: { id },
+      data: { status: BookingStatuses.CANCELLED },
+    });
+
+    return { success: true, userTelegramId: booking.user.telegramId };
+  });
+
   // ============ SUPER ADMIN ONLY ============
 
   // List all admins
