@@ -13,7 +13,8 @@ export type BookingStep =
   | 'success'
   | 'orders'
   | 'help'
-  | 'profile';
+  | 'profile'
+  | 'pro_cleaning';
 
 export interface BookingDraft {
   serviceCode?: string;

@@ -89,20 +89,23 @@ export function ServiceStep() {
         </div>
       </motion.button>
 
-      {/* Coming soon cards */}
+      {/* Other services */}
       <motion.div 
         className="mt-4 grid grid-cols-2 gap-3"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.4 }}
       >
-        <div className="glass-card-static p-4 opacity-50">
+        <button 
+          onClick={() => setStep('pro_cleaning')}
+          className="glass-card-static p-4 text-left hover:bg-white/10 transition-colors"
+        >
           <div className="icon-box w-10 h-10 mb-3">
-            <Sparkle weight="duotone" className="w-5 h-5 text-white/40" />
+            <Sparkle weight="duotone" className="w-5 h-5 text-accent-purple" />
           </div>
-          <p className="text-sm font-medium text-white/60">Мастер на дом</p>
-          <p className="text-xs text-white/30 mt-1">Скоро</p>
-        </div>
+          <p className="text-sm font-medium text-white">Мастер на дом</p>
+          <p className="text-xs text-white/40 mt-1">Проф. химчистка</p>
+        </button>
         <div className="glass-card-static p-4 opacity-50">
           <div className="icon-box w-10 h-10 mb-3">
             <SprayBottle weight="duotone" className="w-5 h-5 text-white/40" />

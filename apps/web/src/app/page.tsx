@@ -17,6 +17,7 @@ import {
 import { MyOrdersStep } from '@/components/steps/MyOrdersStep';
 import { HelpStep } from '@/components/steps/HelpStep';
 import { ProfileStep } from '@/components/steps/ProfileStep';
+import { ProCleaningStep } from '@/components/steps/ProCleaningStep';
 import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
@@ -80,6 +81,10 @@ function HomeContent() {
   
   if (step === 'profile') {
     return <ProfileStep onBack={handleBackToService} />;
+  }
+  
+  if (step === 'pro_cleaning') {
+    return <ProCleaningStep />;
   }
 
   const StepComponent = {
