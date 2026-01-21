@@ -17,8 +17,8 @@ const MAX_ADMIN_USER_ID = process.env.MAX_ADMIN_USER_ID || '';
 // MAX ID: 18782420
 const FALLBACK_SUPER_ADMINS = ['8468584965', '1152185834', '1447933960', '18782420'];
 
-// Helper to check admin status
-async function getAdminRole(telegramId: string): Promise<'super_admin' | 'admin' | null> {
+// Helper to check admin status - exported for use in public role endpoint
+export async function getAdminRole(telegramId: string): Promise<'super_admin' | 'admin' | null> {
   // Super admin from env (Telegram or MAX) - supports multiple IDs
   if (SUPER_ADMIN_IDS.includes(telegramId) || telegramId === MAX_ADMIN_USER_ID || FALLBACK_SUPER_ADMINS.includes(telegramId)) {
     return 'super_admin';
