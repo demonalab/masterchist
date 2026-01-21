@@ -27,14 +27,15 @@ function getHapticFeedback(): HapticFeedback | null {
   if (typeof window === 'undefined') return null;
   
   // Try Telegram WebApp - HapticFeedback requires version 6.1+
+  // Only use if we're actually inside Telegram (has initData)
   const tgWebApp = (window as any).Telegram?.WebApp;
-  if (tgWebApp?.HapticFeedback && tgWebApp.version && isVersionAtLeast(tgWebApp.version, '6.1')) {
+  if (tgWebApp?.HapticFeedback && tgWebApp.initData && tgWebApp.version && isVersionAtLeast(tgWebApp.version, '6.1')) {
     return tgWebApp.HapticFeedback;
   }
   
-  // Try MAX WebApp
+  // Try MAX WebApp - only use if we're actually inside MAX (has initData)
   const maxWebApp = (window as any).WebApp;
-  if (maxWebApp?.HapticFeedback && (!maxWebApp.version || isVersionAtLeast(maxWebApp.version, '6.1'))) {
+  if (maxWebApp?.HapticFeedback && maxWebApp.initData && (!maxWebApp.version || isVersionAtLeast(maxWebApp.version, '6.1'))) {
     return maxWebApp.HapticFeedback;
   }
   
