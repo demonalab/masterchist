@@ -6,13 +6,18 @@ import { motion } from 'framer-motion';
 import { SprayBottle, Sparkle, Gift, CaretRight, Clock, Star, ClipboardText, Question, User, GearSix } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
 import { useHaptic } from '@/lib/haptic';
+import { useTelegram } from '@/lib/telegram-provider';
 
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
   const [isAdmin, setIsAdmin] = useState(false);
   const haptic = useHaptic();
+  const { initData, isReady } = useTelegram();
 
   useEffect(() => {
+    if (!isReady) return;
+    
+    api.setInitData(initData);
     api.getAdminRole().then(res => {
       if (res.ok && res.data.role) {
         setIsAdmin(true);
@@ -20,7 +25,7 @@ export function ServiceStep() {
     }).catch(() => {
       // User is not admin - expected behavior, no action needed
     });
-  }, []);
+  }, [isReady, initData]);
 
   const handleSelect = () => {
     haptic.medium();
