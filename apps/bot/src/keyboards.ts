@@ -13,7 +13,8 @@ export const persistentMenuKeyboard = new Keyboard()
 
 // Get keyboard based on user role
 export function getMenuKeyboard(telegramId?: number): Keyboard {
-  const isAdmin = telegramId && String(telegramId) === config.ADMIN_TELEGRAM_ID;
+  const adminIds = config.ADMIN_TELEGRAM_ID?.split(',').map(id => id.trim()) || [];
+  const isAdmin = telegramId && adminIds.includes(String(telegramId));
   
   if (isAdmin) {
     return new Keyboard()
