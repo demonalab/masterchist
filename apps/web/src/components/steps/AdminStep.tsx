@@ -631,26 +631,28 @@ export function AdminStep() {
           {showAddAdmin && (
             <div className="glass-card-static p-4 mb-4">
               <p className="text-sm text-white/60 mb-3">Введите Telegram ID:</p>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 <input
                   type="text"
                   value={newAdminId}
                   onChange={(e) => setNewAdminId(e.target.value)}
                   placeholder="123456789"
-                  className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-accent-green/50"
+                  className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:border-accent-green/50"
                 />
-                <button
-                  onClick={handleAddAdmin}
-                  className="px-4 py-2.5 bg-accent-green text-black rounded-xl font-medium"
-                >
-                  Добавить
-                </button>
-                <button
-                  onClick={() => { setShowAddAdmin(false); setNewAdminId(''); }}
-                  className="px-4 py-2.5 bg-white/5 text-white/60 rounded-xl"
-                >
-                  Отмена
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleAddAdmin}
+                    className="flex-1 px-4 py-2.5 bg-accent-green text-black rounded-xl font-medium"
+                  >
+                    Добавить
+                  </button>
+                  <button
+                    onClick={() => { setShowAddAdmin(false); setNewAdminId(''); }}
+                    className="flex-1 px-4 py-2.5 bg-white/5 text-white/60 rounded-xl"
+                  >
+                    Отмена
+                  </button>
+                </div>
               </div>
             </div>
           )}
