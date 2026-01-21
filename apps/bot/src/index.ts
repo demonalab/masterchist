@@ -20,7 +20,7 @@ async function main() {
       await bot.api.setChatMenuButton({
         menu_button: {
           type: 'web_app',
-          text: '📱 Открыть приложение',
+          text: 'Открыть',
           web_app: { url: WEBAPP_URL }
         }
       });
@@ -70,7 +70,7 @@ async function main() {
       await bot.api.setChatMenuButton({
         menu_button: {
           type: 'web_app',
-          text: '📱 Открыть приложение',
+          text: 'Открыть',
           web_app: { url: WEBAPP_URL }
         }
       });
