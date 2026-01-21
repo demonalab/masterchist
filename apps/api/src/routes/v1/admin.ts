@@ -120,12 +120,6 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     };
   });
 
-  // Get current admin role
-  fastify.get('/role', async (request) => {
-    const role = (request as any).adminRole;
-    return { role };
-  });
-
   // Confirm booking (any admin)
   fastify.post<{ Params: { id: string } }>('/bookings/:id/confirm', async (request, reply) => {
     const { id } = request.params;
