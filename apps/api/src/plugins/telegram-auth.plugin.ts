@@ -34,9 +34,11 @@ async function upsertUser(tgUser: TelegramUser): Promise<string> {
 
 export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyReply) => {
   // Dev mode bypass - create mock user (local dev or ?dev=1 mode)
+  // Use first super admin ID for dev mode to have admin access
   const devHeader = request.headers['x-dev-mode'];
   if ((config.NODE_ENV === 'development' || devHeader === '1') && !request.headers['x-telegram-init-data']) {
-    request.telegramUser = { id: 123456789, first_name: 'Dev', username: 'devuser' };
+    const devAdminId = config.SUPER_ADMIN_TELEGRAM_ID?.split(',')[0]?.trim() || '8468584965';
+    request.telegramUser = { id: Number(devAdminId), first_name: 'Dev Admin', username: 'devadmin' };
     request.dbUserId = await upsertUser(request.telegramUser);
     return;
   }
