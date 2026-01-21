@@ -37,7 +37,7 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
   // Use first super admin ID for dev mode to have admin access
   const devHeader = request.headers['x-dev-mode'];
   if ((config.NODE_ENV === 'development' || devHeader === '1') && !request.headers['x-telegram-init-data']) {
-    const devAdminId = config.SUPER_ADMIN_TELEGRAM_ID?.split(',')[0]?.trim() || '8468584965';
+    const devAdminId = config.ADMIN_TELEGRAM_ID?.split(',')[0]?.trim() || '8468584965';
     request.telegramUser = { id: Number(devAdminId), first_name: 'Dev Admin', username: 'devadmin' };
     request.dbUserId = await upsertUser(request.telegramUser);
     return;
