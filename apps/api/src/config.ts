@@ -5,6 +5,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().default(3001),
   HOST: z.string().default('0.0.0.0'),
   BOT_TOKEN: z.string().min(1),
+  MAX_BOT_TOKEN: z.string().optional(),
   ADMIN_TELEGRAM_ID: z.string().optional(),
 });
 

@@ -58,8 +58,12 @@ export async function sendReminders(bot: Bot<BotContext>): Promise<void> {
           );
           // Mark as sent
           await fetch(`${API_BASE_URL}/api/v1/conversations/${conv.id}/mark-2h-sent`, { method: 'POST' });
-        } catch (err) {
-          console.error(`Failed to send 2h reminder to ${conv.telegramId}:`, err);
+        } catch (err: any) {
+          // Mark as sent anyway if user blocked bot or chat not found
+          if (err?.error_code === 403 || err?.error_code === 400) {
+            await fetch(`${API_BASE_URL}/api/v1/conversations/${conv.id}/mark-2h-sent`, { method: 'POST' });
+          }
+          console.error(`Failed to send 2h reminder to ${conv.telegramId}:`, err?.description || err);
         }
       }
     }
@@ -80,8 +84,12 @@ export async function sendReminders(bot: Bot<BotContext>): Promise<void> {
             );
             // Mark as sent
             await fetch(`${API_BASE_URL}/api/v1/conversations/${conv.id}/mark-next-day-sent`, { method: 'POST' });
-          } catch (err) {
-            console.error(`Failed to send next day reminder to ${conv.telegramId}:`, err);
+          } catch (err: any) {
+            // Mark as sent anyway if user blocked bot or chat not found
+            if (err?.error_code === 403 || err?.error_code === 400) {
+              await fetch(`${API_BASE_URL}/api/v1/conversations/${conv.id}/mark-next-day-sent`, { method: 'POST' });
+            }
+            console.error(`Failed to send next day reminder to ${conv.telegramId}:`, err?.description || err);
           }
         }
       }

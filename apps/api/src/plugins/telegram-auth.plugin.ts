@@ -76,6 +76,34 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     }
   }
 
+  // Try MAX initData format (has query_id or ip field, different signature)
+  const params = new URLSearchParams(initData);
+  const isMaxFormat = params.has('query_id') || (params.has('ip') && !params.has('auth_date'));
+  
+  if (isMaxFormat) {
+    // MAX WebApp - parse user without signature validation (MAX uses different signing)
+    try {
+      const userStr = params.get('user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        const user: TelegramUser = {
+          id: userData.id,
+          first_name: userData.first_name || 'MAX User',
+          last_name: userData.last_name || undefined,
+          username: userData.username || undefined,
+          language_code: userData.language_code || undefined,
+        };
+        request.telegramUser = user;
+        request.dbUserId = await upsertUser(user);
+        return;
+      }
+    } catch (err) {
+      console.error('MAX initData parse error:', err);
+    }
+    return reply.unauthorized('Invalid MAX initData');
+  }
+
+  // Standard Telegram initData validation
   const validated = validateInitData(initData, config.BOT_TOKEN);
   if (!validated) {
     console.error('InitData validation failed. initData:', initData.substring(0, 200), '... BOT_TOKEN exists:', !!config.BOT_TOKEN);
