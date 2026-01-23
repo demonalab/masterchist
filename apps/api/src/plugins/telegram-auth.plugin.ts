@@ -76,9 +76,11 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     }
   }
 
-  // Try MAX initData format (has query_id or ip field, different signature)
+  // Try MAX initData format (has ip field or chat with type DIALOG - MAX specific)
   const params = new URLSearchParams(initData);
-  const isMaxFormat = params.has('query_id') || (params.has('ip') && !params.has('auth_date'));
+  const chatParam = params.get('chat');
+  const hasMaxChat = chatParam && chatParam.includes('"type"') && chatParam.includes('DIALOG');
+  const isMaxFormat = params.has('ip') || hasMaxChat || params.has('query_id');
   
   if (isMaxFormat) {
     // MAX WebApp - parse user without signature validation (MAX uses different signing)
