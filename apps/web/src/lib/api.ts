@@ -81,6 +81,16 @@ class ApiClient {
     return h;
   }
 
+  protected get headersNoBody(): Record<string, string> {
+    const h: Record<string, string> = {};
+    if (this.devMode) {
+      h['X-Dev-Mode'] = '1';
+    } else if (this.initData) {
+      h['X-Telegram-Init-Data'] = this.initData;
+    }
+    return h;
+  }
+
   async getAvailability(
     city: string,
     scheduledDate: string,
@@ -455,7 +465,7 @@ class ApiClientExtended extends ApiClient {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings/${bookingId}`, {
         method: 'DELETE',
-        headers: this.headers,
+        headers: this.headersNoBody,
       });
 
       if (!res.ok) {
@@ -529,7 +539,7 @@ class ApiClientExtended extends ApiClient {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins/${telegramId}`, {
         method: 'DELETE',
-        headers: this.headers,
+        headers: this.headersNoBody,
       });
 
       if (!res.ok) {

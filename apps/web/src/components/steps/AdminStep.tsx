@@ -32,27 +32,27 @@ interface AdminStats {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  NEW: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  AWAITING_PREPAYMENT: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  PREPAID: 'bg-green-500/20 text-green-400 border-green-500/30',
-  CONFIRMED: 'bg-accent-green/20 text-accent-green border-accent-green/30',
-  IN_PROGRESS: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  COMPLETED: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  CANCELLED: 'bg-red-500/20 text-red-400 border-red-500/30',
+  new: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  awaiting_prepayment: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  prepaid: 'bg-green-500/20 text-green-400 border-green-500/30',
+  confirmed: 'bg-accent-green/20 text-accent-green border-accent-green/30',
+  in_progress: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  completed: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  cancelled: 'bg-red-500/20 text-red-400 border-red-500/30',
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  NEW: 'Новый',
-  AWAITING_PREPAYMENT: 'Ожидает оплаты',
-  PREPAID: 'Предоплачен',
-  CONFIRMED: 'Подтверждён',
-  IN_PROGRESS: 'В работе',
-  COMPLETED: 'Завершён',
-  CANCELLED: 'Отменён',
+  new: 'Новый',
+  awaiting_prepayment: 'Ожидает оплаты',
+  prepaid: 'Предоплачен',
+  confirmed: 'Подтверждён',
+  in_progress: 'В работе',
+  completed: 'Завершён',
+  cancelled: 'Отменён',
 };
 
 type Tab = 'stats' | 'orders' | 'admins';
-type StatusFilter = 'all' | 'NEW' | 'AWAITING_PREPAYMENT' | 'PREPAID' | 'CONFIRMED';
+type StatusFilter = 'all' | 'new' | 'awaiting_prepayment' | 'prepaid' | 'confirmed';
 
 interface Admin {
   id: string;
@@ -400,10 +400,10 @@ export function AdminStep() {
           <div className="flex gap-2 overflow-x-auto pb-3 mb-3">
             {[
               { key: 'all', label: 'Все' },
-              { key: 'NEW', label: 'Новые' },
-              { key: 'AWAITING_PREPAYMENT', label: 'Ожидают' },
-              { key: 'PREPAID', label: 'Оплачено' },
-              { key: 'CONFIRMED', label: 'Подтв.' },
+              { key: 'new', label: 'Новые' },
+              { key: 'awaiting_prepayment', label: 'Ожидают' },
+              { key: 'prepaid', label: 'Оплачено' },
+              { key: 'confirmed', label: 'Подтв.' },
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -560,7 +560,7 @@ export function AdminStep() {
 
               {/* Action buttons */}
               <div className="mt-5 space-y-2">
-                {['NEW', 'AWAITING_PREPAYMENT', 'PREPAID'].includes(selectedBooking.status) && (
+                {['new', 'awaiting_prepayment', 'prepaid'].includes(selectedBooking.status) && (
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => handleConfirm(selectedBooking.id)}
