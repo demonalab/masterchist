@@ -1,4 +1,6 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@himchistka/db';
 import { BookingStatuses } from '@himchistka/shared';
@@ -138,13 +140,23 @@ const paymentProofsRoutes: FastifyPluginAsync = async (fastify) => {
 
     const fileBuffer = await data.toBuffer();
     const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-    const placeholderFileId = `local_${fileHash.slice(0, 32)}`;
+    const fileExt = data.mimetype.split('/')[1] || 'jpg';
+    const fileName = `${fileHash.slice(0, 32)}.${fileExt}`;
+    
+    // Save file to uploads directory
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'proofs');
+    await fs.mkdir(uploadsDir, { recursive: true });
+    const filePath = path.join(uploadsDir, fileName);
+    await fs.writeFile(filePath, fileBuffer);
+    
+    const photoUrl = `/uploads/proofs/${fileName}`;
 
     const result = await prisma.$transaction(async (tx) => {
       await tx.paymentProof.create({
         data: {
           bookingId: booking.id,
-          telegramFileId: placeholderFileId,
+          telegramFileId: `local_${fileHash.slice(0, 32)}`,
+          photoUrl,
           mimeType: data.mimetype,
           fileName: data.filename,
         },

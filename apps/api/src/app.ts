@@ -2,6 +2,8 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import sensible from '@fastify/sensible';
+import fastifyStatic from '@fastify/static';
+import path from 'node:path';
 import telegramAuthPlugin from './plugins/telegram-auth.plugin';
 import healthRoutes from './routes/health';
 import v1Routes from './routes/v1';
@@ -30,6 +32,13 @@ export async function buildApp(): Promise<FastifyInstance> {
     },
   });
   await fastify.register(telegramAuthPlugin);
+
+  // Serve uploaded files
+  await fastify.register(fastifyStatic, {
+    root: path.join(process.cwd(), 'uploads'),
+    prefix: '/uploads/',
+    decorateReply: false,
+  });
 
   fastify.setErrorHandler((error, request, reply) => {
     request.log.error(error);
