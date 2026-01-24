@@ -36,7 +36,7 @@ export function SuccessStep() {
 
   const [cancelling, setCancelling] = useState(false);
 
-  const handleDone = () => { reset(); webApp?.close(); };
+  const handleDone = () => { reset(); }; // Go to main page instead of closing
   
   const handleCancel = async () => {
     if (!booking) return;

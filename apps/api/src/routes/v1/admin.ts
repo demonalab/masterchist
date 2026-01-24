@@ -180,12 +180,22 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.forbidden('Только для супер-админа');
     }
 
-    const admins = await prisma.admin.findMany({
+    // Get admins from database
+    const dbAdmins = await prisma.admin.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    return admins;
+    // Get super admins from env
+    const envSuperAdmins = SUPER_ADMIN_IDS.filter(id => id.length > 0).map(id => ({
+      id: `env_${id}`,
+      telegramId: id,
+      role: 'super_admin (env)',
+      isActive: true,
+      createdAt: new Date(),
+    }));
+
+    return [...envSuperAdmins, ...dbAdmins];
   });
 
   // Add admin
