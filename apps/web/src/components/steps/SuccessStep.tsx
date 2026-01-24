@@ -34,8 +34,28 @@ export function SuccessStep() {
     });
   }, []);
 
-  const handleClose = () => { reset(); webApp?.close(); };
-  const handleNewBooking = () => { reset(); };
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleDone = () => { reset(); webApp?.close(); };
+  
+  const handleCancel = async () => {
+    if (!booking) return;
+    
+    const confirmed = window.confirm('Вы уверены, что хотите отменить заказ?');
+    if (!confirmed) return;
+    
+    setCancelling(true);
+    const result = await api.cancelBooking(booking.id);
+    setCancelling(false);
+    
+    if (result.ok) {
+      haptic.medium();
+      reset();
+      webApp?.close();
+    } else {
+      setUploadError(result.error || 'Не удалось отменить заказ');
+    }
+  };
   
   const handleUploadClick = () => {
     fileInputRef.current?.click();
@@ -216,23 +236,28 @@ export function SuccessStep() {
             </div>
           </div>
         ) : (
-          <button
-            onClick={handleUploadClick}
-            disabled={uploading}
-            className="mt-4 w-full p-4 bg-accent-purple/10 border border-accent-purple/20 rounded-xl flex items-center justify-center gap-3 hover:bg-accent-purple/20 transition-colors disabled:opacity-50"
-          >
-            {uploading ? (
-              <>
-                <SpinnerGap weight="bold" className="w-5 h-5 text-accent-purple animate-spin" />
-                <span className="text-sm text-accent-purple">Загрузка...</span>
-              </>
-            ) : (
-              <>
-                <Upload weight="duotone" className="w-5 h-5 text-accent-purple" />
-                <span className="text-sm text-accent-purple font-medium">Загрузить фото чека</span>
-              </>
-            )}
-          </button>
+          <div className="mt-4">
+            <p className="text-xs text-white/50 text-center mb-2">
+              ⚠️ Загрузите фото чека для подтверждения заказа
+            </p>
+            <button
+              onClick={handleUploadClick}
+              disabled={uploading}
+              className="w-full p-4 bg-accent-green/10 border border-accent-green/30 rounded-xl flex items-center justify-center gap-3 hover:bg-accent-green/20 transition-colors disabled:opacity-50"
+            >
+              {uploading ? (
+                <>
+                  <SpinnerGap weight="bold" className="w-5 h-5 text-accent-green animate-spin" />
+                  <span className="text-sm text-accent-green">Загрузка...</span>
+                </>
+              ) : (
+                <>
+                  <Camera weight="duotone" className="w-5 h-5 text-accent-green" />
+                  <span className="text-sm text-accent-green font-medium">Загрузить фото чека</span>
+                </>
+              )}
+            </button>
+          </div>
         )}
         
         {uploadError && (
@@ -242,20 +267,24 @@ export function SuccessStep() {
 
       {/* Buttons */}
       <div className="mt-auto pt-4 flex flex-col gap-3">
-        <motion.button 
-          onClick={handleClose} 
-          className="btn-primary"
-          whileTap={{ scale: 0.98 }}
-        >
-          Закрыть
-        </motion.button>
-        <motion.button 
-          onClick={handleNewBooking} 
-          className="btn-secondary"
-          whileTap={{ scale: 0.98 }}
-        >
-          Новый заказ
-        </motion.button>
+        {uploaded ? (
+          <motion.button 
+            onClick={handleDone} 
+            className="btn-primary"
+            whileTap={{ scale: 0.98 }}
+          >
+            Готово
+          </motion.button>
+        ) : (
+          <motion.button 
+            onClick={handleCancel}
+            disabled={cancelling}
+            className="btn-secondary border-red-500/30 text-red-400 hover:bg-red-500/10"
+            whileTap={{ scale: 0.98 }}
+          >
+            {cancelling ? 'Отмена...' : 'Отменить заказ'}
+          </motion.button>
+        )}
       </div>
     </div>
   );
