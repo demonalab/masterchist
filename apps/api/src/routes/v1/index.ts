@@ -6,6 +6,7 @@ import paymentProofsRoutes from './payment-proofs';
 import adminRoutes, { getAdminRole } from './admin';
 import conversationsRoutes from './conversations';
 import addressesRoutes from './addresses';
+import authRoutes from './auth';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import { config } from '../../config';
 
@@ -44,6 +45,7 @@ const v1Routes: FastifyPluginAsync = async (fastify) => {
   fastify.register(adminRoutes, { prefix: '/admin' });
   fastify.register(conversationsRoutes, { prefix: '/conversations' });
   fastify.register(addressesRoutes, { prefix: '/addresses' });
+  fastify.register(authRoutes, { prefix: '/auth' });
 };
 
 export default v1Routes;

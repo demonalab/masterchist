@@ -35,12 +35,14 @@ enum BookingSource {
 
 model User {
   id           String   @id @default(uuid())
-  telegramId   String   @unique @db.VarChar(32)
+  telegramId   String?  @unique @db.VarChar(32)
+  maxId        String?  @unique @db.VarChar(32)
   username     String?  @db.VarChar(64)
   firstName    String?  @db.VarChar(128)
   lastName     String?  @db.VarChar(128)
   languageCode String?  @db.VarChar(16)
-  phone        String?  @db.VarChar(20)
+  phone        String?  @unique @db.VarChar(20)
+  passwordHash String?  @db.VarChar(256)
   isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -49,6 +51,8 @@ model User {
   bookings  Booking[]
 
   @@index([telegramId])
+  @@index([maxId])
+  @@index([phone])
 }
 
 model Service {
