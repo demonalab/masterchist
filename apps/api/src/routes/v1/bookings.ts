@@ -124,13 +124,31 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.unauthorized('User not authenticated');
     }
 
+    // Find current user and check if they have linked accounts via phone
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, phone: true },
+    });
+
+    let userIds = [userId];
+    
+    // If user has phone, find all linked accounts with same phone
+    if (currentUser?.phone) {
+      const linkedUsers = await prisma.user.findMany({
+        where: { phone: currentUser.phone },
+        select: { id: true },
+      });
+      userIds = linkedUsers.map(u => u.id);
+    }
+
     const bookings = await prisma.booking.findMany({
-      where: { userId },
+      where: { userId: { in: userIds } },
       orderBy: { createdAt: 'desc' },
-      take: 10,
+      take: 20,
       select: {
         id: true,
         status: true,
+        source: true,
         scheduledDate: true,
         createdAt: true,
         cleaningKit: { select: { number: true } },
@@ -143,6 +161,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
     return bookings.map(b => ({
       id: b.id,
       status: b.status,
+      source: (b as any).source ?? 'telegram_bot',
       scheduledDate: b.scheduledDate?.toISOString().split('T')[0] ?? null,
       createdAt: b.createdAt.toISOString(),
       kitNumber: b.cleaningKit?.number ?? null,

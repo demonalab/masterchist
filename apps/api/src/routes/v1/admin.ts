@@ -2,6 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@himchistka/db';
 import { BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
+import { notifyBookingStatusChange } from '../../lib/user-notifications';
 import ExcelJS from 'exceljs';
 
 // Support multiple admin IDs via comma-separated list
@@ -147,6 +148,9 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       data: { status: BookingStatuses.CONFIRMED },
     });
 
+    // Notify user in all linked messengers
+    notifyBookingStatusChange(id, BookingStatuses.CONFIRMED, '✅ <b>Ваш заказ подтверждён!</b>').catch(console.error);
+
     return { success: true, userTelegramId: booking.user.telegramId };
   });
 
@@ -172,6 +176,9 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       where: { id },
       data: { status: BookingStatuses.CANCELLED },
     });
+
+    // Notify user in all linked messengers
+    notifyBookingStatusChange(id, BookingStatuses.CANCELLED, '❌ <b>Ваш заказ отклонён</b>\n\nПожалуйста, свяжитесь с поддержкой для уточнения деталей.').catch(console.error);
 
     return { success: true, userTelegramId: booking.user.telegramId };
   });
