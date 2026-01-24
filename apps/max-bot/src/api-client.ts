@@ -105,11 +105,12 @@ export class ApiClient {
     proCleaningDetails?: string;
   }): Promise<ApiResult<BookingResponse>> {
     try {
-      // Add maxUserId to body for MAX bot authentication
+      // Add maxUserId and source to body for MAX bot authentication
       const bodyWithUserId = {
         ...body,
         maxUserId: this.userId,
         maxUserName: this.firstName,
+        source: 'max_bot',
       };
       const res = await fetch(`${this.baseUrl}/api/v1/bookings`, {
         method: 'POST',

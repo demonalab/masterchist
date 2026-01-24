@@ -184,18 +184,25 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.post<{ Body: CreateSelfCleaningBody }>('/', async (request, reply) => {
     const body = request.body as any;
     
-    // Support MAX bot: if maxUserId provided, find or create user
+    // Support MAX bot: if maxUserId provided, find or create user with maxId (not telegramId!)
     let userId = request.dbUserId;
     if (!userId && body.maxUserId) {
-      const maxUser = await prisma.user.upsert({
-        where: { telegramId: String(body.maxUserId) },
-        update: {},
-        create: {
-          telegramId: String(body.maxUserId),
-          firstName: body.maxUserName || 'MAX User',
-        },
+      // First try to find existing MAX user
+      let maxUser = await prisma.user.findFirst({
+        where: { maxId: String(body.maxUserId) },
         select: { id: true },
       });
+      
+      if (!maxUser) {
+        // Create new MAX user with maxId field
+        maxUser = await prisma.user.create({
+          data: {
+            maxId: String(body.maxUserId),
+            firstName: body.maxUserName || 'MAX User',
+          },
+          select: { id: true },
+        });
+      }
       userId = maxUser.id;
     }
     

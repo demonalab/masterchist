@@ -11,7 +11,35 @@ declare module 'fastify' {
   }
 }
 
-async function upsertUser(tgUser: TelegramUser): Promise<string> {
+async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise<string> {
+  if (isMax) {
+    // MAX user - use maxId field to avoid conflicts with Telegram IDs
+    const existing = await prisma.user.findFirst({
+      where: { maxId: String(tgUser.id) },
+      select: { id: true },
+    });
+    
+    if (existing) {
+      await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          firstName: tgUser.first_name ?? null,
+        },
+      });
+      return existing.id;
+    }
+    
+    const user = await prisma.user.create({
+      data: {
+        maxId: String(tgUser.id),
+        firstName: tgUser.first_name ?? null,
+      },
+      select: { id: true },
+    });
+    return user.id;
+  }
+  
+  // Telegram user - use telegramId
   const user = await prisma.user.upsert({
     where: { telegramId: String(tgUser.id) },
     update: {
@@ -50,7 +78,7 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
   if (maxUserId) {
     const maxUser: TelegramUser = { id: Number(maxUserId), first_name: body?.maxUserName || 'MAX User' };
     request.telegramUser = maxUser;
-    request.dbUserId = await upsertUser(maxUser);
+    request.dbUserId = await upsertUser(maxUser, true); // isMax = true
     return;
   }
 
@@ -96,7 +124,7 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
           language_code: userData.language_code || undefined,
         };
         request.telegramUser = user;
-        request.dbUserId = await upsertUser(user);
+        request.dbUserId = await upsertUser(user, true); // isMax = true
         return;
       }
     } catch (err) {

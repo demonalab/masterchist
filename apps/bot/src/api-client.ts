@@ -180,10 +180,12 @@ export class ApiClient {
     proCleaningDetails?: string;
   }): Promise<ApiResult<BookingResponse>> {
     try {
+      // Add source to identify orders from Telegram bot
+      const bodyWithSource = { ...body, source: 'telegram_bot' };
       const res = await fetch(`${this.baseUrl}/api/v1/bookings`, {
         method: 'POST',
         headers: this.headers,
-        body: JSON.stringify(body),
+        body: JSON.stringify(bodyWithSource),
       });
 
       if (!res.ok) {
