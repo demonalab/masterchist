@@ -68,6 +68,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
         service: { select: { code: true, title: true } },
+        address: { select: { addressLine: true, city: true } },
       },
     });
 
@@ -79,6 +80,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       kitNumber: b.cleaningKit?.number ?? null,
       timeSlot: b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : null,
       service: b.service?.title ?? b.service?.code ?? null,
+      address: b.address?.addressLine ?? null,
     }));
   });
 
@@ -428,7 +430,102 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   fastify.post('/:id/cancel', async (request, reply) => {
-    return reply.notImplemented('POST /bookings/:id/cancel - cancel booking');
+    const { id } = request.params as { id: string };
+    const userId = request.dbUserId;
+
+    if (!userId) {
+      return reply.unauthorized('User not authenticated');
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, status: true, userId: true },
+    });
+
+    if (!booking) {
+      return reply.notFound('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      return reply.forbidden('Not your booking');
+    }
+
+    // Can only cancel bookings in these statuses
+    const cancellableStatuses = [BookingStatuses.NEW, BookingStatuses.AWAITING_PREPAYMENT];
+    if (!cancellableStatuses.includes(booking.status as any)) {
+      return reply.badRequest(`Невозможно отменить заказ со статусом: ${booking.status}`);
+    }
+
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: { 
+        status: BookingStatuses.CANCELLED,
+        cleaningKitId: null,
+      },
+      select: { id: true, status: true },
+    });
+
+    return { success: true, id: updated.id, status: updated.status };
+  });
+
+  // Upload photos for pro cleaning request
+  fastify.post<{ Params: { id: string } }>('/:id/photos', async (request, reply) => {
+    const { id } = request.params;
+    const userId = request.dbUserId;
+
+    if (!userId) {
+      return reply.unauthorized('User not authenticated');
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, userId: true, service: { select: { code: true } } },
+    });
+
+    if (!booking) {
+      return reply.notFound('Booking not found');
+    }
+
+    if (booking.userId !== userId) {
+      return reply.forbidden('Not your booking');
+    }
+
+    if (booking.service?.code !== 'pro_cleaning') {
+      return reply.badRequest('Photos can only be uploaded for pro cleaning requests');
+    }
+
+    const data = await request.file();
+    if (!data) {
+      return reply.badRequest('No file uploaded');
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(data.mimetype)) {
+      return reply.badRequest('Invalid file type. Allowed: jpeg, png, webp');
+    }
+
+    // Generate placeholder file ID (in production, upload to storage and get real ID)
+    const crypto = await import('node:crypto');
+    const fileBuffer = await data.toBuffer();
+    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+    const fileId = `photo_${fileHash.slice(0, 32)}`;
+
+    // Add file ID to booking's photo array
+    const updated = await prisma.booking.update({
+      where: { id },
+      data: {
+        proCleaningPhotoFileIds: {
+          push: fileId,
+        },
+      },
+      select: { id: true, proCleaningPhotoFileIds: true },
+    });
+
+    return { 
+      success: true, 
+      fileId,
+      totalPhotos: updated.proCleaningPhotoFileIds.length,
+    };
   });
 
   // Payment proof upload (supports both FormData from web and JSON from MAX bot)

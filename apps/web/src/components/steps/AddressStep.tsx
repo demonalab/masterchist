@@ -5,6 +5,7 @@ import { useBookingStore } from '@/lib/booking-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CaretLeft, MapPin, User, Phone, FloppyDisk, House, Buildings, Check, Star } from '@phosphor-icons/react';
 import { api, SavedAddress } from '@/lib/api';
+import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
 
 export function AddressStep() {
   const { draft, updateDraft, setStep } = useBookingStore();
@@ -57,6 +58,7 @@ export function AddressStep() {
     if (!house.trim()) { setError('Введите номер дома'); return; }
     if (!contactName.trim()) { setError('Введите имя'); return; }
     if (!contactPhone.trim()) { setError('Введите телефон'); return; }
+    if (!isValidPhone(contactPhone)) { setError('Неверный формат телефона'); return; }
     
     // Save address if checkbox is checked
     if (saveAddress && draft.city) {
@@ -234,7 +236,10 @@ export function AddressStep() {
               <input
                 type="tel"
                 value={contactPhone}
-                onChange={(e) => { setContactPhone(e.target.value); setError(''); }}
+                onChange={(e) => { 
+                  setContactPhone(formatPhoneInput(e.target.value, contactPhone)); 
+                  setError(''); 
+                }}
                 placeholder="+7 (999) 123-45-67"
                 className="input pl-12"
               />

@@ -8,6 +8,7 @@ import {
   Image as ImageIcon, FileText
 } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
+import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
 
 const CITIES = [
   { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону' },
@@ -89,6 +90,7 @@ export function ProCleaningStep() {
     if (!address.trim()) { setError('Введите адрес'); return; }
     if (!contactName.trim()) { setError('Введите имя'); return; }
     if (!contactPhone.trim()) { setError('Введите телефон'); return; }
+    if (!isValidPhone(contactPhone)) { setError('Неверный формат телефона'); return; }
     
     setLoading(true);
     setError('');
@@ -96,11 +98,10 @@ export function ProCleaningStep() {
     try {
       const addressParts = address.split(',').map(p => p.trim());
       
+      // Create booking with description
       const result = await api.createBooking({
         serviceCode: 'pro_cleaning',
         city,
-        scheduledDate: new Date().toISOString().split('T')[0],
-        timeSlotId: '',
         address: {
           city: cityName,
           street: addressParts[0] || address,
@@ -111,10 +112,18 @@ export function ProCleaningStep() {
           name: contactName,
           phone: contactPhone,
         },
+        proCleaningDetails: description,
       });
       
       if (result.ok) {
-        setBookingId(result.data.id);
+        const newBookingId = result.data.id;
+        
+        // Upload photos
+        for (const photo of photos) {
+          await api.uploadProCleaningPhoto(newBookingId, photo);
+        }
+        
+        setBookingId(newBookingId);
         setCurrentStep('success');
       } else {
         setError(result.error);
@@ -344,7 +353,10 @@ export function ProCleaningStep() {
                 <input
                   type="tel"
                   value={contactPhone}
-                  onChange={(e) => { setContactPhone(e.target.value); setError(''); }}
+                  onChange={(e) => { 
+                    setContactPhone(formatPhoneInput(e.target.value, contactPhone)); 
+                    setError(''); 
+                  }}
                   placeholder="+7 (999) 123-45-67"
                   className="input pl-12"
                 />

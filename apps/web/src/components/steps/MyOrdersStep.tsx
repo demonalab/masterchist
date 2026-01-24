@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin } from '@phosphor-icons/react';
+import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin, X } from '@phosphor-icons/react';
 import { api, MyBooking } from '@/lib/api';
 import { useBookingStore } from '@/lib/booking-store';
 
@@ -46,6 +46,17 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
       serviceCode: 'self_cleaning',
     });
     setStep('city');
+  };
+
+  const handleCancelOrder = async (bookingId: string) => {
+    const result = await api.cancelBooking(bookingId);
+    if (result.ok) {
+      setBookings(prev => prev.map(b => 
+        b.id === bookingId ? { ...b, status: 'cancelled' } : b
+      ));
+    } else {
+      setError(result.error);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -136,14 +147,22 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                 </div>
 
                 <div className="space-y-2 text-sm">
-                  <div className="flex items-center gap-2 text-white/60">
-                    <CalendarBlank weight="duotone" className="w-4 h-4" />
-                    <span>{formatDate(booking.scheduledDate)}</span>
-                  </div>
+                  {booking.scheduledDate && (
+                    <div className="flex items-center gap-2 text-white/60">
+                      <CalendarBlank weight="duotone" className="w-4 h-4" />
+                      <span>{formatDate(booking.scheduledDate)}</span>
+                    </div>
+                  )}
                   {booking.timeSlot && (
                     <div className="flex items-center gap-2 text-white/60">
                       <Clock weight="duotone" className="w-4 h-4" />
                       <span>{booking.timeSlot}</span>
+                    </div>
+                  )}
+                  {booking.address && (
+                    <div className="flex items-center gap-2 text-white/60">
+                      <MapPin weight="duotone" className="w-4 h-4" />
+                      <span className="truncate">{booking.address}</span>
                     </div>
                   )}
                 </div>
@@ -152,15 +171,26 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                   <p className="text-xs text-white/30 font-mono">
                     ID: {booking.id.slice(0, 8).toUpperCase()}
                   </p>
-                  {(booking.status === 'completed' || booking.status === 'cancelled') && (
-                    <button
-                      onClick={() => handleRepeatOrder(booking)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-green/10 hover:bg-accent-green/20 text-accent-green text-xs font-medium rounded-lg transition-colors"
-                    >
-                      <ArrowClockwise weight="bold" className="w-3.5 h-3.5" />
-                      Повторить
-                    </button>
-                  )}
+  <div className="flex items-center gap-2">
+                    {(booking.status === 'new' || booking.status === 'awaiting_prepayment') && (
+                      <button
+                        onClick={() => handleCancelOrder(booking.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-medium rounded-lg transition-colors"
+                      >
+                        <X weight="bold" className="w-3.5 h-3.5" />
+                        Отменить
+                      </button>
+                    )}
+                    {(booking.status === 'completed' || booking.status === 'cancelled') && (
+                      <button
+                        onClick={() => handleRepeatOrder(booking)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-green/10 hover:bg-accent-green/20 text-accent-green text-xs font-medium rounded-lg transition-colors"
+                      >
+                        <ArrowClockwise weight="bold" className="w-3.5 h-3.5" />
+                        Повторить
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             );

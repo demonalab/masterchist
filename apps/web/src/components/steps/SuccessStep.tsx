@@ -1,12 +1,18 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
 import { api } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy, Upload, SpinnerGap, Check } from '@phosphor-icons/react';
 import { useHaptic } from '@/lib/haptic';
+
+interface PaymentRequisites {
+  prepaymentAmount: number;
+  card: { number: string; bank: string; holder: string };
+  sbp: { phone: string; bank: string };
+}
 
 export function SuccessStep() {
   const { booking, reset } = useBookingStore();
@@ -18,6 +24,15 @@ export function SuccessStep() {
   const [uploaded, setUploaded] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [requisites, setRequisites] = useState<PaymentRequisites | null>(null);
+
+  useEffect(() => {
+    api.getPaymentRequisites().then(result => {
+      if (result.ok) {
+        setRequisites(result.data);
+      }
+    });
+  }, []);
 
   const handleClose = () => { reset(); webApp?.close(); };
   const handleNewBooking = () => { reset(); };
@@ -129,42 +144,59 @@ export function SuccessStep() {
         </div>
 
         <div className="text-center mb-4 py-3 bg-white/5 rounded-2xl">
-          <p className="text-3xl font-bold text-accent-green">1 500 ₽</p>
+          <p className="text-3xl font-bold text-accent-green">
+            {requisites ? `${requisites.prepaymentAmount.toLocaleString('ru')} ₽` : '...'}
+          </p>
           <p className="text-xs text-white/40 mt-1">Предоплата за аренду</p>
         </div>
 
-        <div className="space-y-2">
-          <button 
-            onClick={() => copyToClipboard('1234567890123456', 'card')}
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl w-full text-left hover:bg-white/10 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 text-sm">₽</div>
-            <div className="flex-1">
-              <p className="text-xs text-white/40">Сбербанк</p>
-              <p className="text-sm text-white font-mono">1234 5678 9012 3456</p>
-            </div>
-            {copiedField === 'card' ? (
-              <Check weight="bold" className="w-4 h-4 text-accent-green" />
-            ) : (
-              <Copy weight="regular" className="w-4 h-4 text-white/30" />
+        {requisites ? (
+          <div className="space-y-2">
+            {requisites.card.number && (
+              <button 
+                onClick={() => copyToClipboard(requisites.card.number.replace(/\s/g, ''), 'card')}
+                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl w-full text-left hover:bg-white/10 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center text-green-400 text-sm">₽</div>
+                <div className="flex-1">
+                  <p className="text-xs text-white/40">{requisites.card.bank}</p>
+                  <p className="text-sm text-white font-mono">
+                    {requisites.card.number.replace(/(\d{4})/g, '$1 ').trim()}
+                  </p>
+                  {requisites.card.holder && (
+                    <p className="text-xs text-white/30 mt-0.5">{requisites.card.holder}</p>
+                  )}
+                </div>
+                {copiedField === 'card' ? (
+                  <Check weight="bold" className="w-4 h-4 text-accent-green" />
+                ) : (
+                  <Copy weight="regular" className="w-4 h-4 text-white/30" />
+                )}
+              </button>
             )}
-          </button>
-          <button 
-            onClick={() => copyToClipboard('+79991234567', 'phone')}
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl w-full text-left hover:bg-white/10 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm">⚡</div>
-            <div className="flex-1">
-              <p className="text-xs text-white/40">СБП</p>
-              <p className="text-sm text-white font-mono">+7 999 123-45-67</p>
-            </div>
-            {copiedField === 'phone' ? (
-              <Check weight="bold" className="w-4 h-4 text-accent-green" />
-            ) : (
-              <Copy weight="regular" className="w-4 h-4 text-white/30" />
+            {requisites.sbp.phone && (
+              <button 
+                onClick={() => copyToClipboard(requisites.sbp.phone.replace(/\D/g, ''), 'phone')}
+                className="flex items-center gap-3 p-3 bg-white/5 rounded-xl w-full text-left hover:bg-white/10 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 text-sm">⚡</div>
+                <div className="flex-1">
+                  <p className="text-xs text-white/40">СБП · {requisites.sbp.bank}</p>
+                  <p className="text-sm text-white font-mono">{requisites.sbp.phone}</p>
+                </div>
+                {copiedField === 'phone' ? (
+                  <Check weight="bold" className="w-4 h-4 text-accent-green" />
+                ) : (
+                  <Copy weight="regular" className="w-4 h-4 text-white/30" />
+                )}
+              </button>
             )}
-          </button>
-        </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-center py-4">
+            <SpinnerGap weight="bold" className="w-6 h-6 text-white/30 animate-spin" />
+          </div>
+        )}
 
         {/* Upload receipt section */}
         <input

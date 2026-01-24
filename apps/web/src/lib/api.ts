@@ -32,13 +32,14 @@ export interface MyBooking {
   timeSlot: string;
   kitNumber?: number;
   service?: string;
+  address?: string;
 }
 
 export interface CreateBookingRequest {
   serviceCode: string;
   city: string;
-  scheduledDate: string;
-  timeSlotId: string;
+  scheduledDate?: string;
+  timeSlotId?: string;
   address: {
     city: string;
     street: string;
@@ -49,6 +50,7 @@ export interface CreateBookingRequest {
     name: string;
     phone: string;
   };
+  proCleaningDetails?: string;
 }
 
 export type ApiResult<T> =
@@ -56,8 +58,8 @@ export type ApiResult<T> =
   | { ok: false; status: number; error: string };
 
 class ApiClient {
-  private initData: string = '';
-  private devMode: boolean = false;
+  protected initData: string = '';
+  protected devMode: boolean = false;
 
   setInitData(initData: string) {
     this.initData = initData;
@@ -167,6 +169,24 @@ class ApiClient {
 
       const data = await res.json();
       return { ok: true, data };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async cancelBooking(bookingId: string): Promise<ApiResult<{ success: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/cancel`, {
+        method: 'POST',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
     } catch (err) {
       return { ok: false, status: 0, error: (err as Error).message };
     }
@@ -510,6 +530,57 @@ class ApiClientExtended extends ApiClient {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins/${telegramId}`, {
         method: 'DELETE',
         headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getPaymentRequisites(): Promise<ApiResult<{
+    prepaymentAmount: number;
+    card: { number: string; bank: string; holder: string };
+    sbp: { phone: string; bank: string };
+  }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/payment/requisites`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async uploadProCleaningPhoto(bookingId: string, file: File): Promise<ApiResult<{ fileId: string; totalPhotos: number }>> {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers: Record<string, string> = {};
+      if (this.devMode) {
+        headers['X-Dev-Mode'] = '1';
+      } else if (this.initData) {
+        headers['X-Telegram-Init-Data'] = this.initData;
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/photos`, {
+        method: 'POST',
+        headers,
+        body: formData,
       });
 
       if (!res.ok) {

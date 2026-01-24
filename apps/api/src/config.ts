@@ -7,6 +7,13 @@ const envSchema = z.object({
   BOT_TOKEN: z.string().min(1),
   MAX_BOT_TOKEN: z.string().optional(),
   ADMIN_TELEGRAM_ID: z.string().optional(),
+  // Payment requisites
+  PAYMENT_CARD_NUMBER: z.string().default(''),
+  PAYMENT_CARD_BANK: z.string().default('Сбербанк'),
+  PAYMENT_CARD_HOLDER: z.string().default(''),
+  PAYMENT_SBP_PHONE: z.string().default(''),
+  PAYMENT_SBP_BANK: z.string().default('Сбербанк'),
+  PREPAYMENT_AMOUNT: z.coerce.number().default(500),
 });
 
 export type Env = z.infer<typeof envSchema>;

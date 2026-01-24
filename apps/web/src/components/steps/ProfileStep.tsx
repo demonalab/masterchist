@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, ArrowLeft, MapPin, Plus, Trash, Star, House, Buildings, 
-  Phone, TelegramLogo, CaretRight, Check
+  Phone, TelegramLogo, CaretRight, Check, X, SpinnerGap
 } from '@phosphor-icons/react';
 import { api, SavedAddress } from '@/lib/api';
 import { useTelegram } from '@/lib/telegram-provider';
+import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
 
 interface ProfileStepProps {
   onBack: () => void;
@@ -19,11 +20,28 @@ const CITY_NAMES: Record<string, string> = {
   STAVROPOL: 'Ставрополь',
 };
 
+const CITIES = [
+  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону' },
+  { code: 'BATAYSK', name: 'Батайск' },
+  { code: 'STAVROPOL', name: 'Ставрополь' },
+];
+
 export function ProfileStep({ onBack }: ProfileStepProps) {
   const { webApp } = useTelegram();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
+  
+  // Add address form state
+  const [newCity, setNewCity] = useState('');
+  const [newStreet, setNewStreet] = useState('');
+  const [newHouse, setNewHouse] = useState('');
+  const [newApartment, setNewApartment] = useState('');
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactPhone, setNewContactPhone] = useState('');
+  const [newLabel, setNewLabel] = useState('Дом');
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const user = webApp?.initDataUnsafe?.user;
 
@@ -59,6 +77,52 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
 
   const openSupport = () => {
     window.open('https://t.me/MasterChist_support', '_blank');
+  };
+
+  const resetForm = () => {
+    setNewCity('');
+    setNewStreet('');
+    setNewHouse('');
+    setNewApartment('');
+    setNewContactName('');
+    setNewContactPhone('');
+    setNewLabel('Дом');
+    setFormError('');
+  };
+
+  const handleAddAddress = async () => {
+    if (!newCity) { setFormError('Выберите город'); return; }
+    if (!newStreet.trim()) { setFormError('Введите улицу'); return; }
+    if (!newHouse.trim()) { setFormError('Введите номер дома'); return; }
+    if (!newContactName.trim()) { setFormError('Введите имя'); return; }
+    if (!newContactPhone.trim()) { setFormError('Введите телефон'); return; }
+    if (!isValidPhone(newContactPhone)) { setFormError('Неверный формат телефона'); return; }
+
+    setSaving(true);
+    setFormError('');
+
+    const addressLine = [newStreet.trim(), `д. ${newHouse.trim()}`, newApartment.trim() ? `кв. ${newApartment.trim()}` : '']
+      .filter(Boolean)
+      .join(', ');
+
+    const result = await api.createSavedAddress({
+      city: newCity,
+      addressLine,
+      contactName: newContactName.trim(),
+      contactPhone: newContactPhone.trim(),
+      label: newLabel,
+      isDefault: addresses.length === 0,
+    });
+
+    if (result.ok) {
+      setAddresses(prev => [...prev, result.data]);
+      setShowAddForm(false);
+      resetForm();
+    } else {
+      setFormError(result.error);
+    }
+
+    setSaving(false);
   };
 
   return (
@@ -223,6 +287,147 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
           <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
         </button>
       </motion.div>
+
+      {/* Add Address Modal */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-end justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div 
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => { setShowAddForm(false); resetForm(); }}
+            />
+            <motion.div
+              className="relative w-full max-w-lg bg-[#1a1a2e] rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto"
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold text-white">Новый адрес</h2>
+                <button
+                  onClick={() => { setShowAddForm(false); resetForm(); }}
+                  className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"
+                >
+                  <X weight="bold" className="w-4 h-4 text-white/60" />
+                </button>
+              </div>
+
+              {/* City */}
+              <div className="mb-4">
+                <p className="text-sm text-white/40 mb-2">Город</p>
+                <div className="flex gap-2 flex-wrap">
+                  {CITIES.map(city => (
+                    <button
+                      key={city.code}
+                      onClick={() => setNewCity(city.code)}
+                      className={`px-4 py-2 rounded-xl text-sm transition-all ${
+                        newCity === city.code
+                          ? 'bg-accent-green/20 text-accent-green border border-accent-green'
+                          : 'bg-white/5 text-white/60 border border-white/10'
+                      }`}
+                    >
+                      {city.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Address */}
+              <div className="mb-4">
+                <p className="text-sm text-white/40 mb-2">Адрес</p>
+                <input
+                  type="text"
+                  value={newStreet}
+                  onChange={e => setNewStreet(e.target.value)}
+                  placeholder="Улица"
+                  className="input mb-2"
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={newHouse}
+                    onChange={e => setNewHouse(e.target.value)}
+                    placeholder="Дом"
+                    className="input"
+                  />
+                  <input
+                    type="text"
+                    value={newApartment}
+                    onChange={e => setNewApartment(e.target.value)}
+                    placeholder="Квартира"
+                    className="input"
+                  />
+                </div>
+              </div>
+
+              {/* Contact */}
+              <div className="mb-4">
+                <p className="text-sm text-white/40 mb-2">Контакт</p>
+                <input
+                  type="text"
+                  value={newContactName}
+                  onChange={e => setNewContactName(e.target.value)}
+                  placeholder="Имя"
+                  className="input mb-2"
+                />
+                <input
+                  type="tel"
+                  value={newContactPhone}
+                  onChange={e => setNewContactPhone(formatPhoneInput(e.target.value, newContactPhone))}
+                  placeholder="+7 (999) 123-45-67"
+                  className="input"
+                />
+              </div>
+
+              {/* Label */}
+              <div className="mb-4">
+                <p className="text-sm text-white/40 mb-2">Название</p>
+                <div className="flex gap-2">
+                  {['Дом', 'Офис', 'Другой'].map(label => (
+                    <button
+                      key={label}
+                      onClick={() => setNewLabel(label === 'Другой' ? '' : label)}
+                      className={`px-4 py-2 rounded-xl text-sm flex items-center gap-2 transition-all ${
+                        (newLabel === label || (label === 'Другой' && !['Дом', 'Офис'].includes(newLabel)))
+                          ? 'bg-accent-green/20 text-accent-green border border-accent-green'
+                          : 'bg-white/5 text-white/60 border border-white/10'
+                      }`}
+                    >
+                      {label === 'Дом' && <House weight="duotone" className="w-4 h-4" />}
+                      {label === 'Офис' && <Buildings weight="duotone" className="w-4 h-4" />}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {formError && (
+                <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm text-center">
+                  {formError}
+                </div>
+              )}
+
+              <button
+                onClick={handleAddAddress}
+                disabled={saving}
+                className="btn-primary w-full"
+              >
+                {saving ? (
+                  <SpinnerGap weight="bold" className="w-5 h-5 animate-spin mx-auto" />
+                ) : (
+                  'Сохранить адрес'
+                )}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

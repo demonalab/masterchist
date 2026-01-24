@@ -7,6 +7,7 @@ import adminRoutes, { getAdminRole } from './admin';
 import conversationsRoutes from './conversations';
 import addressesRoutes from './addresses';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
+import { config } from '../../config';
 
 const v1Routes: FastifyPluginAsync = async (fastify) => {
   // Public admin role check - does NOT require admin access, only auth
@@ -18,6 +19,22 @@ const v1Routes: FastifyPluginAsync = async (fastify) => {
     
     const role = await getAdminRole(String(telegramId));
     return { role };
+  });
+
+  // Payment requisites - public endpoint (requires auth)
+  fastify.get('/payment/requisites', { preHandler: [telegramAuthHook] }, async () => {
+    return {
+      prepaymentAmount: config.PREPAYMENT_AMOUNT,
+      card: {
+        number: config.PAYMENT_CARD_NUMBER,
+        bank: config.PAYMENT_CARD_BANK,
+        holder: config.PAYMENT_CARD_HOLDER,
+      },
+      sbp: {
+        phone: config.PAYMENT_SBP_PHONE,
+        bank: config.PAYMENT_SBP_BANK,
+      },
+    };
   });
 
   fastify.register(servicesRoutes, { prefix: '/services' });
