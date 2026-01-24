@@ -116,40 +116,51 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Link MAX account if maxId provided
     if (maxId) {
-      const maxUser = await prisma.user.findUnique({
-        where: { maxId: String(maxId) },
-        select: { id: true },
+      // First check if current user already has this maxId
+      const currentUser = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { maxId: true },
       });
-
-      if (maxUser && maxUser.id !== user.id) {
-        // Merge: move bookings from MAX user to phone user
-        await prisma.booking.updateMany({
-          where: { userId: maxUser.id },
-          data: { userId: user.id },
+      
+      // Skip if user already linked to this maxId
+      if (currentUser?.maxId === String(maxId)) {
+        // Already linked, do nothing
+      } else {
+        const maxUser = await prisma.user.findUnique({
+          where: { maxId: String(maxId) },
+          select: { id: true },
         });
 
-        // Move addresses
-        await prisma.address.updateMany({
-          where: { userId: maxUser.id },
-          data: { userId: user.id },
-        });
+        if (maxUser && maxUser.id !== user.id) {
+          // Merge: move bookings from MAX user to phone user
+          await prisma.booking.updateMany({
+            where: { userId: maxUser.id },
+            data: { userId: user.id },
+          });
 
-        // Update phone user with MAX ID
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { maxId: String(maxId) },
-        });
+          // Move addresses
+          await prisma.address.updateMany({
+            where: { userId: maxUser.id },
+            data: { userId: user.id },
+          });
 
-        // Delete old MAX user
-        await prisma.user.delete({
-          where: { id: maxUser.id },
-        });
-      } else if (!maxUser) {
-        // Just add maxId to phone user
-        await prisma.user.update({
-          where: { id: user.id },
-          data: { maxId: String(maxId) },
-        });
+          // Delete old MAX user first (to free up maxId)
+          await prisma.user.delete({
+            where: { id: maxUser.id },
+          });
+          
+          // Then update phone user with MAX ID
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { maxId: String(maxId) },
+          });
+        } else if (!maxUser && !currentUser?.maxId) {
+          // Just add maxId to phone user (only if user doesn't have maxId yet)
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { maxId: String(maxId) },
+          });
+        }
       }
     }
 
