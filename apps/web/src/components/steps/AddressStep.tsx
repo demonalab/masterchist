@@ -13,7 +13,7 @@ export function AddressStep() {
   const [house, setHouse] = useState(draft.house || '');
   const [apartment, setApartment] = useState(draft.apartment || '');
   const [contactName, setContactName] = useState(draft.contactName || '');
-  const [contactPhone, setContactPhone] = useState(draft.contactPhone || '');
+  const [contactPhone, setContactPhone] = useState(draft.contactPhone || '+7 ');
   const [error, setError] = useState('');
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState('');
