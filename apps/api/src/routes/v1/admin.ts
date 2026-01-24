@@ -74,11 +74,13 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         status: true,
         scheduledDate: true,
         createdAt: true,
+        source: true,
         user: { select: { telegramId: true, firstName: true } },
         address: { select: { addressLine: true, contactName: true, contactPhone: true } },
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
         service: { select: { code: true, title: true } },
+        paymentProofs: { select: { photoUrl: true, telegramFileId: true, createdAt: true }, orderBy: { createdAt: 'desc' }, take: 1 },
       },
     });
 
@@ -87,6 +89,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       status: b.status,
       scheduledDate: b.scheduledDate?.toISOString().split('T')[0] ?? null,
       createdAt: b.createdAt.toISOString(),
+      source: (b as any).source ?? 'telegram_bot',
       kitNumber: b.cleaningKit?.number ?? null,
       timeSlot: b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : null,
       service: b.service?.title ?? b.service?.code ?? null,
@@ -96,6 +99,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         contactName: b.address.contactName ?? '',
         contactPhone: b.address.contactPhone ?? '',
       } : null,
+      paymentProofUrl: (b as any).paymentProofs?.[0]?.photoUrl ?? null,
     }));
   });
 

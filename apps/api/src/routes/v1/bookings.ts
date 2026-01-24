@@ -64,6 +64,12 @@ async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
   }
 }
 
+const BookingSources = {
+  TELEGRAM_BOT: 'telegram_bot',
+  TELEGRAM_MINIAPP: 'telegram_miniapp',
+  MAX_BOT: 'max_bot',
+} as const;
+
 const createSelfCleaningSchema = z.object({
   serviceCode: z.literal(ServiceCodes.SELF_CLEANING),
   city: z.enum([Cities.ROSTOV_NA_DONU, Cities.BATAYSK, Cities.STAVROPOL]),
@@ -79,6 +85,7 @@ const createSelfCleaningSchema = z.object({
     name: z.string().min(1).max(128),
     phone: z.string().min(5).max(32),
   }),
+  source: z.enum(['telegram_bot', 'telegram_miniapp', 'max_bot']).optional(),
 });
 
 const createProCleaningSchema = z.object({
@@ -95,6 +102,7 @@ const createProCleaningSchema = z.object({
     phone: z.string().min(5).max(32),
   }),
   proCleaningDetails: z.string().max(2000).optional(),
+  source: z.enum(['telegram_bot', 'telegram_miniapp', 'max_bot']).optional(),
 });
 
 type CreateSelfCleaningBody = z.infer<typeof createSelfCleaningSchema>;
@@ -231,6 +239,9 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         select: { id: true },
       });
 
+      // Determine source
+      const source = parseResult.data.source || (body.maxUserId ? 'max_bot' : 'telegram_miniapp');
+
       const newBooking = await prisma.booking.create({
         data: {
           userId,
@@ -238,6 +249,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           status: BookingStatuses.NEW,
           addressId: newAddress.id,
           proCleaningDetails: proCleaningDetails,
+          source: source as any,
         },
         select: {
           id: true,
@@ -394,6 +406,9 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           select: { id: true },
         });
 
+        // Determine source based on request origin
+        const source = body.source || (body.maxUserId ? 'max_bot' : 'telegram_miniapp');
+
         const newBooking = await tx.booking.create({
           data: {
             userId,
@@ -403,6 +418,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
             scheduledDate: dateObj,
             timeSlotId: timeSlotId,
             cleaningKitId: availableKit.id,
+            source: source as any,
           },
           select: {
             id: true,

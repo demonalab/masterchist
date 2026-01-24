@@ -18,9 +18,17 @@ interface AdminBooking {
   kitNumber: number | null;
   timeSlot: string | null;
   service: string | null;
+  source?: string;
+  paymentProofUrl?: string | null;
   user: { telegramId: string; firstName: string } | null;
   address: { addressLine: string; contactName: string; contactPhone: string } | null;
 }
+
+const SOURCE_LABELS: Record<string, string> = {
+  telegram_bot: '🤖 Telegram бот',
+  telegram_miniapp: '📱 Mini App TG',
+  max_bot: '💬 MAX бот',
+};
 
 interface AdminStats {
   totalBookings: number;
@@ -541,6 +549,29 @@ export function AdminStep() {
                       </a>
                     </div>
                   </>
+                )}
+
+                {selectedBooking.source && (
+                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                    <div className="w-5 h-5 flex items-center justify-center">
+                      <span className="text-sm">📲</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-white/40">Источник</p>
+                      <p className="text-sm text-white">{SOURCE_LABELS[selectedBooking.source] || selectedBooking.source}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedBooking.paymentProofUrl && (
+                  <div className="p-3 bg-white/5 rounded-xl">
+                    <p className="text-xs text-white/40 mb-2">📸 Фото чека</p>
+                    <img 
+                      src={selectedBooking.paymentProofUrl} 
+                      alt="Чек оплаты" 
+                      className="w-full max-h-48 object-contain rounded-lg bg-black/20"
+                    />
+                  </div>
                 )}
 
                 {selectedBooking.user && (
