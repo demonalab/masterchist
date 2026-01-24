@@ -123,7 +123,7 @@ export function ConfirmStep() {
         </div>
         <div className="flex items-center gap-2 text-accent-green text-sm">
           <Gift weight="duotone" className="w-4 h-4" />
-          <span>Сушилка и химия в подарок!</span>
+          <span>Сушка мебели и химия в подарок!</span>
         </div>
       </motion.div>
 

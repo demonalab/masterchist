@@ -25,7 +25,7 @@ export async function sendMessageToUser(userId: string, text: string) {
   }
 }
 
-const WEBAPP_URL = 'https://xn--80akjkwedee1c.xn--p1ai';
+const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
 function welcomeKeyboard() {
   return Keyboard.inlineKeyboard([
@@ -47,7 +47,7 @@ export function createBot() {
 • Профессиональная химчистка — мастер приедет к вам
 
 💰 Акция: 1500 ₽/сутки
-🎁 Сушилка и химия в подарок!
+🎁 Сушка мебели и химия в подарок!
 
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 

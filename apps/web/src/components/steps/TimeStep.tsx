@@ -59,7 +59,7 @@ export function TimeStep() {
       <motion.div className="mb-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <p className="label-sm">Шаг 4 из 6</p>
         <h1 className="text-hero">
-          Выберите <span className="text-hero-accent">время</span>
+          Выберите <span className="text-hero-accent">время доставки</span>
         </h1>
         {draft.scheduledDate && (
           <p className="text-white/40 mt-2 capitalize">

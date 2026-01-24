@@ -45,7 +45,7 @@ export async function selfCleaningConversation(
       caption: `🧹 <b>Химчистка самообслуживания</b>
 
 💰 <b>АКЦИЯ: 1500 ₽ за сутки</b>
-🎁 Сушилка и химия в подарок!`,
+🎁 Сушка мебели и химия в подарок!`,
       parse_mode: 'HTML',
     });
   } catch (err) {
@@ -144,7 +144,7 @@ export async function selfCleaningConversation(
       return;
     }
 
-    await ctx.reply('🕐 Выберите время:', { reply_markup: buildTimeSlotsKeyboard(slots) });
+    await ctx.reply('🕐 Выберите время доставки:', { reply_markup: buildTimeSlotsKeyboard(slots) });
 
     const slotCtx = await conversation.waitForCallbackQuery(/^slot[|:]|^back:date$/);
     await slotCtx.answerCallbackQuery();

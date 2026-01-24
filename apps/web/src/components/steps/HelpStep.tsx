@@ -91,7 +91,7 @@ export function HelpStep({ onBack }: HelpStepProps) {
           <div className="glass-card-static p-4">
             <p className="font-medium text-white text-sm mb-1">Что входит в набор?</p>
             <p className="text-xs text-white/40">
-              Моющий пылесос, профессиональная химия, сушилка, инструкция.
+              Моющий пылесос, профессиональная химия, сушка мебели, инструкция.
             </p>
           </div>
           

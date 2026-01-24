@@ -146,14 +146,14 @@ export default function BookingPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Время
+                  Время доставки
                 </label>
                 <Select
                   value={form.time}
                   onValueChange={(value) => setForm({ ...form, time: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Выберите время" />
+                    <SelectValue placeholder="Выберите время доставки" />
                   </SelectTrigger>
                   <SelectContent>
                     {timeSlots.map((time) => (

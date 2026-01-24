@@ -108,7 +108,7 @@ export function ServiceStep() {
             <Gift weight="duotone" className="w-5 h-5 text-accent-green" />
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-accent-green">Сушилка и химия в подарок!</p>
+            <p className="text-sm font-medium text-accent-green">Сушка мебели и химия в подарок!</p>
             <p className="text-xs text-white/40">При заказе сегодня</p>
           </div>
           <CaretRight weight="bold" className="w-5 h-5 text-accent-green" />
