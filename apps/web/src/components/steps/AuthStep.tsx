@@ -8,13 +8,14 @@ import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
 interface AuthStepProps {
   onBack: () => void;
   onSuccess: (token: string) => void;
+  maxId?: string;
 }
 
 type AuthMode = 'login' | 'register';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xn--80akjnwedee1c.xn--p1ai';
 
-export function AuthStep({ onBack, onSuccess }: AuthStepProps) {
+export function AuthStep({ onBack, onSuccess, maxId }: AuthStepProps) {
   const [mode, setMode] = useState<AuthMode>('login');
   const [phone, setPhone] = useState('+7 ');
   const [password, setPassword] = useState('');
@@ -55,6 +56,11 @@ export function AuthStep({ onBack, onSuccess }: AuthStepProps) {
       
       if (mode === 'register') {
         body.firstName = firstName.trim();
+      }
+      
+      // Add maxId to link MAX account on login
+      if (maxId) {
+        body.maxId = maxId;
       }
 
       const res = await fetch(`${API_BASE_URL}${endpoint}`, {

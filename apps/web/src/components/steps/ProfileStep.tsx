@@ -46,7 +46,7 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   const [formError, setFormError] = useState('');
   
   // Auth state
-  const [authUser, setAuthUser] = useState<{ phone: string; firstName: string } | null>(null);
+  const [authUser, setAuthUser] = useState<{ phone: string; firstName: string; username?: string | null } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const user = webApp?.initDataUnsafe?.user;
@@ -72,7 +72,7 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
       
       if (res.ok) {
         const data = await res.json();
-        setAuthUser({ phone: data.phone, firstName: data.firstName });
+        setAuthUser({ phone: data.phone, firstName: data.firstName, username: data.username });
       } else {
         localStorage.removeItem('auth_token');
       }
@@ -200,6 +200,8 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
             </p>
             {user?.username ? (
               <p className="text-sm text-white/40">@{user.username}</p>
+            ) : authUser?.username ? (
+              <p className="text-sm text-white/40">@{authUser.username}</p>
             ) : authUser?.phone ? (
               <p className="text-sm text-white/40">{authUser.phone}</p>
             ) : null}

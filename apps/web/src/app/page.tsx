@@ -24,7 +24,7 @@ import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
   const { step, error, setError, setStep } = useBookingStore();
-  const { isReady, isTelegram, isMax } = useTelegram();
+  const { isReady, isTelegram, isMax, maxWebApp } = useTelegram();
   const searchParams = useSearchParams();
   const devMode = searchParams.get('dev') === '1';
   
@@ -94,7 +94,9 @@ function HomeContent() {
   }
   
   if (step === 'auth') {
-    return <AuthStep onBack={handleBackToService} onSuccess={() => setStep('profile')} />;
+    // Get MAX user ID for account linking
+    const maxUserId = maxWebApp?.initDataUnsafe?.user?.id?.toString();
+    return <AuthStep onBack={handleBackToService} onSuccess={() => setStep('profile')} maxId={maxUserId} />;
   }
 
   const StepComponent = {

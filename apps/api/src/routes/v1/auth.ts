@@ -16,6 +16,7 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   phone: z.string().min(10).max(20),
   password: z.string().min(1).max(100),
+  maxId: z.string().optional(),
 });
 
 const linkAccountSchema = z.object({
@@ -97,7 +98,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.badRequest(parseResult.error.errors[0]?.message ?? 'Invalid request');
     }
 
-    const { phone, password } = parseResult.data;
+    const { phone, password, maxId } = parseResult.data;
 
     const user = await prisma.user.findUnique({
       where: { phone },
@@ -111,6 +112,45 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
       return reply.unauthorized('Неверный телефон или пароль');
+    }
+
+    // Link MAX account if maxId provided
+    if (maxId) {
+      const maxUser = await prisma.user.findUnique({
+        where: { maxId: String(maxId) },
+        select: { id: true },
+      });
+
+      if (maxUser && maxUser.id !== user.id) {
+        // Merge: move bookings from MAX user to phone user
+        await prisma.booking.updateMany({
+          where: { userId: maxUser.id },
+          data: { userId: user.id },
+        });
+
+        // Move addresses
+        await prisma.address.updateMany({
+          where: { userId: maxUser.id },
+          data: { userId: user.id },
+        });
+
+        // Update phone user with MAX ID
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { maxId: String(maxId) },
+        });
+
+        // Delete old MAX user
+        await prisma.user.delete({
+          where: { id: maxUser.id },
+        });
+      } else if (!maxUser) {
+        // Just add maxId to phone user
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { maxId: String(maxId) },
+        });
+      }
     }
 
     const token = generateToken(user.id);
@@ -225,6 +265,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
         id: true,
         phone: true,
         firstName: true,
+        username: true,
         telegramId: true,
         maxId: true,
         createdAt: true,
@@ -239,6 +280,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       id: user.id,
       phone: user.phone,
       firstName: user.firstName,
+      username: user.username,
       hasTelegram: !!user.telegramId,
       hasMax: !!user.maxId,
       createdAt: user.createdAt.toISOString(),
