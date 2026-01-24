@@ -603,6 +603,53 @@ class ApiClientExtended extends ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  async getCities(): Promise<ApiResult<Array<{
+    id: string;
+    city: string;
+    isActive: boolean;
+    deliveryPriceRub: number;
+    minOrderRub: number | null;
+  }>>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/cities`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async updateCity(city: string, data: {
+    isActive?: boolean;
+    deliveryPriceRub?: number;
+    minOrderRub?: number | null;
+  }): Promise<ApiResult<{ id: string; city: string; isActive: boolean; deliveryPriceRub: number }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/cities/${city}`, {
+        method: 'PATCH',
+        headers: this.headers,
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }
 
 export const api = new ApiClientExtended();

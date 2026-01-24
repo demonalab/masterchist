@@ -266,6 +266,46 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return { success: true };
   });
 
+  // ============ CITY SETTINGS ============
+
+  // Get all city settings
+  fastify.get('/cities', async () => {
+    const cities = await prisma.citySettings.findMany({
+      orderBy: { city: 'asc' },
+    });
+    return cities;
+  });
+
+  // Update city settings (super admin only)
+  fastify.patch<{
+    Params: { city: string };
+    Body: { isActive?: boolean; deliveryPriceRub?: number; minOrderRub?: number };
+  }>('/cities/:city', async (request, reply) => {
+    if ((request as any).adminRole !== 'super_admin') {
+      return reply.forbidden('Только для супер-админа');
+    }
+
+    const { city } = request.params;
+    const { isActive, deliveryPriceRub, minOrderRub } = request.body;
+
+    const updated = await prisma.citySettings.upsert({
+      where: { city: city as any },
+      update: {
+        ...(isActive !== undefined && { isActive }),
+        ...(deliveryPriceRub !== undefined && { deliveryPriceRub }),
+        ...(minOrderRub !== undefined && { minOrderRub }),
+      },
+      create: {
+        city: city as any,
+        isActive: isActive ?? true,
+        deliveryPriceRub: deliveryPriceRub ?? 0,
+        minOrderRub: minOrderRub ?? null,
+      },
+    });
+
+    return updated;
+  });
+
   // ============ EXPORT ============
 
   const STATUS_LABELS: Record<string, string> = {
