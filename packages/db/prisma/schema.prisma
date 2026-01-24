@@ -34,6 +34,7 @@ model User {
   firstName    String?  @db.VarChar(128)
   lastName     String?  @db.VarChar(128)
   languageCode String?  @db.VarChar(16)
+  phone        String?  @db.VarChar(20)
   isAdmin      Boolean  @default(false)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
@@ -128,6 +129,7 @@ model Booking {
   cleaningKit CleaningKit? @relation(fields: [cleaningKitId], references: [id], onDelete: Restrict)
 
   paymentProofs PaymentProof[]
+  statusHistory BookingStatusHistory[]
 
   @@unique([cleaningKitId, scheduledDate, timeSlotId], map: "uniq_kit_date_slot")
   @@index([userId, createdAt])
@@ -177,4 +179,29 @@ model AbandonedConversation {
   
   @@index([telegramId, completedAt])
   @@index([startedAt, completedAt])
+}
+
+model BookingStatusHistory {
+  id        String        @id @default(uuid())
+  bookingId String
+  status    BookingStatus
+  comment   String?       @db.Text
+  changedBy String?       @db.VarChar(32) // admin telegramId or 'system'
+  createdAt DateTime      @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+model CitySettings {
+  id               String  @id @default(uuid())
+  city             City    @unique
+  isActive         Boolean @default(true)
+  deliveryPriceRub Int     @default(0)
+  minOrderRub      Int?    
+  workingHoursFrom String? @db.VarChar(5) // "09:00"
+  workingHoursTo   String? @db.VarChar(5) // "21:00"
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }

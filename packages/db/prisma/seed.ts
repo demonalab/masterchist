@@ -1,4 +1,4 @@
-import { PrismaClient, ServiceCode } from '@prisma/client';
+import { PrismaClient, ServiceCode, City } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -35,6 +35,30 @@ const SERVICES = [
     priceRub: 0,
     prepaymentRub: null,
     isActive: false,
+  },
+] as const;
+
+const CITY_SETTINGS = [
+  {
+    city: City.ROSTOV_NA_DONU,
+    isActive: true,
+    deliveryPriceRub: 0,
+    workingHoursFrom: '07:00',
+    workingHoursTo: '21:00',
+  },
+  {
+    city: City.BATAYSK,
+    isActive: true,
+    deliveryPriceRub: 200,
+    workingHoursFrom: '08:00',
+    workingHoursTo: '20:00',
+  },
+  {
+    city: City.STAVROPOL,
+    isActive: true,
+    deliveryPriceRub: 0,
+    workingHoursFrom: '08:00',
+    workingHoursTo: '20:00',
   },
 ] as const;
 
@@ -93,11 +117,34 @@ async function seedServices() {
   console.log(`Seeded ${SERVICES.length} services`);
 }
 
+async function seedCitySettings() {
+  for (const settings of CITY_SETTINGS) {
+    await prisma.citySettings.upsert({
+      where: { city: settings.city },
+      update: {
+        isActive: settings.isActive,
+        deliveryPriceRub: settings.deliveryPriceRub,
+        workingHoursFrom: settings.workingHoursFrom,
+        workingHoursTo: settings.workingHoursTo,
+      },
+      create: {
+        city: settings.city,
+        isActive: settings.isActive,
+        deliveryPriceRub: settings.deliveryPriceRub,
+        workingHoursFrom: settings.workingHoursFrom,
+        workingHoursTo: settings.workingHoursTo,
+      },
+    });
+  }
+  console.log(`Seeded ${CITY_SETTINGS.length} city settings`);
+}
+
 async function main() {
   console.log('Starting seed...');
   await seedCleaningKits();
   await seedTimeSlots();
   await seedServices();
+  await seedCitySettings();
   console.log('Seed completed.');
 }
 
