@@ -29,7 +29,7 @@ const WEBAPP_URL = 'https://xn--80akjkwedee1c.xn--p1ai';
 
 function welcomeKeyboard() {
   return Keyboard.inlineKeyboard([
-    [Keyboard.button.link('Otkryt prilozhenie', WEBAPP_URL)],
+    [Keyboard.button.link('🚀 Открыть приложение', WEBAPP_URL)],
   ]);
 }
 
@@ -38,17 +38,18 @@ export function createBot() {
   botInstance = bot;
 
   bot.command('start', async (ctx) => {
-    const welcomeText = `Dobro pozhalovat v MasterChist!
+    const welcomeText = `👋 Добро пожаловать в МастерЧист!
 
-Servis arendy naborov dlya himchistki mebeli
+🧹 Сервис аренды наборов для химчистки мебели
 
-Chem my pomogem:
-- Himchistka samoobsluzhivaniya - arenda nabora na sutki
-- Prof. himchistka - master priedet k vam
+Что мы предлагаем:
+• Химчистка самообслуживания — аренда набора на сутки
+• Профессиональная химчистка — мастер приедет к вам
 
-Akciya: 1500 rub/sutki
+💰 Акция: 1500 ₽/сутки
+🎁 Сушилка и химия в подарок!
 
-Zkmite knopku nishe chtoby otkryt prilozhenie:`;
+📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
   });
@@ -57,11 +58,11 @@ Zkmite knopku nishe chtoby otkryt prilozhenie:`;
     const message = ctx.message as any;
     const text = message?.body?.text || '';
     if (text.startsWith('/')) return;
-    await ctx.reply('Dlya oformleniya zakaza nazhmite knopku nishe:', { attachments: [welcomeKeyboard()] });
+    await ctx.reply('👋 Для оформления заказа нажмите кнопку ниже:', { attachments: [welcomeKeyboard()] });
   });
 
   bot.on('message_callback', async (ctx) => {
-    await ctx.reply('Nazhmite knopku Otkryt prilozhenie:', { attachments: [welcomeKeyboard()] });
+    await ctx.reply('📱 Нажмите кнопку "Открыть приложение":', { attachments: [welcomeKeyboard()] });
   });
 
   return bot;
