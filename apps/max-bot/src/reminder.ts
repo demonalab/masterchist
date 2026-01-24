@@ -46,7 +46,7 @@ export async function sendReminders(): Promise<void> {
           const serviceName = SERVICE_NAMES[conv.serviceCode] || conv.serviceCode;
           await sendMessageToUser(
             conv.telegramId,
-            `👋 Привет! Вы начали оформлять заявку на "${serviceName}", но не завершили её.\n\nХотите продолжить? Просто выберите услугу в меню! 👇`
+            `👋 Привет! Вы начали оформлять заявку на "${serviceName}", но не завершили её.\n\nХотите продолжить? Откройте приложение и завершите заказ! 📱`
           );
           // Mark as sent
           await fetch(`${API_BASE_URL}/api/v1/conversations/${conv.id}/mark-2h-sent`, { method: 'POST' });
@@ -68,7 +68,7 @@ export async function sendReminders(): Promise<void> {
             const serviceName = SERVICE_NAMES[conv.serviceCode] || conv.serviceCode;
             await sendMessageToUser(
               conv.telegramId,
-              `🌞 Добрый день! Напоминаем, что вы вчера начали оформлять заявку на "${serviceName}".\n\nМы будем рады помочь вам! Выберите услугу в меню. 👇`
+              `🌞 Добрый день! Напоминаем, что вы вчера начали оформлять заявку на "${serviceName}".\n\nМы будем рады помочь вам! Откройте приложение для завершения заказа. 📱`
             );
             // Mark as sent
             await fetch(`${API_BASE_URL}/api/v1/conversations/${conv.id}/mark-next-day-sent`, { method: 'POST' });
