@@ -3,6 +3,66 @@ import { z } from 'zod';
 import { prisma } from '@himchistka/db';
 import { Cities, ServiceCodes, BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
+import { config } from '../../config';
+
+async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
+  if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
+    console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
+    return;
+  }
+
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        scheduledDate: true,
+        cleaningKit: { select: { number: true } },
+        timeSlot: { select: { startTime: true, endTime: true } },
+        address: { select: { addressLine: true, contactName: true, contactPhone: true } },
+        user: { select: { telegramId: true, firstName: true } },
+        service: { select: { title: true } },
+      },
+    });
+
+    if (!booking) return;
+
+    const date = booking.scheduledDate
+      ? booking.scheduledDate.toISOString().split('T')[0]
+      : '—';
+
+    const message = `💰 <b>Новая оплата!</b>
+
+📋 ID: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
+🧹 ${booking.service?.title ?? 'Химчистка'}
+📅 ${date}
+🕐 ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}
+📦 Набор #${booking.cleaningKit?.number ?? '—'}
+
+👤 ${booking.address?.contactName ?? '—'}
+📞 ${booking.address?.contactPhone ?? '—'}
+📍 ${booking.address?.addressLine ?? '—'}
+
+⏳ Подтвердите в админ-панели`;
+
+    const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
+    
+    for (const adminId of adminIds) {
+      await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: adminId,
+          text: message,
+          parse_mode: 'HTML',
+        }),
+      });
+    }
+    console.log('Admin notifications sent to:', adminIds);
+  } catch (err) {
+    console.error('Failed to notify admins:', err);
+  }
+}
 
 const createSelfCleaningSchema = z.object({
   serviceCode: z.literal(ServiceCodes.SELF_CLEANING),
@@ -634,6 +694,11 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           status: BookingStatuses.PREPAID,
         },
         select: { id: true, status: true },
+      });
+
+      // Notify admins about payment
+      notifyAdminsAboutPayment(id).catch(err => {
+        console.error('Admin notification failed:', err);
       });
 
       return { success: true, id: updated.id, status: updated.status };
