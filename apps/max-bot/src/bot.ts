@@ -27,10 +27,15 @@ export async function sendMessageToUser(userId: string, text: string) {
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
 
-function welcomeKeyboard() {
-  return Keyboard.inlineKeyboard([
-    [Keyboard.button.link('🚀 Открыть приложение', WEBAPP_URL)],
-  ]);
+function welcomeKeyboard(): any {
+  return {
+    type: 'inline_keyboard' as const,
+    payload: {
+      buttons: [[
+        { type: 'open_app' as const, text: '🚀 Открыть приложение', url: WEBAPP_URL }
+      ]]
+    }
+  };
 }
 
 export function createBot() {
