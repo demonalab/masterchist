@@ -12,7 +12,7 @@ interface AuthStepProps {
 
 type AuthMode = 'login' | 'register';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xn--80akjnwedee1c.xn--p1ai/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xn--80akjnwedee1c.xn--p1ai';
 
 export function AuthStep({ onBack, onSuccess }: AuthStepProps) {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -47,7 +47,7 @@ export function AuthStep({ onBack, onSuccess }: AuthStepProps) {
     setLoading(true);
 
     try {
-      const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
+      const endpoint = mode === 'login' ? '/api/v1/auth/login' : '/api/v1/auth/register';
       const body: any = {
         phone: '+' + cleanPhone,
         password,
