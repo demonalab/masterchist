@@ -5,7 +5,7 @@ import { BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import { config } from '../../config';
 
-async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
+async function notifyAdminsAboutPayment(bookingId: string, fileBuffer?: Buffer, mimeType?: string): Promise<void> {
   if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
     console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
     return;
@@ -49,15 +49,31 @@ async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
     const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
     
     for (const adminId of adminIds) {
-      await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: adminId,
-          text: message,
-          parse_mode: 'HTML',
-        }),
-      });
+      // Send photo if available
+      if (fileBuffer && mimeType?.startsWith('image/')) {
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('chat_id', adminId);
+        formData.append('photo', fileBuffer, { filename: 'payment_proof.jpg', contentType: mimeType });
+        formData.append('caption', message);
+        formData.append('parse_mode', 'HTML');
+        
+        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
+          method: 'POST',
+          body: formData as any,
+          headers: formData.getHeaders(),
+        });
+      } else {
+        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: adminId,
+            text: message,
+            parse_mode: 'HTML',
+          }),
+        });
+      }
     }
   } catch (err) {
     console.error('Failed to notify admins:', err);
@@ -144,7 +160,7 @@ const paymentProofsRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     // Notify admins in background (don't await to not block response)
-    notifyAdminsAboutPayment(result.id).catch(err => {
+    notifyAdminsAboutPayment(result.id, fileBuffer, data.mimetype).catch(err => {
       console.error('Admin notification failed:', err);
     });
 

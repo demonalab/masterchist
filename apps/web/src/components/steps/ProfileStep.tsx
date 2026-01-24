@@ -72,7 +72,7 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
       
       if (res.ok) {
         const data = await res.json();
-        setAuthUser(data.user);
+        setAuthUser({ phone: data.phone, firstName: data.firstName });
       } else {
         localStorage.removeItem('auth_token');
       }
