@@ -9,6 +9,7 @@ import {
 import { api, SavedAddress } from '@/lib/api';
 import { useTelegram } from '@/lib/telegram-provider';
 import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
+import { useBookingStore } from '@/lib/booking-store';
 
 interface ProfileStepProps {
   onBack: () => void;
@@ -28,6 +29,7 @@ const CITIES = [
 
 export function ProfileStep({ onBack }: ProfileStepProps) {
   const { webApp } = useTelegram();
+  const { setStep } = useBookingStore();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -261,12 +263,39 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
         )}
       </motion.div>
 
-      {/* Support */}
+      {/* Account */}
       <motion.div
         className="mt-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <User weight="duotone" className="w-5 h-5 text-accent-blue" />
+          Личный кабинет
+        </h2>
+        
+        <button
+          onClick={() => setStep('auth')}
+          className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors mb-3"
+        >
+          <div className="icon-box w-10 h-10">
+            <User weight="duotone" className="w-5 h-5 text-accent-green" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="font-medium text-white">Вход / Регистрация</p>
+            <p className="text-xs text-white/40">Связать аккаунты, история заказов</p>
+          </div>
+          <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
+        </button>
+      </motion.div>
+
+      {/* Support */}
+      <motion.div
+        className="mt-4"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
       >
         <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
           <Phone weight="duotone" className="w-5 h-5 text-accent-purple" />

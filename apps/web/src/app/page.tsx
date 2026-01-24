@@ -19,6 +19,7 @@ import { HelpStep } from '@/components/steps/HelpStep';
 import { ProfileStep } from '@/components/steps/ProfileStep';
 import { ProCleaningStep } from '@/components/steps/ProCleaningStep';
 import { AdminStep } from '@/components/steps/AdminStep';
+import { AuthStep } from '@/components/steps/AuthStep';
 import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
@@ -90,6 +91,10 @@ function HomeContent() {
   
   if (step === 'admin') {
     return <AdminStep />;
+  }
+  
+  if (step === 'auth') {
+    return <AuthStep onBack={handleBackToService} onSuccess={() => setStep('profile')} />;
   }
 
   const StepComponent = {
