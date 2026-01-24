@@ -231,22 +231,84 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
 
     try {
       const booking = await prisma.$transaction(async (tx) => {
-        const activeKits = await tx.cleaningKit.findMany({
-          where: { isActive: true },
-          select: { id: true },
-        });
+        // Previous day - kits booked yesterday are unavailable until their slot time today
+        const prevDateObj = new Date(dateObj);
+        prevDateObj.setUTCDate(prevDateObj.getUTCDate() - 1);
+        
+        // Next day - kits booked tomorrow block today's late slots
+        const nextDateObj = new Date(dateObj);
+        nextDateObj.setUTCDate(nextDateObj.getUTCDate() + 1);
 
-        const bookedKitIds = await tx.booking.findMany({
-          where: {
-            scheduledDate: dateObj,
-            timeSlotId: timeSlotId,
-            status: { in: [...BLOCKING_STATUSES] },
-            cleaningKitId: { not: null },
-          },
-          select: { cleaningKitId: true },
-        });
+        const [activeKits, timeSlots, todayBookings, yesterdayBookings, tomorrowBookings] = await Promise.all([
+          tx.cleaningKit.findMany({
+            where: { isActive: true },
+            select: { id: true },
+          }),
+          tx.timeSlot.findMany({
+            where: { isActive: true },
+            select: { id: true, sortOrder: true },
+          }),
+          tx.booking.findMany({
+            where: {
+              scheduledDate: dateObj,
+              status: { in: [...BLOCKING_STATUSES] },
+              cleaningKitId: { not: null },
+            },
+            select: { timeSlotId: true, cleaningKitId: true },
+          }),
+          tx.booking.findMany({
+            where: {
+              scheduledDate: prevDateObj,
+              status: { in: [...BLOCKING_STATUSES] },
+              cleaningKitId: { not: null },
+            },
+            select: { timeSlotId: true, cleaningKitId: true },
+          }),
+          tx.booking.findMany({
+            where: {
+              scheduledDate: nextDateObj,
+              status: { in: [...BLOCKING_STATUSES] },
+              cleaningKitId: { not: null },
+            },
+            select: { timeSlotId: true, cleaningKitId: true },
+          }),
+        ]);
 
-        const bookedSet = new Set(bookedKitIds.map((b) => b.cleaningKitId).filter((id: string | null): id is string => id !== null));
+        // Build slot sort order map
+        const slotSortOrder = new Map<string, number>();
+        for (const slot of timeSlots) {
+          slotSortOrder.set(slot.id, slot.sortOrder);
+        }
+        const requestedSlotOrder = slotSortOrder.get(timeSlotId) ?? 0;
+
+        // Collect all blocked kit IDs for the requested slot
+        const bookedSet = new Set<string>();
+
+        // Kits booked today for this specific slot
+        for (const booking of todayBookings) {
+          if (booking.timeSlotId === timeSlotId && booking.cleaningKitId) {
+            bookedSet.add(booking.cleaningKitId);
+          }
+        }
+
+        // Kits blocked from yesterday (kit rented for 24h, blocked until same slot today)
+        for (const booking of yesterdayBookings) {
+          if (!booking.timeSlotId || !booking.cleaningKitId) continue;
+          const blockedUntilOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
+          if (requestedSlotOrder <= blockedUntilOrder) {
+            bookedSet.add(booking.cleaningKitId);
+          }
+        }
+
+        // Kits blocked by tomorrow's bookings (must return before tomorrow's use)
+        for (const booking of tomorrowBookings) {
+          if (!booking.timeSlotId || !booking.cleaningKitId) continue;
+          const blockedFromOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
+          if (requestedSlotOrder >= blockedFromOrder) {
+            bookedSet.add(booking.cleaningKitId);
+          }
+        }
+
         const availableKit = activeKits.find((kit) => !bookedSet.has(kit.id));
 
         if (!availableKit) {

@@ -429,7 +429,7 @@ class ApiClientExtended extends ApiClient {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings/${bookingId}/confirm`, {
         method: 'POST',
-        headers: this.headers,
+        headers: this.headersNoBody,
       });
 
       if (!res.ok) {
@@ -447,7 +447,7 @@ class ApiClientExtended extends ApiClient {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/bookings/${bookingId}/reject`, {
         method: 'POST',
-        headers: this.headers,
+        headers: this.headersNoBody,
       });
 
       if (!res.ok) {
