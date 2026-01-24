@@ -52,6 +52,8 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   const user = webApp?.initDataUnsafe?.user;
 
   useEffect(() => {
+    // Load auth token for API requests (for MAX users)
+    api.loadAuthToken();
     fetchAddresses();
     checkAuth();
   }, []);

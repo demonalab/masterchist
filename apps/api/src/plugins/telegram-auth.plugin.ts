@@ -1,8 +1,11 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import fp from 'fastify-plugin';
+import jwt from 'jsonwebtoken';
 import { prisma } from '@himchistka/db';
 import { validateInitData, isInitDataExpired, TelegramUser } from '../lib/telegram-auth';
 import { config } from '../config';
+
+const JWT_SECRET = config.JWT_SECRET;
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -61,6 +64,28 @@ async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise
 }
 
 export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyReply) => {
+  // JWT Authorization header - for phone-authenticated users (MAX)
+  const authHeader = request.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      if (decoded?.userId) {
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.userId },
+          select: { id: true, firstName: true, username: true },
+        });
+        if (user) {
+          request.dbUserId = user.id;
+          request.telegramUser = { id: 0, first_name: user.firstName || 'User', username: user.username || undefined };
+          return;
+        }
+      }
+    } catch (err) {
+      // Token invalid, continue to other auth methods
+    }
+  }
+
   // Dev mode bypass - create mock user (local dev or ?dev=1 mode)
   // Use first super admin ID for dev mode to have admin access
   const devHeader = request.headers['x-dev-mode'];

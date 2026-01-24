@@ -7,6 +7,7 @@ const envSchema = z.object({
   BOT_TOKEN: z.string().min(1),
   MAX_BOT_TOKEN: z.string().optional(),
   ADMIN_TELEGRAM_ID: z.string().optional(),
+  JWT_SECRET: z.string().default('your-secret-key-change-in-production'),
   // Payment requisites
   PAYMENT_CARD_NUMBER: z.string().default(''),
   PAYMENT_CARD_BANK: z.string().default('Сбербанк'),

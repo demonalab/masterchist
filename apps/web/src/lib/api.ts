@@ -60,6 +60,7 @@ export type ApiResult<T> =
 class ApiClient {
   protected initData: string = '';
   protected devMode: boolean = false;
+  protected authToken: string = '';
 
   setInitData(initData: string) {
     this.initData = initData;
@@ -67,6 +68,16 @@ class ApiClient {
 
   setDevMode(enabled: boolean) {
     this.devMode = enabled;
+  }
+
+  setAuthToken(token: string) {
+    this.authToken = token;
+  }
+
+  loadAuthToken() {
+    if (typeof localStorage !== 'undefined') {
+      this.authToken = localStorage.getItem('auth_token') || '';
+    }
   }
 
   protected get headers(): Record<string, string> {
@@ -78,6 +89,10 @@ class ApiClient {
     } else if (this.initData) {
       h['X-Telegram-Init-Data'] = this.initData;
     }
+    // Also add auth token if available (for MAX users)
+    if (this.authToken) {
+      h['Authorization'] = `Bearer ${this.authToken}`;
+    }
     return h;
   }
 
@@ -87,6 +102,10 @@ class ApiClient {
       h['X-Dev-Mode'] = '1';
     } else if (this.initData) {
       h['X-Telegram-Init-Data'] = this.initData;
+    }
+    // Also add auth token if available (for MAX users)
+    if (this.authToken) {
+      h['Authorization'] = `Bearer ${this.authToken}`;
     }
     return h;
   }
