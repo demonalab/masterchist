@@ -105,7 +105,7 @@ export async function handleHelp(chatId: number) {
 
 🏠 <b>Клининг</b> — уборка помещений (скоро)
 
-📞 Контакт: @MasterChist_support`;
+📞 Контакт: @rim613`;
 
   await api.sendMessage(chatId, text, backKeyboard);
 }

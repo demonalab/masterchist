@@ -109,7 +109,7 @@ export function createBot(): Bot<BotContext> {
 
 🏠 <b>Клининг</b> — уборка помещений
 
-📞 Контакт: @MasterChist_support`,
+📞 Контакт: @rim613`,
       { parse_mode: 'HTML' }
     );
   });

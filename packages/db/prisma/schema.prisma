@@ -27,6 +27,12 @@ enum BookingStatus {
   cancelled
 }
 
+enum BookingSource {
+  telegram_bot
+  telegram_miniapp
+  max_bot
+}
+
 model User {
   id           String   @id @default(uuid())
   telegramId   String   @unique @db.VarChar(32)
@@ -118,6 +124,7 @@ model Booking {
 
   proCleaningDetails    String?       @db.Text
   proCleaningPhotoFileIds String[]    @default([])
+  source                BookingSource @default(telegram_bot)
 
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
@@ -141,6 +148,7 @@ model PaymentProof {
   id            String   @id @default(uuid())
   bookingId     String
   telegramFileId String  @db.VarChar(256)
+  photoUrl      String?  @db.Text
   mimeType      String?  @db.VarChar(64)
   fileName      String?  @db.VarChar(256)
   createdAt     DateTime @default(now())
