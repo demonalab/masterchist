@@ -44,12 +44,48 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   const [newLabel, setNewLabel] = useState('Дом');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  
+  // Auth state
+  const [authUser, setAuthUser] = useState<{ phone: string; firstName: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const user = webApp?.initDataUnsafe?.user;
 
   useEffect(() => {
     fetchAddresses();
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    setAuthLoading(true);
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+      setAuthLoading(false);
+      return;
+    }
+    
+    try {
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://xn--80akjnwedee1c.xn--p1ai';
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setAuthUser(data.user);
+      } else {
+        localStorage.removeItem('auth_token');
+      }
+    } catch (err) {
+      console.error('Auth check failed:', err);
+    }
+    setAuthLoading(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token');
+    setAuthUser(null);
+  };
 
   const fetchAddresses = async () => {
     setLoading(true);
@@ -275,19 +311,43 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
           Личный кабинет
         </h2>
         
-        <button
-          onClick={() => setStep('auth')}
-          className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors mb-3"
-        >
-          <div className="icon-box w-10 h-10">
-            <User weight="duotone" className="w-5 h-5 text-accent-green" />
+        {authLoading ? (
+          <div className="glass-card-static p-4 flex items-center justify-center">
+            <SpinnerGap className="w-5 h-5 text-white/40 animate-spin" />
           </div>
-          <div className="flex-1 text-left">
-            <p className="font-medium text-white">Вход / Регистрация</p>
-            <p className="text-xs text-white/40">Связать аккаунты, история заказов</p>
+        ) : authUser ? (
+          <div className="glass-card-static p-4 mb-3">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="icon-box w-10 h-10 bg-accent-green/20">
+                <Check weight="bold" className="w-5 h-5 text-accent-green" />
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-white">{authUser.firstName}</p>
+                <p className="text-xs text-white/40">{authUser.phone}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full py-2 bg-white/5 text-white/60 rounded-lg text-sm hover:bg-white/10 transition-colors"
+            >
+              Выйти из аккаунта
+            </button>
           </div>
-          <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
-        </button>
+        ) : (
+          <button
+            onClick={() => setStep('auth')}
+            className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors mb-3"
+          >
+            <div className="icon-box w-10 h-10">
+              <User weight="duotone" className="w-5 h-5 text-accent-green" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium text-white">Вход / Регистрация</p>
+              <p className="text-xs text-white/40">Связать аккаунты, история заказов</p>
+            </div>
+            <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
+          </button>
+        )}
       </motion.div>
 
       {/* Support */}
