@@ -196,11 +196,13 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
           </div>
           <div className="flex-1">
             <p className="font-semibold text-white text-lg">
-              {user?.first_name || 'Пользователь'} {user?.last_name || ''}
+              {user?.first_name || authUser?.firstName || 'Пользователь'} {user?.last_name || ''}
             </p>
-            {user?.username && (
+            {user?.username ? (
               <p className="text-sm text-white/40">@{user.username}</p>
-            )}
+            ) : authUser?.phone ? (
+              <p className="text-sm text-white/40">{authUser.phone}</p>
+            ) : null}
           </div>
         </div>
       </motion.div>
