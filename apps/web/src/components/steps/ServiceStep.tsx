@@ -24,19 +24,22 @@ export function ServiceStep() {
     const hasAuth = initData || localStorage.getItem('auth_token');
     if (hasAuth) {
       api.getAdminRole().then(res => {
+        console.log('Admin role response:', res);
         if (res.ok && res.data.role) {
           setIsAdmin(true);
           // Load pending bookings count for admins
           api.getAdminStats().then(statsRes => {
+            console.log('Admin stats response:', statsRes);
             if (statsRes.ok) {
               const stats = statsRes.data;
-              // Count new + awaiting prepayment bookings
-              setPendingCount((stats.newBookings || 0) + (stats.awaitingPrepaymentBookings || 0));
+              const count = (stats.newBookings || 0) + (stats.awaitingPrepaymentBookings || 0);
+              console.log('Pending count:', count, stats);
+              setPendingCount(count);
             }
           });
         }
-      }).catch(() => {
-        // User is not admin - expected behavior, no action needed
+      }).catch((err) => {
+        console.log('Admin role error:', err);
       });
     }
   }, [isReady, initData]);

@@ -63,10 +63,11 @@ export async function notifyUserAllChannels(options: NotifyUserOptions): Promise
     }
 
     // Send to MAX
+    console.log(`MAX notification check: token=${!!config.MAX_BOT_TOKEN}, maxIds=${maxIds.join(',')}`);
     if (config.MAX_BOT_TOKEN && maxIds.length > 0) {
       for (const chatId of maxIds) {
         try {
-          await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
+          const maxRes = await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
             method: 'POST',
             headers: { 
               'Authorization': config.MAX_BOT_TOKEN,
@@ -77,6 +78,8 @@ export async function notifyUserAllChannels(options: NotifyUserOptions): Promise
               format: parseMode === 'HTML' ? 'html' : 'text',
             }),
           });
+          const maxResText = await maxRes.text();
+          console.log(`MAX notification to ${chatId}: status=${maxRes.status}, response=${maxResText}`);
         } catch (err) {
           console.error(`Failed to send MAX notification to ${chatId}:`, err);
         }
