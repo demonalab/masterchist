@@ -52,36 +52,47 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
     console.log('Sending payment notification, photoBuffer:', !!photoBuffer, 'mimeType:', mimeType);
     
     for (const adminId of adminIds) {
-      if (photoBuffer && mimeType?.startsWith('image/')) {
-        console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
-        const FormData = (await import('form-data')).default;
-        const formData = new FormData();
-        formData.append('chat_id', adminId);
-        formData.append('photo', photoBuffer, { filename: 'payment_proof.jpg', contentType: mimeType });
-        formData.append('caption', message);
-        formData.append('parse_mode', 'HTML');
-        
-        const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
-          method: 'POST',
-          body: formData as any,
-          headers: formData.getHeaders(),
-        });
-        const result = await response.json();
-        console.log('Telegram sendPhoto response:', JSON.stringify(result));
-      } else {
-        console.log('Sending text message to admin:', adminId, '(no photo)');
-        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: adminId,
-            text: message,
-            parse_mode: 'HTML',
-          }),
-        });
+      try {
+        if (photoBuffer && mimeType?.startsWith('image/')) {
+          console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
+          const FormData = (await import('form-data')).default;
+          const formData = new FormData();
+          formData.append('chat_id', adminId);
+          formData.append('photo', photoBuffer, { filename: 'payment_proof.jpg', contentType: mimeType });
+          formData.append('caption', message);
+          formData.append('parse_mode', 'HTML');
+          
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 30000);
+          
+          const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData as any,
+            headers: formData.getHeaders(),
+            signal: controller.signal,
+          });
+          clearTimeout(timeout);
+          const result = await response.json();
+          console.log('Telegram sendPhoto response for', adminId, ':', JSON.stringify(result));
+        } else {
+          console.log('Sending text message to admin:', adminId, '(no photo)');
+          const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: adminId,
+              text: message,
+              parse_mode: 'HTML',
+            }),
+          });
+          const result = await response.json();
+          console.log('Telegram sendMessage response for', adminId, ':', JSON.stringify(result));
+        }
+      } catch (adminErr) {
+        console.error('Failed to send to admin', adminId, ':', adminErr);
       }
     }
-    console.log('Admin notifications sent to:', adminIds);
+    console.log('Admin notifications completed for:', adminIds);
   } catch (err) {
     console.error('Failed to notify admins:', err);
   }
