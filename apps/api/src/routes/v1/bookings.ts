@@ -104,9 +104,12 @@ ${details || '—'}
 
     const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
     
+    console.log('Sending pro cleaning notification, photoBuffer:', !!photoBuffer, 'mimeType:', mimeType);
+    
     for (const adminId of adminIds) {
       // Send photo with caption if available
       if (photoBuffer && mimeType?.startsWith('image/')) {
+        console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
         const FormData = (await import('form-data')).default;
         const formData = new FormData();
         formData.append('chat_id', adminId);
@@ -114,12 +117,15 @@ ${details || '—'}
         formData.append('caption', message);
         formData.append('parse_mode', 'HTML');
         
-        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
+        const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
           method: 'POST',
           body: formData as any,
           headers: formData.getHeaders(),
         });
+        const result = await response.json();
+        console.log('Telegram sendPhoto response:', JSON.stringify(result));
       } else {
+        console.log('Sending text message to admin:', adminId, '(no photo)');
         await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
