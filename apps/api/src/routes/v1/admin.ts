@@ -76,6 +76,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         scheduledDate: true,
         createdAt: true,
         source: true,
+        proCleaningDetails: true,
+        proCleaningPhotoFileIds: true,
         user: { select: { telegramId: true, firstName: true } },
         address: { select: { addressLine: true, contactName: true, contactPhone: true } },
         cleaningKit: { select: { number: true } },
@@ -100,6 +102,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         contactName: b.address.contactName ?? '',
         contactPhone: b.address.contactPhone ?? '',
       } : null,
+      proCleaningDetails: b.proCleaningDetails ?? null,
+      proCleaningPhotoUrls: b.proCleaningPhotoFileIds ?? [],
       paymentProofUrl: (b as any).paymentProofs?.[0]?.photoUrl ?? null,
     }));
   });
