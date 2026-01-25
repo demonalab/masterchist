@@ -186,15 +186,17 @@ export function ServiceStep() {
         {isAdmin && (
           <button 
             onClick={() => handleNavClick('admin')}
-            className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors relative"
+            className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors relative overflow-visible"
           >
-            <GearSix weight="duotone" className="w-6 h-6 text-yellow-400" />
+            <div className="relative">
+              <GearSix weight="duotone" className="w-6 h-6 text-yellow-400" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-2 -right-3 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg">
+                  {pendingCount > 99 ? '99+' : pendingCount}
+                </span>
+              )}
+            </div>
             <span className="text-xs text-white/70">Админ</span>
-            {pendingCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                {pendingCount > 99 ? '99+' : pendingCount}
-              </span>
-            )}
           </button>
         )}
       </motion.div>
