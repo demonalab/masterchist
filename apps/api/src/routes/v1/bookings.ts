@@ -1,3 +1,5 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { FastifyPluginAsync } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '@himchistka/db';
@@ -64,7 +66,7 @@ async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
   }
 }
 
-async function notifyAdminsAboutProCleaning(bookingId: string, details: string): Promise<void> {
+async function notifyAdminsAboutProCleaning(bookingId: string, details: string, photoBuffer?: Buffer, mimeType?: string): Promise<void> {
   if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
     console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
     return;
@@ -103,15 +105,31 @@ ${details || '—'}
     const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
     
     for (const adminId of adminIds) {
-      await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: adminId,
-          text: message,
-          parse_mode: 'HTML',
-        }),
-      });
+      // Send photo with caption if available
+      if (photoBuffer && mimeType?.startsWith('image/')) {
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('chat_id', adminId);
+        formData.append('photo', photoBuffer, { filename: 'pro_cleaning.jpg', contentType: mimeType });
+        formData.append('caption', message);
+        formData.append('parse_mode', 'HTML');
+        
+        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
+          method: 'POST',
+          body: formData as any,
+          headers: formData.getHeaders(),
+        });
+      } else {
+        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: adminId,
+            text: message,
+            parse_mode: 'HTML',
+          }),
+        });
+      }
     }
     console.log('Pro cleaning notifications sent to:', adminIds);
   } catch (err) {
@@ -726,34 +744,77 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.badRequest('Invalid file type. Allowed: jpeg, png, webp');
     }
 
-    // Generate placeholder file ID (in production, upload to storage and get real ID)
+    // Save file to disk
     const crypto = await import('node:crypto');
     const fileBuffer = await data.toBuffer();
     const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
-    const fileId = `photo_${fileHash.slice(0, 32)}`;
+    const fileExt = data.mimetype.split('/')[1] || 'jpg';
+    const fileName = `${fileHash.slice(0, 32)}.${fileExt}`;
+    
+    // Create uploads directory and save file
+    const uploadsDir = path.join(process.cwd(), 'uploads', 'pro-cleaning');
+    await fs.mkdir(uploadsDir, { recursive: true });
+    const filePath = path.join(uploadsDir, fileName);
+    await fs.writeFile(filePath, fileBuffer);
+    
+    const photoUrl = `/uploads/pro-cleaning/${fileName}`;
 
-    // Add file ID to booking's photo array
+    // Add photo URL to booking's photo array
     const updated = await prisma.booking.update({
       where: { id },
       data: {
         proCleaningPhotoFileIds: {
-          push: fileId,
+          push: photoUrl,
         },
       },
       select: { id: true, proCleaningPhotoFileIds: true, proCleaningDetails: true },
     });
 
-    // Send notification to admins on first photo upload
+    // Send notification to admins on first photo upload (with photo)
     if (updated.proCleaningPhotoFileIds.length === 1) {
-      notifyAdminsAboutProCleaning(id, updated.proCleaningDetails || '').catch(err => {
+      notifyAdminsAboutProCleaning(id, updated.proCleaningDetails || '', fileBuffer, data.mimetype).catch(err => {
         console.error('Pro cleaning notification failed:', err);
       });
     }
 
     return { 
       success: true, 
-      fileId,
+      fileId: photoUrl,
       totalPhotos: updated.proCleaningPhotoFileIds.length,
+    };
+  });
+
+  // Get photos for pro cleaning booking
+  fastify.get<{ Params: { id: string } }>('/:id/photos', async (request, reply) => {
+    const { id } = request.params;
+    const userId = request.dbUserId;
+
+    if (!userId) {
+      return reply.unauthorized('User not authenticated');
+    }
+
+    const booking = await prisma.booking.findUnique({
+      where: { id },
+      select: { id: true, userId: true, proCleaningPhotoFileIds: true },
+    });
+
+    if (!booking) {
+      return reply.notFound('Booking not found');
+    }
+
+    // Allow access to own bookings or for admins
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { isAdmin: true },
+    });
+
+    if (booking.userId !== userId && !user?.isAdmin) {
+      return reply.forbidden('Not your booking');
+    }
+
+    return { 
+      bookingId: id,
+      photos: booking.proCleaningPhotoFileIds || [],
     };
   });
 
