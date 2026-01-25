@@ -72,8 +72,14 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
             signal: controller.signal,
           });
           clearTimeout(timeout);
-          const result = await response.json();
-          console.log('Telegram sendPhoto response for', adminId, ':', JSON.stringify(result));
+          const text = await response.text();
+          console.log('Telegram sendPhoto raw response for', adminId, ':', text.substring(0, 500));
+          try {
+            const result = JSON.parse(text);
+            console.log('Telegram sendPhoto parsed for', adminId, '- ok:', result.ok, 'error:', result.description);
+          } catch (parseErr) {
+            console.error('Failed to parse Telegram response:', parseErr);
+          }
         } else {
           console.log('Sending text message to admin:', adminId, '(no photo)');
           const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
