@@ -15,8 +15,8 @@ export function ImageLightbox({ images, initialIndex = 0, alt = 'Фото', onCl
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isPinching, setIsPinching] = useState(false);
   const lastTouchDistance = useRef<number | null>(null);
-  const lastTouchCenter = useRef<{ x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const currentSrc = images[currentIndex] || null;
@@ -70,20 +70,19 @@ export function ImageLightbox({ images, initialIndex = 0, alt = 'Фото', onCl
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (e.touches.length === 2) {
+      e.preventDefault();
+      setIsPinching(true);
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
       lastTouchDistance.current = distance;
-      lastTouchCenter.current = {
-        x: (touch1.clientX + touch2.clientX) / 2,
-        y: (touch1.clientY + touch2.clientY) / 2,
-      };
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (e.touches.length === 2 && lastTouchDistance.current !== null) {
+    if (e.touches.length === 2 && lastTouchDistance.current !== null && isPinching) {
       e.preventDefault();
+      e.stopPropagation();
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const distance = Math.hypot(touch2.clientX - touch1.clientX, touch2.clientY - touch1.clientY);
@@ -100,7 +99,7 @@ export function ImageLightbox({ images, initialIndex = 0, alt = 'Фото', onCl
 
   const handleTouchEnd = () => {
     lastTouchDistance.current = null;
-    lastTouchCenter.current = null;
+    setTimeout(() => setIsPinching(false), 100);
   };
 
   const handleDoubleTap = () => {
@@ -186,10 +185,10 @@ export function ImageLightbox({ images, initialIndex = 0, alt = 'Фото', onCl
               transition={{ type: 'spring', stiffness: 300, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
               onDoubleClick={handleDoubleTap}
-              drag={scale > 1 || hasMultiple}
+              drag={!isPinching && (scale > 1 || hasMultiple)}
               dragConstraints={scale > 1 ? undefined : { left: 0, right: 0, top: 0, bottom: 0 }}
               dragElastic={scale > 1 ? 0.1 : 0.5}
-              onDragEnd={handleDragEnd}
+              onDragEnd={isPinching ? undefined : handleDragEnd}
             />
           </div>
 
