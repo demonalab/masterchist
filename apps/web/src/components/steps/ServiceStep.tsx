@@ -32,7 +32,8 @@ export function ServiceStep() {
             console.log('Admin stats response:', statsRes);
             if (statsRes.ok) {
               const stats = statsRes.data;
-              const count = (stats.newBookings || 0) + (stats.awaitingPrepaymentBookings || 0);
+              // Count new + awaiting prepayment + prepaid (need admin action)
+              const count = (stats.newBookings || 0) + (stats.awaitingPrepaymentBookings || 0) + (stats.prepaidBookings || 0);
               console.log('Pending count:', count, stats);
               setPendingCount(count);
             }
