@@ -605,6 +605,10 @@ class ApiClientExtended extends ApiClient {
       } else if (this.initData) {
         headers['X-Telegram-Init-Data'] = this.initData;
       }
+      // Also add auth token if available (for MAX users)
+      if (this.authToken) {
+        headers['Authorization'] = `Bearer ${this.authToken}`;
+      }
 
       const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/photos`, {
         method: 'POST',

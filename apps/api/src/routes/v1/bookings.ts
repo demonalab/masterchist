@@ -64,6 +64,61 @@ async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
   }
 }
 
+async function notifyAdminsAboutProCleaning(bookingId: string, details: string): Promise<void> {
+  if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
+    console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
+    return;
+  }
+
+  try {
+    const booking = await prisma.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        address: { select: { city: true, addressLine: true, contactName: true, contactPhone: true } },
+        user: { select: { telegramId: true, firstName: true, phone: true } },
+        service: { select: { title: true } },
+        proCleaningPhotoFileIds: true,
+      },
+    });
+
+    if (!booking) return;
+
+    const message = `🧹 <b>Новая заявка на проф. химчистку!</b>
+
+📋 ID: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
+🏙 ${booking.address?.city ?? '—'}
+
+📝 <b>Описание:</b>
+${details || '—'}
+
+👤 ${booking.address?.contactName ?? '—'}
+📞 ${booking.address?.contactPhone ?? '—'}
+📍 ${booking.address?.addressLine ?? '—'}
+
+📸 Фото: ${booking.proCleaningPhotoFileIds?.length || 0} шт.
+
+⚡️ Свяжитесь с клиентом!`;
+
+    const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
+    
+    for (const adminId of adminIds) {
+      await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: adminId,
+          text: message,
+          parse_mode: 'HTML',
+        }),
+      });
+    }
+    console.log('Pro cleaning notifications sent to:', adminIds);
+  } catch (err) {
+    console.error('Failed to notify admins about pro cleaning:', err);
+  }
+}
+
 const BookingSources = {
   TELEGRAM_BOT: 'telegram_bot',
   TELEGRAM_MINIAPP: 'telegram_miniapp',
@@ -285,6 +340,9 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           service: { select: { title: true } },
         },
       });
+
+      // Note: Photos will be uploaded separately, notification will be sent after photos
+      // For now, return booking ID so frontend can upload photos
 
       return reply.status(201).send({
         id: newBooking.id,
@@ -682,8 +740,15 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           push: fileId,
         },
       },
-      select: { id: true, proCleaningPhotoFileIds: true },
+      select: { id: true, proCleaningPhotoFileIds: true, proCleaningDetails: true },
     });
+
+    // Send notification to admins on first photo upload
+    if (updated.proCleaningPhotoFileIds.length === 1) {
+      notifyAdminsAboutProCleaning(id, updated.proCleaningDetails || '').catch(err => {
+        console.error('Pro cleaning notification failed:', err);
+      });
+    }
 
     return { 
       success: true, 
