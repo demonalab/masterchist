@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
 import { useSearchParams } from 'next/navigation';
@@ -24,12 +24,16 @@ import { WebHomePage } from '@/components/web/WebHomePage';
 
 function HomeContent() {
   const { step, error, setError, setStep } = useBookingStore();
-  const { isReady, isTelegram, isMax, maxWebApp } = useTelegram();
+  const { isReady, isTelegram, isMax, maxWebApp, platform } = useTelegram();
   const searchParams = useSearchParams();
   const devMode = searchParams.get('dev') === '1';
+  const [hasToken, setHasToken] = useState<boolean | null>(null);
   
   // Always show Mini App interface (same UI for browser, Telegram, MAX)
   const showMiniApp = true;
+  
+  // Check if user is in browser without Telegram/MAX
+  const isBrowser = platform === 'web' && !isTelegram && !isMax && !devMode;
 
   // Scroll to top on mount and step change
   useEffect(() => {
@@ -39,6 +43,11 @@ function HomeContent() {
   }, [step]);
 
   useEffect(() => {
+    // Load auth token from localStorage for browser sessions
+    api.loadAuthToken();
+    const token = localStorage.getItem('auth_token');
+    setHasToken(!!token);
+    
     if (devMode) {
       api.setDevMode(true);
     }
@@ -54,6 +63,19 @@ function HomeContent() {
 
   if (!showMiniApp) {
     return <WebHomePage />;
+  }
+
+  // Browser without token - show auth page
+  if (isBrowser && hasToken === false) {
+    return (
+      <AuthStep 
+        onBack={() => {}} 
+        onSuccess={() => {
+          setHasToken(true);
+          api.loadAuthToken();
+        }} 
+      />
+    );
   }
 
   if (error) {
