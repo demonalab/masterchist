@@ -26,6 +26,20 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* GPU acceleration for smooth animations on mobile */
+.animate-fade-in,
+.animate-slide-up,
+.animate-slide-down,
+.animate-scale-in,
+[class*="transition"],
+[class*="animate-"] {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
 html {
   height: 100%;
   overflow: hidden;
