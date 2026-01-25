@@ -210,7 +210,7 @@ class ApiClient {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/bookings/${bookingId}/cancel`, {
         method: 'POST',
-        headers: this.headers,
+        headers: this.headersNoBody,
       });
 
       if (!res.ok) {

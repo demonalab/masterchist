@@ -30,7 +30,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
     if (!booking) return;
 
     const date = booking.scheduledDate
-      ? booking.scheduledDate.toISOString().split('T')[0]
+      ? booking.scheduledDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : '—';
 
     const message = `💰 <b>Новая оплата!</b>
