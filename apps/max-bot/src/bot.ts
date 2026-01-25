@@ -25,8 +25,8 @@ export async function sendMessageToUser(userId: string, text: string) {
   }
 }
 
-// Deep link to open Mini App inside MAX
-const WEBAPP_DEEPLINK = 'https://max.ru/MasterChist_bot?startapp';
+// Deep link to open Mini App inside MAX (using bot ID)
+const WEBAPP_DEEPLINK = 'https://max.ru/id616485389776_bot?startapp';
 
 function welcomeKeyboard() {
   return Keyboard.inlineKeyboard([
