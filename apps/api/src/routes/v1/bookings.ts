@@ -7,7 +7,7 @@ import { Cities, ServiceCodes, BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import { config } from '../../config';
 
-async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
+async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer, mimeType?: string): Promise<void> {
   if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
     console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
     return;
@@ -49,16 +49,37 @@ async function notifyAdminsAboutPayment(bookingId: string): Promise<void> {
 
     const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
     
+    console.log('Sending payment notification, photoBuffer:', !!photoBuffer, 'mimeType:', mimeType);
+    
     for (const adminId of adminIds) {
-      await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: adminId,
-          text: message,
-          parse_mode: 'HTML',
-        }),
-      });
+      if (photoBuffer && mimeType?.startsWith('image/')) {
+        console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
+        const FormData = (await import('form-data')).default;
+        const formData = new FormData();
+        formData.append('chat_id', adminId);
+        formData.append('photo', photoBuffer, { filename: 'payment_proof.jpg', contentType: mimeType });
+        formData.append('caption', message);
+        formData.append('parse_mode', 'HTML');
+        
+        const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
+          method: 'POST',
+          body: formData as any,
+          headers: formData.getHeaders(),
+        });
+        const result = await response.json();
+        console.log('Telegram sendPhoto response:', JSON.stringify(result));
+      } else {
+        console.log('Sending text message to admin:', adminId, '(no photo)');
+        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: adminId,
+            text: message,
+            parse_mode: 'HTML',
+          }),
+        });
+      }
     }
     console.log('Admin notifications sent to:', adminIds);
   } catch (err) {
@@ -831,25 +852,12 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Payment proof upload (supports both FormData from web and JSON from MAX bot)
-  fastify.post<{ Params: { id: string }; Body: { photoUrl?: string; maxUserId?: number } }>(
+  fastify.post<{ Params: { id: string } }>(
     '/:id/payment-proof',
     async (request, reply) => {
       const { id } = request.params;
       
-      // Handle both FormData and JSON body
-      const body = request.body || {};
-      const { photoUrl, maxUserId } = body as { photoUrl?: string; maxUserId?: number };
-
-      // Get userId from auth or maxUserId
-      let userId = request.dbUserId;
-      if (!userId && maxUserId) {
-        const user = await prisma.user.findUnique({
-          where: { telegramId: String(maxUserId) },
-          select: { id: true },
-        });
-        userId = user?.id;
-      }
-
+      const userId = request.dbUserId;
       if (!userId) {
         return reply.unauthorized('User not authenticated');
       }
@@ -867,6 +875,48 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.forbidden('Not your booking');
       }
 
+      // Try to get uploaded file
+      let fileBuffer: Buffer | undefined;
+      let mimeType: string | undefined;
+      let savedPhotoUrl: string | undefined;
+
+      try {
+        const data = await request.file();
+        if (data) {
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+          if (allowedTypes.includes(data.mimetype)) {
+            fileBuffer = await data.toBuffer();
+            mimeType = data.mimetype;
+            
+            // Save file to disk
+            const crypto = await import('node:crypto');
+            const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex');
+            const fileExt = data.mimetype.split('/')[1] || 'jpg';
+            const fileName = `${fileHash.slice(0, 32)}.${fileExt}`;
+            
+            const uploadsDir = path.join(process.cwd(), 'uploads', 'proofs');
+            await fs.mkdir(uploadsDir, { recursive: true });
+            const filePath = path.join(uploadsDir, fileName);
+            await fs.writeFile(filePath, fileBuffer);
+            
+            savedPhotoUrl = `/uploads/proofs/${fileName}`;
+            console.log('Payment proof saved:', savedPhotoUrl);
+          }
+        }
+      } catch (err) {
+        console.log('No file in request or error parsing:', err);
+      }
+
+      // Create payment proof record if we have a photo
+      if (savedPhotoUrl) {
+        await prisma.paymentProof.create({
+          data: {
+            bookingId: id,
+            photoUrl: savedPhotoUrl,
+          },
+        });
+      }
+
       // Update status to prepaid (payment proof received)
       const updated = await prisma.booking.update({
         where: { id },
@@ -876,12 +926,12 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         select: { id: true, status: true },
       });
 
-      // Notify admins about payment
-      notifyAdminsAboutPayment(id).catch(err => {
+      // Notify admins about payment with photo
+      notifyAdminsAboutPayment(id, fileBuffer, mimeType).catch(err => {
         console.error('Admin notification failed:', err);
       });
 
-      return { success: true, id: updated.id, status: updated.status };
+      return { success: true, id: updated.id, status: updated.status, photoUrl: savedPhotoUrl };
     }
   );
 };
