@@ -18,13 +18,18 @@ export function ServiceStep() {
     if (!isReady) return;
     
     api.setInitData(initData);
-    api.getAdminRole().then(res => {
-      if (res.ok && res.data.role) {
-        setIsAdmin(true);
-      }
-    }).catch(() => {
-      // User is not admin - expected behavior, no action needed
-    });
+    
+    // Only check admin role if we have auth (initData or token)
+    const hasAuth = initData || localStorage.getItem('auth_token');
+    if (hasAuth) {
+      api.getAdminRole().then(res => {
+        if (res.ok && res.data.role) {
+          setIsAdmin(true);
+        }
+      }).catch(() => {
+        // User is not admin - expected behavior, no action needed
+      });
+    }
   }, [isReady, initData]);
 
   const handleSelect = () => {
