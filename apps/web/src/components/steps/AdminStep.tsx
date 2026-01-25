@@ -10,6 +10,7 @@ import {
 import { api } from '@/lib/api';
 import { useHaptic } from '@/lib/haptic';
 import { ImageLightbox } from '@/components/ImageLightbox';
+import { toast } from 'sonner';
 
 interface AdminBooking {
   id: string;
@@ -104,6 +105,7 @@ export function AdminStep() {
   const [editingCity, setEditingCity] = useState<CitySettings | null>(null);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [confirmDelete, setConfirmDelete] = useState<{ type: 'booking' | 'admin'; id: string } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -178,7 +180,7 @@ export function AdminStep() {
       setEditingCity(null);
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
@@ -194,7 +196,7 @@ export function AdminStep() {
       loadData();
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
@@ -210,16 +212,16 @@ export function AdminStep() {
       loadData();
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
   const handleDelete = async (bookingId: string) => {
-    if (!confirm('Удалить заказ?')) return;
     haptic.heavy();
     setActionLoading(true);
     const res = await api.deleteBooking(bookingId);
     setActionLoading(false);
+    setConfirmDelete(null);
     if (res.ok) {
       haptic.success();
       setSelectedBooking(null);
@@ -227,7 +229,7 @@ export function AdminStep() {
       loadData();
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
@@ -244,7 +246,7 @@ export function AdminStep() {
       haptic.success();
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
@@ -259,20 +261,20 @@ export function AdminStep() {
       loadAdmins();
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
   const handleRemoveAdmin = async (telegramId: string) => {
-    if (!confirm('Удалить админа?')) return;
     haptic.heavy();
     const res = await api.removeAdmin(telegramId);
+    setConfirmDelete(null);
     if (res.ok) {
       haptic.success();
       loadAdmins();
     } else {
       haptic.error();
-      alert(res.error);
+      toast.error(res.error);
     }
   };
 
@@ -721,7 +723,7 @@ export function AdminStep() {
 
                 {role === 'super_admin' && (
                   <button
-                    onClick={() => handleDelete(selectedBooking.id)}
+                    onClick={() => setConfirmDelete({ type: 'booking', id: selectedBooking.id })}
                     disabled={actionLoading}
                     className="w-full py-3 px-4 bg-red-500/10 border border-red-500/20 text-red-400 font-medium rounded-xl flex items-center justify-center gap-2 disabled:opacity-50"
                   >
@@ -807,7 +809,7 @@ export function AdminStep() {
                     <p className="text-xs text-white/40">{admin.role}</p>
                   </div>
                   <button
-                    onClick={() => handleRemoveAdmin(admin.telegramId)}
+                    onClick={() => setConfirmDelete({ type: 'admin', id: admin.telegramId })}
                     className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
                   >
                     <Trash weight="duotone" className="w-4 h-4" />
@@ -908,6 +910,60 @@ export function AdminStep() {
         initialIndex={lightboxIndex}
         onClose={() => setLightboxImages([])} 
       />
+
+      {/* Confirm Delete Dialog */}
+      <AnimatePresence>
+        {confirmDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70"
+            onClick={() => setConfirmDelete(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="glass-card p-6 max-w-sm w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Trash weight="duotone" className="w-8 h-8 text-red-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  {confirmDelete.type === 'booking' ? 'Удалить заказ?' : 'Удалить админа?'}
+                </h3>
+                <p className="text-sm text-white/50">
+                  Это действие нельзя отменить
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setConfirmDelete(null)}
+                  className="flex-1 py-3 px-4 bg-white/5 text-white/60 font-medium rounded-xl"
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={() => {
+                    if (confirmDelete.type === 'booking') {
+                      handleDelete(confirmDelete.id);
+                    } else {
+                      handleRemoveAdmin(confirmDelete.id);
+                    }
+                  }}
+                  disabled={actionLoading}
+                  className="flex-1 py-3 px-4 bg-red-500 text-white font-medium rounded-xl disabled:opacity-50"
+                >
+                  {actionLoading ? <SpinnerGap className="w-5 h-5 animate-spin mx-auto" /> : 'Удалить'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
