@@ -7,6 +7,12 @@ import { Cities, ServiceCodes, BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import { config } from '../../config';
 
+const CITY_NAMES: Record<string, string> = {
+  ROSTOV_NA_DONU: 'Ростов-на-Дону',
+  BATAYSK: 'Батайск',
+  STAVROPOL: 'Ставрополь',
+};
+
 async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer, mimeType?: string): Promise<void> {
   if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
     console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
@@ -117,10 +123,12 @@ async function notifyAdminsAboutProCleaning(bookingId: string, details: string, 
 
     if (!booking) return;
 
+    const cityName = CITY_NAMES[booking.address?.city ?? ''] || booking.address?.city || '—';
+    
     const message = `🧹 <b>Новая заявка на проф. химчистку!</b>
 
 📋 ID: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
-🏙 ${booking.address?.city ?? '—'}
+🏙 ${cityName}
 
 📝 <b>Описание:</b>
 ${details || '—'}
@@ -128,8 +136,6 @@ ${details || '—'}
 👤 ${booking.address?.contactName ?? '—'}
 📞 ${booking.address?.contactPhone ?? '—'}
 📍 ${booking.address?.addressLine ?? '—'}
-
-📸 Фото: ${booking.proCleaningPhotoFileIds?.length || 0} шт.
 
 ⚡️ Свяжитесь с клиентом!`;
 
