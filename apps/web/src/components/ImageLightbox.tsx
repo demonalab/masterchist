@@ -55,25 +55,25 @@ export function ImageLightbox({ src, alt = 'Фото', onClose }: ImageLightboxP
           exit={{ opacity: 0 }}
           onClick={onClose}
         >
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
-          >
-            <X weight="bold" className="w-6 h-6 text-white" />
-          </button>
-
-          {/* Download button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDownload();
-            }}
-            className="absolute top-4 left-4 z-10 flex items-center gap-2 px-4 py-2 rounded-full bg-accent-green/20 hover:bg-accent-green/30 text-accent-green text-sm font-medium transition-colors"
-          >
-            <DownloadSimple weight="bold" className="w-5 h-5" />
-            Скачать
-          </button>
+          {/* Bottom buttons */}
+          <div className="absolute bottom-8 left-0 right-0 z-10 flex items-center justify-center gap-4 px-4">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDownload();
+              }}
+              className="flex items-center gap-2 px-6 py-3 rounded-full bg-accent-green text-black text-sm font-bold transition-colors shadow-lg"
+            >
+              <DownloadSimple weight="bold" className="w-5 h-5" />
+              Скачать
+            </button>
+            <button
+              onClick={onClose}
+              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors shadow-lg"
+            >
+              <X weight="bold" className="w-6 h-6 text-white" />
+            </button>
+          </div>
 
           {/* Image */}
           <motion.img
