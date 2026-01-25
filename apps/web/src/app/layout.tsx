@@ -38,9 +38,9 @@ export default function RootLayout({
           </TelegramProvider>
         </QueryProvider>
         <Toaster 
-          position="top-center" 
+          position="bottom-center" 
           theme="dark"
-          offset="100px"
+          offset="80px"
           toastOptions={{
             style: {
               background: 'rgba(30, 30, 35, 0.95)',
