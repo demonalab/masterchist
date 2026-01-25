@@ -21,6 +21,8 @@ interface AdminBooking {
   service: string | null;
   source?: string;
   paymentProofUrl?: string | null;
+  proCleaningDetails?: string | null;
+  proCleaningPhotoUrls?: string[];
   user: { telegramId: string; firstName: string } | null;
   address: { addressLine: string; contactName: string; contactPhone: string } | null;
 }
@@ -619,9 +621,35 @@ export function AdminStep() {
                   </div>
                 )}
 
+                {/* Pro cleaning details */}
+                {selectedBooking.proCleaningDetails && (
+                  <div className="p-3 bg-white/5 rounded-xl">
+                    <p className="text-xs text-white/40 mb-1">📝 Описание</p>
+                    <p className="text-sm text-white">{selectedBooking.proCleaningDetails}</p>
+                  </div>
+                )}
+
+                {/* Pro cleaning photos */}
+                {selectedBooking.proCleaningPhotoUrls && selectedBooking.proCleaningPhotoUrls.length > 0 && (
+                  <div className="p-3 bg-white/5 rounded-xl">
+                    <p className="text-xs text-white/40 mb-2">📸 Фото от клиента ({selectedBooking.proCleaningPhotoUrls.length} шт.)</p>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {selectedBooking.proCleaningPhotoUrls.map((url, i) => (
+                        <img 
+                          key={i}
+                          src={`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`}
+                          alt={`Фото ${i + 1}`}
+                          className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shrink-0"
+                          onClick={() => setLightboxImage(`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {selectedBooking.paymentProofUrl && (
                   <div className="p-3 bg-white/5 rounded-xl">
-                    <p className="text-xs text-white/40 mb-2">📸 Фото чека (нажмите для увеличения)</p>
+                    <p className="text-xs text-white/40 mb-2">💳 Фото чека</p>
                     <img 
                       src={selectedBooking.paymentProofUrl} 
                       alt="Чек оплаты" 

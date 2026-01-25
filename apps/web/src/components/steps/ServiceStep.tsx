@@ -129,8 +129,8 @@ export function ServiceStep() {
           <div className="icon-box w-10 h-10 mb-3">
             <Sparkle weight="duotone" className="w-5 h-5 text-accent-purple" />
           </div>
-          <p className="text-sm font-medium text-white">Мастер на дом</p>
-          <p className="text-xs text-white/40 mt-1">Проф. химчистка</p>
+          <p className="text-sm font-medium text-white">Проф. химчистка</p>
+          <p className="text-xs text-white/40 mt-1">Мастер на дом</p>
         </button>
         <div className="glass-card-static p-4 opacity-50">
           <div className="icon-box w-10 h-10 mb-3">

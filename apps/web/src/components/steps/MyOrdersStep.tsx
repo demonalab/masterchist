@@ -136,6 +136,12 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
               >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-2">
+                    {booking.service && (
+                      <div className="badge-green">
+                        <ClipboardText weight="duotone" className="w-3 h-3" />
+                        {booking.service}
+                      </div>
+                    )}
                     {booking.kitNumber && (
                       <div className="badge-green">
                         <Package weight="duotone" className="w-3 h-3" />
