@@ -40,6 +40,7 @@ export default function RootLayout({
         <Toaster 
           position="top-center" 
           theme="dark"
+          offset="70px"
           toastOptions={{
             style: {
               background: 'rgba(30, 30, 35, 0.95)',
