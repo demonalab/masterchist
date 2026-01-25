@@ -50,25 +50,34 @@ export function ProCleaningStep() {
     }
   };
 
-  const handleCitySelect = async (cityCode: string, name: string) => {
+  // Load saved addresses when city changes
+  useEffect(() => {
+    if (!city) return;
+    
+    async function loadAddresses() {
+      setLoadingAddresses(true);
+      const result = await api.getSavedAddresses();
+      if (result.ok) {
+        const cityAddresses = result.data.filter(a => a.city === city);
+        setSavedAddresses(cityAddresses);
+        
+        // Auto-select default address if not already filled
+        if (!street && !contactName) {
+          const defaultAddr = cityAddresses.find(a => a.isDefault);
+          if (defaultAddr) {
+            selectSavedAddress(defaultAddr);
+          }
+        }
+      }
+      setLoadingAddresses(false);
+    }
+    loadAddresses();
+  }, [city]);
+
+  const handleCitySelect = (cityCode: string, name: string) => {
     setCity(cityCode);
     setCityName(name);
     setCurrentStep('details');
-    
-    // Load saved addresses for this city
-    setLoadingAddresses(true);
-    const result = await api.getSavedAddresses();
-    if (result.ok) {
-      const cityAddresses = result.data.filter(a => a.city === cityCode);
-      setSavedAddresses(cityAddresses);
-      
-      // Auto-select default address
-      const defaultAddr = cityAddresses.find(a => a.isDefault);
-      if (defaultAddr) {
-        selectSavedAddress(defaultAddr);
-      }
-    }
-    setLoadingAddresses(false);
   };
 
   const selectSavedAddress = (addr: SavedAddress) => {
