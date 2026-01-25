@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin, X, Image as ImageIcon } from '@phosphor-icons/react';
 import { api, MyBooking } from '@/lib/api';
 import { useBookingStore } from '@/lib/booking-store';
+import { ImageLightbox } from '@/components/ImageLightbox';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new: { label: 'Новый', color: 'text-blue-400' },
@@ -24,6 +25,7 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
   const [bookings, setBookings] = useState<MyBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const { updateDraft, setStep } = useBookingStore();
 
   useEffect(() => {
@@ -185,14 +187,16 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                           key={i}
                           src={`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`}
                           alt={`Фото ${i + 1}`}
-                          className="w-16 h-16 object-cover rounded-lg border border-white/10"
+                          className="w-16 h-16 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setLightboxImage(`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`)}
                         />
                       ))}
                       {booking.paymentProofUrl && (
                         <img 
                           src={`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`}
                           alt="Чек оплаты"
-                          className="w-16 h-16 object-cover rounded-lg border border-white/10"
+                          className="w-16 h-16 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => setLightboxImage(`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`)}
                         />
                       )}
                     </div>
@@ -229,6 +233,11 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
           })}
         </div>
       )}
+
+      <ImageLightbox 
+        src={lightboxImage} 
+        onClose={() => setLightboxImage(null)} 
+      />
     </div>
   );
 }

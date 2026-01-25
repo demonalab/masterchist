@@ -9,6 +9,7 @@ import {
 } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
 import { useHaptic } from '@/lib/haptic';
+import { ImageLightbox } from '@/components/ImageLightbox';
 
 interface AdminBooking {
   id: string;
@@ -99,6 +100,7 @@ export function AdminStep() {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [cities, setCities] = useState<CitySettings[]>([]);
   const [editingCity, setEditingCity] = useState<CitySettings | null>(null);
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -619,11 +621,12 @@ export function AdminStep() {
 
                 {selectedBooking.paymentProofUrl && (
                   <div className="p-3 bg-white/5 rounded-xl">
-                    <p className="text-xs text-white/40 mb-2">📸 Фото чека</p>
+                    <p className="text-xs text-white/40 mb-2">📸 Фото чека (нажмите для увеличения)</p>
                     <img 
                       src={selectedBooking.paymentProofUrl} 
                       alt="Чек оплаты" 
-                      className="w-full max-h-48 object-contain rounded-lg bg-black/20"
+                      className="w-full max-h-48 object-contain rounded-lg bg-black/20 cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => setLightboxImage(selectedBooking.paymentProofUrl!)}
                     />
                   </div>
                 )}
@@ -855,6 +858,11 @@ export function AdminStep() {
           </div>
         </motion.div>
       )}
+
+      <ImageLightbox 
+        src={lightboxImage} 
+        onClose={() => setLightboxImage(null)} 
+      />
     </div>
   );
 }
