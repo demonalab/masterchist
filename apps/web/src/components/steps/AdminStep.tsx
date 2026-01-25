@@ -102,7 +102,8 @@ export function AdminStep() {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [cities, setCities] = useState<CitySettings[]>([]);
   const [editingCity, setEditingCity] = useState<CitySettings | null>(null);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   useEffect(() => {
     loadData();
@@ -640,7 +641,14 @@ export function AdminStep() {
                           src={`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`}
                           alt={`Фото ${i + 1}`}
                           className="w-20 h-20 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shrink-0"
-                          onClick={() => setLightboxImage(`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`)}
+                          onClick={() => {
+                            const allImages = [
+                              ...(selectedBooking.proCleaningPhotoUrls || []).map(u => `${process.env.NEXT_PUBLIC_API_URL || ''}${u}`),
+                              ...(selectedBooking.paymentProofUrl ? [selectedBooking.paymentProofUrl] : []),
+                            ];
+                            setLightboxImages(allImages);
+                            setLightboxIndex(i);
+                          }}
                         />
                       ))}
                     </div>
@@ -654,7 +662,15 @@ export function AdminStep() {
                       src={selectedBooking.paymentProofUrl} 
                       alt="Чек оплаты" 
                       className="w-full max-h-48 object-contain rounded-lg bg-black/20 cursor-pointer hover:opacity-80 transition-opacity"
-                      onClick={() => setLightboxImage(selectedBooking.paymentProofUrl!)}
+                      onClick={() => {
+                        const allImages = [
+                          ...(selectedBooking.proCleaningPhotoUrls || []).map(u => `${process.env.NEXT_PUBLIC_API_URL || ''}${u}`),
+                          ...(selectedBooking.paymentProofUrl ? [selectedBooking.paymentProofUrl] : []),
+                        ];
+                        const paymentIndex = (selectedBooking.proCleaningPhotoUrls || []).length;
+                        setLightboxImages(allImages);
+                        setLightboxIndex(paymentIndex);
+                      }}
                     />
                   </div>
                 )}
@@ -888,8 +904,9 @@ export function AdminStep() {
       )}
 
       <ImageLightbox 
-        src={lightboxImage} 
-        onClose={() => setLightboxImage(null)} 
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        onClose={() => setLightboxImages([])} 
       />
     </div>
   );

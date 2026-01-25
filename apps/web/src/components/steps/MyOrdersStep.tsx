@@ -25,7 +25,8 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
   const [bookings, setBookings] = useState<MyBooking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const { updateDraft, setStep } = useBookingStore();
 
   useEffect(() => {
@@ -194,7 +195,14 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                           src={`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`}
                           alt={`Фото ${i + 1}`}
                           className="w-16 h-16 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => setLightboxImage(`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`)}
+                          onClick={() => {
+                            const allImages = [
+                              ...(booking.proCleaningPhotoUrls || []).map(u => `${process.env.NEXT_PUBLIC_API_URL || ''}${u}`),
+                              ...(booking.paymentProofUrl ? [`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`] : []),
+                            ];
+                            setLightboxImages(allImages);
+                            setLightboxIndex(i);
+                          }}
                         />
                       ))}
                       {booking.paymentProofUrl && (
@@ -202,7 +210,15 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                           src={`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`}
                           alt="Чек оплаты"
                           className="w-16 h-16 object-cover rounded-lg border border-white/10 cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => setLightboxImage(`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`)}
+                          onClick={() => {
+                            const allImages = [
+                              ...(booking.proCleaningPhotoUrls || []).map(u => `${process.env.NEXT_PUBLIC_API_URL || ''}${u}`),
+                              ...(booking.paymentProofUrl ? [`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`] : []),
+                            ];
+                            const paymentIndex = (booking.proCleaningPhotoUrls || []).length;
+                            setLightboxImages(allImages);
+                            setLightboxIndex(paymentIndex);
+                          }}
                         />
                       )}
                     </div>
@@ -241,8 +257,9 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
       )}
 
       <ImageLightbox 
-        src={lightboxImage} 
-        onClose={() => setLightboxImage(null)} 
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        onClose={() => setLightboxImages([])} 
       />
     </div>
   );
