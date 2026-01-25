@@ -28,8 +28,8 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const devMode = searchParams.get('dev') === '1';
   
-  // Show Mini App interface for Telegram, MAX, or dev mode
-  const showMiniApp = isTelegram || isMax || devMode;
+  // Always show Mini App interface (same UI for browser, Telegram, MAX)
+  const showMiniApp = true;
 
   // Scroll to top on mount and step change
   useEffect(() => {
