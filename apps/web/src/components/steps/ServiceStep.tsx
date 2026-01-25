@@ -11,6 +11,7 @@ import { useTelegram } from '@/lib/telegram-provider';
 export function ServiceStep() {
   const { updateDraft, setStep } = useBookingStore();
   const [isAdmin, setIsAdmin] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const haptic = useHaptic();
   const { initData, isReady } = useTelegram();
 
@@ -25,6 +26,14 @@ export function ServiceStep() {
       api.getAdminRole().then(res => {
         if (res.ok && res.data.role) {
           setIsAdmin(true);
+          // Load pending bookings count for admins
+          api.getAdminStats().then(statsRes => {
+            if (statsRes.ok) {
+              const stats = statsRes.data;
+              // Count new + awaiting prepayment bookings
+              setPendingCount((stats.newBookings || 0) + (stats.awaitingPrepaymentBookings || 0));
+            }
+          });
         }
       }).catch(() => {
         // User is not admin - expected behavior, no action needed
@@ -177,10 +186,15 @@ export function ServiceStep() {
         {isAdmin && (
           <button 
             onClick={() => handleNavClick('admin')}
-            className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors"
+            className="glass-card-static p-4 flex flex-col items-center gap-2 hover:bg-white/10 transition-colors relative"
           >
             <GearSix weight="duotone" className="w-6 h-6 text-yellow-400" />
             <span className="text-xs text-white/70">Админ</span>
+            {pendingCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1.5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                {pendingCount > 99 ? '99+' : pendingCount}
+              </span>
+            )}
           </button>
         )}
       </motion.div>

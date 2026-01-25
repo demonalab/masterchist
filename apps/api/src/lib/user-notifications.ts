@@ -66,13 +66,15 @@ export async function notifyUserAllChannels(options: NotifyUserOptions): Promise
     if (config.MAX_BOT_TOKEN && maxIds.length > 0) {
       for (const chatId of maxIds) {
         try {
-          await fetch(`https://api.max.ru/bot${config.MAX_BOT_TOKEN}/sendMessage`, {
+          await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Authorization': config.MAX_BOT_TOKEN,
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
-              chat_id: chatId,
               text: message,
-              parse_mode: parseMode === 'HTML' ? 'html' : undefined,
+              format: parseMode === 'HTML' ? 'html' : 'text',
             }),
           });
         } catch (err) {
