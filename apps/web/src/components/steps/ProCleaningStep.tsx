@@ -245,7 +245,7 @@ export function ProCleaningStep() {
               transition={{ delay: index * 0.1 }}
             >
               <div className="icon-box w-10 h-10">
-                <MapPin weight="duotone" className="w-5 h-5 text-accent-purple" />
+                <Buildings weight="duotone" className="w-5 h-5 text-accent-purple" />
               </div>
               <span className="font-medium text-white">{c.name}</span>
             </motion.button>

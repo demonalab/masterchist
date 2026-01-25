@@ -68,11 +68,7 @@ export function CityStep() {
             whileTap={{ scale: 0.98 }}
           >
             <div className="icon-box">
-              {index === 0 ? (
-                <Buildings weight="duotone" className="w-5 h-5 text-accent-green" />
-              ) : (
-                <MapPin weight="duotone" className="w-5 h-5 text-white/60" />
-              )}
+              <Buildings weight="duotone" className="w-5 h-5 text-accent-green" />
             </div>
             <div className="flex-1">
               <p className="font-medium text-white">{city.name}</p>
