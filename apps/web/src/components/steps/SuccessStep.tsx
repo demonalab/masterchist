@@ -7,6 +7,7 @@ import { api } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy, Upload, SpinnerGap, Check, X, Warning } from '@phosphor-icons/react';
 import { useHaptic } from '@/lib/haptic';
+import { toast } from 'sonner';
 
 interface PaymentRequisites {
   prepaymentAmount: number;
@@ -55,9 +56,10 @@ export function SuccessStep() {
     
     if (result.ok) {
       haptic.medium();
+      toast.success('Заказ отменён');
       reset();
     } else {
-      setUploadError(result.error || 'Не удалось отменить заказ');
+      toast.error(result.error || 'Не удалось отменить заказ');
     }
   };
   
