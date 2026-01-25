@@ -100,6 +100,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         // Running inside MAX
         maxApp.ready();
         
+        // Enable closing confirmation to prevent accidental swipe-down close
+        if (maxApp.enableClosingConfirmation) {
+          maxApp.enableClosingConfirmation();
+        }
+        
         setTimeout(() => {
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
         }, 0);
