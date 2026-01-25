@@ -6,6 +6,7 @@ import { prisma } from '@himchistka/db';
 import { Cities, ServiceCodes, BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import { config } from '../../config';
+import { notifyUserAllChannels } from '../../lib/user-notifications';
 
 const CITY_NAMES: Record<string, string> = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
@@ -588,6 +589,19 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
 
         return newBooking;
       });
+
+      // Send confirmation to user
+      notifyUserAllChannels({
+        userId,
+        message: `🎉 <b>Заказ оформлен!</b>
+
+📋 Номер: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
+📅 Дата: ${scheduledDate}
+🕐 Время: ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}
+📦 Набор #${booking.cleaningKit?.number ?? '—'}
+
+Ожидайте внесения предоплаты для подтверждения заказа.`,
+      }).catch(console.error);
 
       return reply.status(201).send({
         id: booking.id,
