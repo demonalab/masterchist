@@ -228,6 +228,9 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         timeSlot: { select: { startTime: true, endTime: true } },
         service: { select: { code: true, title: true } },
         address: { select: { addressLine: true, city: true } },
+        proCleaningDetails: true,
+        proCleaningPhotoFileIds: true,
+        paymentProofs: { select: { photoUrl: true }, take: 1 },
       },
     });
 
@@ -241,6 +244,9 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       timeSlot: b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : null,
       service: b.service?.title ?? b.service?.code ?? null,
       address: b.address?.addressLine ?? null,
+      proCleaningDetails: b.proCleaningDetails ?? null,
+      proCleaningPhotoUrls: b.proCleaningPhotoFileIds ?? [],
+      paymentProofUrl: b.paymentProofs?.[0]?.photoUrl ?? null,
     }));
   });
 

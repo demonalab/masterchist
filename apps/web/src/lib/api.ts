@@ -33,6 +33,9 @@ export interface MyBooking {
   kitNumber?: number;
   service?: string;
   address?: string;
+  proCleaningDetails?: string;
+  proCleaningPhotoUrls?: string[];
+  paymentProofUrl?: string;
 }
 
 export interface CreateBookingRequest {

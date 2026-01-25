@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin, X } from '@phosphor-icons/react';
+import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin, X, Image as ImageIcon } from '@phosphor-icons/react';
 import { api, MyBooking } from '@/lib/api';
 import { useBookingStore } from '@/lib/booking-store';
 
@@ -165,7 +165,39 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                       <span className="truncate">{booking.address}</span>
                     </div>
                   )}
+                  {booking.proCleaningDetails && (
+                    <div className="text-white/60 text-xs mt-1">
+                      📝 {booking.proCleaningDetails.slice(0, 100)}{booking.proCleaningDetails.length > 100 ? '...' : ''}
+                    </div>
+                  )}
                 </div>
+
+                {/* Photos */}
+                {((booking.proCleaningPhotoUrls && booking.proCleaningPhotoUrls.length > 0) || booking.paymentProofUrl) && (
+                  <div className="mt-3 pt-3 border-t border-white/5">
+                    <div className="flex items-center gap-2 mb-2 text-white/40 text-xs">
+                      <ImageIcon weight="duotone" className="w-4 h-4" />
+                      <span>Фото</span>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto">
+                      {booking.proCleaningPhotoUrls?.map((url, i) => (
+                        <img 
+                          key={i}
+                          src={`${process.env.NEXT_PUBLIC_API_URL || ''}${url}`}
+                          alt={`Фото ${i + 1}`}
+                          className="w-16 h-16 object-cover rounded-lg border border-white/10"
+                        />
+                      ))}
+                      {booking.paymentProofUrl && (
+                        <img 
+                          src={`${process.env.NEXT_PUBLIC_API_URL || ''}${booking.paymentProofUrl}`}
+                          alt="Чек оплаты"
+                          className="w-16 h-16 object-cover rounded-lg border border-white/10"
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between">
                   <p className="text-xs text-white/30 font-mono">
