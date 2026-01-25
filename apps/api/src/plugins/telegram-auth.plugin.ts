@@ -32,6 +32,23 @@ async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise
       return existing.id;
     }
     
+    // Check if there's a Telegram user with same ID (user may have both TG and MAX with same numeric ID)
+    // In this case, add maxId to existing user instead of creating new one
+    const telegramUser = await prisma.user.findFirst({
+      where: { telegramId: String(tgUser.id) },
+      select: { id: true, maxId: true },
+    });
+    
+    if (telegramUser && !telegramUser.maxId) {
+      // Link MAX to existing Telegram user
+      await prisma.user.update({
+        where: { id: telegramUser.id },
+        data: { maxId: String(tgUser.id) },
+      });
+      console.log(`Linked MAX ID ${tgUser.id} to existing Telegram user ${telegramUser.id}`);
+      return telegramUser.id;
+    }
+    
     const user = await prisma.user.create({
       data: {
         maxId: String(tgUser.id),

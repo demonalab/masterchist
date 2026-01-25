@@ -119,6 +119,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       prisma.booking.count({ where: { status: BookingStatuses.CANCELLED } }),
     ]);
 
+    console.log(`Stats: total=${total}, new=${newCount}, awaiting=${awaitingPrepayment}, prepaid=${prepaid}, confirmed=${confirmed}, cancelled=${cancelled}`);
+
     return {
       totalBookings: total,
       newBookings: newCount,
