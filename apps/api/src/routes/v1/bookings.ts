@@ -913,6 +913,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           data: {
             bookingId: id,
             photoUrl: savedPhotoUrl,
+            telegramFileId: '', // Not from Telegram, using local file
           },
         });
       }
