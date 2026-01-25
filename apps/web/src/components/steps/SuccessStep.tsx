@@ -4,8 +4,8 @@ import { useState, useRef, useEffect } from 'react';
 import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
 import { api } from '@/lib/api';
-import { motion } from 'framer-motion';
-import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy, Upload, SpinnerGap, Check } from '@phosphor-icons/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle, Package, CalendarBlank, Clock, MapPin, CreditCard, Camera, Copy, Upload, SpinnerGap, Check, X, Warning } from '@phosphor-icons/react';
 import { useHaptic } from '@/lib/haptic';
 
 interface PaymentRequisites {
@@ -38,12 +38,17 @@ export function SuccessStep() {
 
   const handleDone = () => { reset(); }; // Go to main page instead of closing
   
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  
   const handleCancel = async () => {
     if (!booking) return;
+    setShowCancelConfirm(true);
+  };
+  
+  const confirmCancel = async () => {
+    if (!booking) return;
     
-    const confirmed = window.confirm('Вы уверены, что хотите отменить заказ?');
-    if (!confirmed) return;
-    
+    setShowCancelConfirm(false);
     setCancelling(true);
     const result = await api.cancelBooking(booking.id);
     setCancelling(false);
@@ -51,7 +56,6 @@ export function SuccessStep() {
     if (result.ok) {
       haptic.medium();
       reset();
-      webApp?.close();
     } else {
       setUploadError(result.error || 'Не удалось отменить заказ');
     }
@@ -286,6 +290,47 @@ export function SuccessStep() {
           </motion.button>
         )}
       </div>
+
+      {/* Cancel confirmation modal */}
+      <AnimatePresence>
+        {showCancelConfirm && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              className="bg-card-bg border border-white/10 rounded-2xl p-6 max-w-sm w-full"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+            >
+              <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-500/20 mx-auto mb-4">
+                <Warning weight="fill" className="w-6 h-6 text-red-400" />
+              </div>
+              <h3 className="text-lg font-bold text-white text-center mb-2">Отменить заказ?</h3>
+              <p className="text-sm text-white/60 text-center mb-6">
+                Это действие нельзя отменить. Заказ будет отменён.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowCancelConfirm(false)}
+                  className="flex-1 py-3 px-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-colors"
+                >
+                  Назад
+                </button>
+                <button
+                  onClick={confirmCancel}
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-xl transition-colors"
+                >
+                  Отменить
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -55,30 +55,23 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       try {
         if (photoBuffer && mimeType?.startsWith('image/')) {
           console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
-          const FormData = (await import('form-data')).default;
+          
+          // Use native FormData with Blob for better compatibility
+          const blob = new Blob([photoBuffer], { type: mimeType });
           const formData = new FormData();
           formData.append('chat_id', adminId);
-          formData.append('photo', photoBuffer, { filename: 'payment_proof.jpg', contentType: mimeType });
+          formData.append('photo', blob, 'payment_proof.jpg');
           formData.append('caption', message);
           formData.append('parse_mode', 'HTML');
           
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 30000);
-          
           const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
             method: 'POST',
-            body: formData as any,
-            headers: formData.getHeaders(),
-            signal: controller.signal,
+            body: formData,
           });
-          clearTimeout(timeout);
           const text = await response.text();
-          console.log('Telegram sendPhoto raw response for', adminId, ':', text.substring(0, 500));
-          try {
-            const result = JSON.parse(text);
-            console.log('Telegram sendPhoto parsed for', adminId, '- ok:', result.ok, 'error:', result.description);
-          } catch (parseErr) {
-            console.error('Failed to parse Telegram response:', parseErr);
+          console.log('Telegram sendPhoto response for', adminId, ':', text.substring(0, 300));
+          if (!response.ok) {
+            console.error('Telegram API error:', response.status, text);
           }
         } else {
           console.log('Sending text message to admin:', adminId, '(no photo)');
@@ -145,26 +138,27 @@ ${details || '—'}
     console.log('Sending pro cleaning notification, photoBuffer:', !!photoBuffer, 'mimeType:', mimeType);
     
     for (const adminId of adminIds) {
-      // Send photo with caption if available
-      if (photoBuffer && mimeType?.startsWith('image/')) {
-        console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
-        const FormData = (await import('form-data')).default;
-        const formData = new FormData();
-        formData.append('chat_id', adminId);
-        formData.append('photo', photoBuffer, { filename: 'pro_cleaning.jpg', contentType: mimeType });
-        formData.append('caption', message);
-        formData.append('parse_mode', 'HTML');
-        
-        const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
-          method: 'POST',
-          body: formData as any,
-          headers: formData.getHeaders(),
-        });
-        const result = await response.json();
-        console.log('Telegram sendPhoto response:', JSON.stringify(result));
-      } else {
-        console.log('Sending text message to admin:', adminId, '(no photo)');
-        await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
+      try {
+        // Send photo with caption if available
+        if (photoBuffer && mimeType?.startsWith('image/')) {
+          console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
+          
+          const blob = new Blob([photoBuffer], { type: mimeType });
+          const formData = new FormData();
+          formData.append('chat_id', adminId);
+          formData.append('photo', blob, 'pro_cleaning.jpg');
+          formData.append('caption', message);
+          formData.append('parse_mode', 'HTML');
+          
+          const response = await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendPhoto`, {
+            method: 'POST',
+            body: formData,
+          });
+          const text = await response.text();
+          console.log('Telegram sendPhoto response for', adminId, ':', text.substring(0, 300));
+        } else {
+          console.log('Sending text message to admin:', adminId, '(no photo)');
+          await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -173,6 +167,9 @@ ${details || '—'}
             parse_mode: 'HTML',
           }),
         });
+        }
+      } catch (adminErr) {
+        console.error('Failed to send to admin', adminId, ':', adminErr);
       }
     }
     console.log('Pro cleaning notifications sent to:', adminIds);
