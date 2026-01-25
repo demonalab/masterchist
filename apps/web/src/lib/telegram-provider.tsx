@@ -57,6 +57,11 @@ export function TelegramProvider({ children }: { children: ReactNode }) {
         tgWebApp.ready();
         tgWebApp.expand();
         
+        // Disable swipe down to close (requires version 7.7+)
+        if ((tgWebApp as any).disableVerticalSwipes) {
+          (tgWebApp as any).disableVerticalSwipes();
+        }
+        
         setTimeout(() => {
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
           document.body.scrollTop = 0;
