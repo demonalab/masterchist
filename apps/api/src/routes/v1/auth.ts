@@ -116,46 +116,72 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Link MAX account if maxId provided
     if (maxId) {
-      // First check if current user already has this maxId
       const currentUser = await prisma.user.findUnique({
         where: { id: user.id },
-        select: { maxId: true },
+        select: { maxId: true, telegramId: true, username: true },
       });
       
       // Skip if user already linked to this maxId
       if (currentUser?.maxId === String(maxId)) {
         // Already linked, do nothing
       } else {
-        const maxUser = await prisma.user.findUnique({
+        // Check for existing MAX user with this maxId
+        const maxUser = await prisma.user.findFirst({
           where: { maxId: String(maxId) },
-          select: { id: true },
+          select: { id: true, username: true },
         });
 
+        // ALSO check for Telegram user with same ID (MAX and Telegram can share user IDs)
+        const telegramUserWithSameId = await prisma.user.findFirst({
+          where: { telegramId: String(maxId) },
+          select: { id: true, username: true },
+        });
+
+        // Merge MAX user data if exists
         if (maxUser && maxUser.id !== user.id) {
-          // Merge: move bookings from MAX user to phone user
           await prisma.booking.updateMany({
             where: { userId: maxUser.id },
             data: { userId: user.id },
           });
-
-          // Move addresses
           await prisma.address.updateMany({
             where: { userId: maxUser.id },
             data: { userId: user.id },
           });
-
-          // Delete old MAX user first (to free up maxId)
           await prisma.user.delete({
             where: { id: maxUser.id },
           });
+        }
+
+        // Merge Telegram user with same ID if exists (important for cross-platform linking)
+        if (telegramUserWithSameId && telegramUserWithSameId.id !== user.id) {
+          await prisma.booking.updateMany({
+            where: { userId: telegramUserWithSameId.id },
+            data: { userId: user.id },
+          });
+          await prisma.address.updateMany({
+            where: { userId: telegramUserWithSameId.id },
+            data: { userId: user.id },
+          });
           
-          // Then update phone user with MAX ID
+          // Copy username from Telegram user if current user doesn't have one
+          const usernameToKeep = currentUser?.username || telegramUserWithSameId.username;
+          
+          // Update current user with telegramId and username before deleting old user
           await prisma.user.update({
             where: { id: user.id },
-            data: { maxId: String(maxId) },
+            data: { 
+              telegramId: String(maxId),
+              username: usernameToKeep,
+            },
           });
-        } else if (!maxUser && !currentUser?.maxId) {
-          // Just add maxId to phone user (only if user doesn't have maxId yet)
+          
+          await prisma.user.delete({
+            where: { id: telegramUserWithSameId.id },
+          });
+        }
+        
+        // Update phone user with MAX ID
+        if (!currentUser?.maxId) {
           await prisma.user.update({
             where: { id: user.id },
             data: { maxId: String(maxId) },
