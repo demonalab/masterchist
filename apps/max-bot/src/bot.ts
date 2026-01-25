@@ -25,25 +25,13 @@ export async function sendMessageToUser(userId: string, text: string) {
   }
 }
 
-const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
+// Deep link to open Mini App inside MAX
+const WEBAPP_DEEPLINK = 'https://max.ru/MasterChist_bot?startapp';
 
-function welcomeKeyboard(): any {
-  // Use open_app button type to open Mini App inside MAX
-  // Library types don't support open_app yet, but MAX API does
-  return {
-    type: 'inline_keyboard',
-    payload: {
-      buttons: [
-        [
-          {
-            type: 'open_app',
-            text: '🚀 Открыть приложение',
-            url: WEBAPP_URL,
-          }
-        ]
-      ]
-    }
-  };
+function welcomeKeyboard() {
+  return Keyboard.inlineKeyboard([
+    [Keyboard.button.link('🚀 Открыть приложение', WEBAPP_DEEPLINK)],
+  ]);
 }
 
 export function createBot() {
