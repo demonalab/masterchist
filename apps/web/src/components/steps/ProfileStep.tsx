@@ -28,7 +28,7 @@ const CITIES = [
 ];
 
 export function ProfileStep({ onBack }: ProfileStepProps) {
-  const { webApp } = useTelegram();
+  const { webApp, initData } = useTelegram();
   const { setStep } = useBookingStore();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,11 +52,15 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   const user = webApp?.initDataUnsafe?.user;
 
   useEffect(() => {
+    // Set initData for Telegram auth
+    if (initData) {
+      api.setInitData(initData);
+    }
     // Load auth token for API requests (for MAX users)
     api.loadAuthToken();
     fetchAddresses();
     checkAuth();
-  }, []);
+  }, [initData]);
 
   const checkAuth = async () => {
     setAuthLoading(true);
