@@ -1,4 +1,4 @@
-const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('../node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
@@ -25,14 +25,7 @@ async function main() {
       console.log('Telegram:', JSON.stringify(tgUser));
       console.log('MAX:', JSON.stringify(matchingMax));
       
-      // Add maxId to telegram user
-      await prisma.user.update({
-        where: { id: tgUser.id },
-        data: { maxId: matchingMax.maxId }
-      });
-      console.log('Added maxId to telegram user');
-      
-      // Move bookings from MAX user to Telegram user
+      // Move bookings from MAX user to Telegram user FIRST
       const bookings = await prisma.booking.updateMany({
         where: { userId: matchingMax.id },
         data: { userId: tgUser.id }
@@ -46,9 +39,49 @@ async function main() {
       });
       console.log('Moved', addresses.count, 'addresses');
       
-      // Delete MAX user
+      // Delete MAX user BEFORE adding maxId (to avoid unique constraint)
+      const maxIdToAdd = matchingMax.maxId;
       await prisma.user.delete({ where: { id: matchingMax.id } });
       console.log('Deleted MAX user profile');
+      
+      // Now add maxId to telegram user if it doesn't have one
+      if (!tgUser.maxId) {
+        await prisma.user.update({
+          where: { id: tgUser.id },
+          data: { maxId: maxIdToAdd }
+        });
+        console.log('Added maxId to telegram user');
+      } else {
+        console.log('Telegram user already has maxId:', tgUser.maxId);
+      }
+    }
+  }
+  
+  // Also check for MAX users matching telegram users by ID (reverse check)
+  for (const maxUser of maxUsers) {
+    const matchingTg = telegramUsers.find(t => t.telegramId === maxUser.maxId && t.id !== maxUser.id);
+    if (matchingTg) {
+      console.log('\nFound MAX user that matches Telegram user ID:');
+      console.log('MAX:', JSON.stringify(maxUser));
+      console.log('Telegram:', JSON.stringify(matchingTg));
+      
+      // Move bookings
+      const bookings = await prisma.booking.updateMany({
+        where: { userId: maxUser.id },
+        data: { userId: matchingTg.id }
+      });
+      console.log('Moved', bookings.count, 'bookings');
+      
+      // Move addresses
+      const addresses = await prisma.address.updateMany({
+        where: { userId: maxUser.id },
+        data: { userId: matchingTg.id }
+      });
+      console.log('Moved', addresses.count, 'addresses');
+      
+      // Delete duplicate MAX user
+      await prisma.user.delete({ where: { id: maxUser.id } });
+      console.log('Deleted duplicate MAX user');
     }
   }
   

@@ -30,14 +30,25 @@
 .animate-fade-in,
 .animate-slide-up,
 .animate-slide-down,
-.animate-scale-in,
-[class*="transition"],
-[class*="animate-"] {
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+.animate-scale-in {
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  will-change: transform, opacity;
+  -webkit-perspective: 1000px;
+  perspective: 1000px;
+}
+
+/* Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-scale-in,
+  [class*="animate-"] {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 html {
