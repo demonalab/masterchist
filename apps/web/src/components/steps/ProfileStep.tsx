@@ -103,6 +103,8 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   };
 
   const handleDelete = async (id: string) => {
+    if (initData) api.setInitData(initData);
+    api.loadAuthToken();
     const result = await api.deleteSavedAddress(id);
     if (result.ok) {
       setAddresses(prev => prev.filter(a => a.id !== id));
@@ -110,6 +112,8 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   };
 
   const handleSetDefault = async (id: string) => {
+    if (initData) api.setInitData(initData);
+    api.loadAuthToken();
     const result = await api.setDefaultAddress(id);
     if (result.ok) {
       setAddresses(prev => prev.map(a => ({
