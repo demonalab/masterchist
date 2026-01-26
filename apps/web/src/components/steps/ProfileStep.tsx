@@ -103,11 +103,16 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   };
 
   const handleDelete = async (id: string) => {
+    console.log('handleDelete called:', id);
+    alert('Удаление: ' + id);
     if (initData) api.setInitData(initData);
     api.loadAuthToken();
     const result = await api.deleteSavedAddress(id);
+    console.log('Delete result:', result);
     if (result.ok) {
       setAddresses(prev => prev.filter(a => a.id !== id));
+    } else {
+      alert('Ошибка: ' + (result.error || 'unknown'));
     }
   };
 
