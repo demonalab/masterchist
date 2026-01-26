@@ -81,8 +81,8 @@ async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise
 }
 
 export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyReply) => {
-  const initData = request.headers['x-telegram-init-data'] as string | undefined;
-  console.log(`Auth hook: initData length=${initData?.length || 0}, hasAuthHeader=${!!request.headers.authorization}`);
+  const initDataHeader = request.headers['x-telegram-init-data'] as string | undefined;
+  console.log(`Auth hook: initData length=${initDataHeader?.length || 0}, hasAuthHeader=${!!request.headers.authorization}`);
   
   // JWT Authorization header - for phone-authenticated users (MAX)
   const authHeader = request.headers.authorization;
