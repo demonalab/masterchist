@@ -291,19 +291,19 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
                   <div className="flex items-center gap-1">
                     {!address.isDefault && (
                       <button
-                        onClick={() => handleSetDefault(address.id)}
-                        className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors touch-manipulation"
+                        onPointerUp={(e) => { e.stopPropagation(); handleSetDefault(address.id); }}
+                        className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors touch-manipulation cursor-pointer"
                         title="Сделать основным"
                       >
-                        <Star weight="regular" className="w-5 h-5 text-white/40" />
+                        <Star weight="regular" className="w-5 h-5 text-white/40 pointer-events-none" />
                       </button>
                     )}
                     <button
-                      onClick={() => handleDelete(address.id)}
-                      className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 active:bg-red-500/30 transition-colors touch-manipulation"
+                      onPointerUp={(e) => { e.stopPropagation(); handleDelete(address.id); }}
+                      className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 active:bg-red-500/30 transition-colors touch-manipulation cursor-pointer"
                       title="Удалить"
                     >
-                      <Trash weight="regular" className="w-5 h-5 text-white/40" />
+                      <Trash weight="regular" className="w-5 h-5 text-white/40 pointer-events-none" />
                     </button>
                   </div>
                 </div>
