@@ -151,11 +151,25 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     }
   }
 
-  // Try MAX initData format (has ip field or chat with type DIALOG - MAX specific)
+  // First try standard Telegram initData validation (works for both direct open and menu button)
+  const validated = validateInitData(initData, config.BOT_TOKEN);
+  if (validated) {
+    // Valid Telegram signature - use as Telegram user
+    if (!isInitDataExpired(validated.authDate)) {
+      console.log(`Telegram auth: user.id=${validated.user.id}, first_name=${validated.user.first_name}`);
+      request.telegramUser = validated.user;
+      request.dbUserId = await upsertUser(validated.user);
+      console.log(`Telegram auth: dbUserId=${request.dbUserId}`);
+      return;
+    }
+    return reply.unauthorized('Telegram initData expired');
+  }
+
+  // If Telegram validation failed, try MAX initData format (has ip field or chat with type DIALOG)
   const params = new URLSearchParams(initData);
   const chatParam = params.get('chat');
   const hasMaxChat = chatParam && chatParam.includes('"type"') && chatParam.includes('DIALOG');
-  const isMaxFormat = params.has('ip') || hasMaxChat || params.has('query_id');
+  const isMaxFormat = params.has('ip') || hasMaxChat;
   
   if (isMaxFormat) {
     // MAX WebApp - parse user without signature validation (MAX uses different signing)
@@ -170,8 +184,10 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
           username: userData.username || undefined,
           language_code: userData.language_code || undefined,
         };
+        console.log(`MAX auth: user.id=${user.id}, first_name=${user.first_name}`);
         request.telegramUser = user;
         request.dbUserId = await upsertUser(user, true); // isMax = true
+        console.log(`MAX auth: dbUserId=${request.dbUserId}`);
         return;
       }
     } catch (err) {
@@ -180,21 +196,9 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     return reply.unauthorized('Invalid MAX initData');
   }
 
-  // Standard Telegram initData validation
-  const validated = validateInitData(initData, config.BOT_TOKEN);
-  if (!validated) {
-    console.error('InitData validation failed. initData:', initData.substring(0, 200), '... BOT_TOKEN exists:', !!config.BOT_TOKEN);
-    return reply.unauthorized('Invalid Telegram initData signature');
-  }
-
-  if (isInitDataExpired(validated.authDate)) {
-    return reply.unauthorized('Telegram initData expired');
-  }
-
-  console.log(`Telegram auth: user.id=${validated.user.id}, first_name=${validated.user.first_name}`);
-  request.telegramUser = validated.user;
-  request.dbUserId = await upsertUser(validated.user);
-  console.log(`Telegram auth: dbUserId=${request.dbUserId}`);
+  // Neither Telegram nor MAX format recognized
+  console.error('InitData validation failed. initData:', initData.substring(0, 200), '... BOT_TOKEN exists:', !!config.BOT_TOKEN);
+  return reply.unauthorized('Invalid initData format');
 };
 
 const telegramAuthPlugin: FastifyPluginAsync = async (fastify) => {
