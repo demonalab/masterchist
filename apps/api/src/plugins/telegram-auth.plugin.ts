@@ -90,11 +90,13 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
       if (decoded?.userId) {
         const user = await prisma.user.findUnique({
           where: { id: decoded.userId },
-          select: { id: true, firstName: true, username: true },
+          select: { id: true, firstName: true, username: true, telegramId: true, maxId: true },
         });
         if (user) {
           request.dbUserId = user.id;
-          request.telegramUser = { id: 0, first_name: user.firstName || 'User', username: user.username || undefined };
+          // Use telegramId or maxId for admin checks (whichever exists)
+          const numericId = user.telegramId ? Number(user.telegramId) : (user.maxId ? Number(user.maxId) : 0);
+          request.telegramUser = { id: numericId, first_name: user.firstName || 'User', username: user.username || undefined };
           return;
         }
       }
