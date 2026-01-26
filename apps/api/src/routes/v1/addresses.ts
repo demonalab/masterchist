@@ -31,7 +31,11 @@ const addressesRoutes: FastifyPluginAsync = async (fastify) => {
   // Get user's saved addresses
   fastify.get('/', async (request, reply) => {
     const userId = request.dbUserId;
+    const telegramId = request.telegramUser?.id;
+    console.log(`GET /addresses: userId=${userId}, telegramId=${telegramId}`);
+    
     if (!userId) {
+      console.log('GET /addresses: No userId - unauthorized');
       return reply.unauthorized('User not authenticated');
     }
 
