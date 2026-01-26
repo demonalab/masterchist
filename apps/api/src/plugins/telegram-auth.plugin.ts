@@ -191,8 +191,10 @@ export const telegramAuthHook = async (request: FastifyRequest, reply: FastifyRe
     return reply.unauthorized('Telegram initData expired');
   }
 
+  console.log(`Telegram auth: user.id=${validated.user.id}, first_name=${validated.user.first_name}`);
   request.telegramUser = validated.user;
   request.dbUserId = await upsertUser(validated.user);
+  console.log(`Telegram auth: dbUserId=${request.dbUserId}`);
 };
 
 const telegramAuthPlugin: FastifyPluginAsync = async (fastify) => {
