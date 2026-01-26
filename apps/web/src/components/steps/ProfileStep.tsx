@@ -288,22 +288,26 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2 relative z-10">
                     {!address.isDefault && (
                       <button
-                        onPointerUp={(e) => { e.stopPropagation(); handleSetDefault(address.id); }}
-                        className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors touch-manipulation cursor-pointer"
-                        title="Сделать основным"
+                        type="button"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSetDefault(address.id); }}
+                        onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); handleSetDefault(address.id); }}
+                        className="w-11 h-11 rounded-lg bg-white/10 flex items-center justify-center active:bg-white/20 transition-colors"
+                        style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                       >
-                        <Star weight="regular" className="w-5 h-5 text-white/40 pointer-events-none" />
+                        <Star weight="regular" className="w-5 h-5 text-white/50" />
                       </button>
                     )}
                     <button
-                      onPointerUp={(e) => { e.stopPropagation(); handleDelete(address.id); }}
-                      className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 active:bg-red-500/30 transition-colors touch-manipulation cursor-pointer"
-                      title="Удалить"
+                      type="button"
+                      onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(address.id); }}
+                      onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); handleDelete(address.id); }}
+                      className="w-11 h-11 rounded-lg bg-red-500/20 flex items-center justify-center active:bg-red-500/40 transition-colors"
+                      style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
                     >
-                      <Trash weight="regular" className="w-5 h-5 text-white/40 pointer-events-none" />
+                      <Trash weight="regular" className="w-5 h-5 text-red-400" />
                     </button>
                   </div>
                 </div>
