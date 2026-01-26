@@ -65,9 +65,10 @@ export function ServiceStep() {
       {/* Hero text */}
       <motion.div 
         className="mt-8 mb-10"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4 }}
+        style={{ transform: 'translateZ(0)' }}
       >
         <p className="label-sm">Сервис</p>
         <h1 className="text-hero">
@@ -80,11 +81,11 @@ export function ServiceStep() {
       {/* Main service card */}
       <motion.button
         onClick={handleSelect}
-        className="glass-card p-6 w-full text-left relative overflow-hidden group"
-        initial={{ opacity: 0, y: 30 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        whileTap={{ scale: 0.98 }}
+        className="glass-card p-6 w-full text-left relative overflow-hidden group active:scale-[0.98] transition-transform"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.15 }}
+        style={{ transform: 'translateZ(0)' }}
       >
         {/* Badge in corner */}
         <div className="absolute top-4 right-4">

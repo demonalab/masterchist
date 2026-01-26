@@ -33,10 +33,10 @@ export function CityStep() {
       {/* Back button */}
       <motion.button 
         onClick={handleBack}
-        className="btn-ghost flex items-center gap-2 -ml-4 mb-6"
-        initial={{ opacity: 0, x: -10 }}
-        animate={{ opacity: 1, x: 0 }}
-        whileTap={{ scale: 0.95 }}
+        className="btn-ghost flex items-center gap-2 -ml-4 mb-6 active:scale-95"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2 }}
       >
         <CaretLeft weight="bold" className="w-4 h-4" />
         <span>Назад</span>
@@ -45,9 +45,10 @@ export function CityStep() {
       {/* Hero text */}
       <motion.div 
         className="mb-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        style={{ transform: 'translateZ(0)' }}
       >
         <p className="label-sm">Шаг 2 из 6</p>
         <h1 className="text-hero">
@@ -61,11 +62,11 @@ export function CityStep() {
           <motion.button
             key={city.code}
             onClick={() => handleSelect(city.code, city.name)}
-            className="glass-card p-5 flex items-center gap-4 text-left"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.1 }}
-            whileTap={{ scale: 0.98 }}
+            className="glass-card p-5 flex items-center gap-4 text-left active:scale-[0.98] transition-transform"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: index * 0.08, duration: 0.3 }}
+            style={{ transform: 'translateZ(0)' }}
           >
             <div className="icon-box">
               <Buildings weight="duotone" className="w-5 h-5 text-accent-green" />
