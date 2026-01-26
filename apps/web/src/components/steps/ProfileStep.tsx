@@ -292,18 +292,18 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
                     {!address.isDefault && (
                       <button
                         onClick={() => handleSetDefault(address.id)}
-                        className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 transition-colors"
+                        className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-white/10 active:bg-white/20 transition-colors touch-manipulation"
                         title="Сделать основным"
                       >
-                        <Star weight="regular" className="w-4 h-4 text-white/40" />
+                        <Star weight="regular" className="w-5 h-5 text-white/40" />
                       </button>
                     )}
                     <button
                       onClick={() => handleDelete(address.id)}
-                      className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 transition-colors"
+                      className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center hover:bg-red-500/20 active:bg-red-500/30 transition-colors touch-manipulation"
                       title="Удалить"
                     >
-                      <Trash weight="regular" className="w-4 h-4 text-white/40" />
+                      <Trash weight="regular" className="w-5 h-5 text-white/40" />
                     </button>
                   </div>
                 </div>
