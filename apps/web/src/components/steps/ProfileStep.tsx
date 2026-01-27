@@ -398,6 +398,8 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
           
           <a
             href="tel:+79993333299"
+            target="_blank"
+            rel="noopener noreferrer"
             className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors"
           >
             <div className="icon-box w-10 h-10">

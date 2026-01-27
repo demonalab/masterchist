@@ -603,6 +603,8 @@ export function AdminStep() {
                       </div>
                       <a 
                         href={`tel:${selectedBooking.address.contactPhone}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="flex items-center gap-2 px-3 py-1.5 bg-accent-green/20 rounded-lg text-accent-green text-sm"
                       >
                         <Phone weight="duotone" className="w-4 h-4" />
