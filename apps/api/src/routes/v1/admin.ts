@@ -453,13 +453,21 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     const citySlotSettings = await prisma.cityTimeSlotSettings.findMany({
       where: { city: city as any },
     });
+    console.log(`City ${city} slot settings from DB:`, JSON.stringify(citySlotSettings));
+    
     const citySettingsMap = new Map(citySlotSettings.map((s: { timeSlotId: string; isActive: boolean }) => [s.timeSlotId, s.isActive]));
     
-    // For city view: slot is active if BOTH globally active AND city-specific active (or no city setting = default true)
-    return slots.map((slot: typeof slots[number]) => ({
-      ...slot,
-      isActive: slot.isActive && (citySettingsMap.has(slot.id) ? citySettingsMap.get(slot.id) : true),
-    }));
+    // For city view: use city-specific isActive if exists, otherwise use global
+    const result = slots.map((slot: typeof slots[number]) => {
+      const cityIsActive = citySettingsMap.get(slot.id);
+      const finalIsActive = cityIsActive !== undefined ? cityIsActive : slot.isActive;
+      console.log(`Slot ${slot.code}: global=${slot.isActive}, citySpecific=${cityIsActive}, final=${finalIsActive}`);
+      return {
+        ...slot,
+        isActive: finalIsActive,
+      };
+    });
+    return result;
   });
 
   // Update time slot for a specific city
