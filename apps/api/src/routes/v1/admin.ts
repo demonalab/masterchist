@@ -478,6 +478,15 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.notFound('Слот не найден');
       }
 
+      // If trying to enable and slot is globally disabled, enable it globally first
+      if (isActive && !slot.isActive) {
+        await prisma.timeSlot.update({
+          where: { code },
+          data: { isActive: true },
+        });
+      }
+
+      // Update city-specific setting
       const updated = await prisma.cityTimeSlotSettings.upsert({
         where: { city_timeSlotId: { city: city as any, timeSlotId: slot.id } },
         update: { isActive: isActive ?? true },
