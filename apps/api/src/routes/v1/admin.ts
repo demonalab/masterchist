@@ -433,8 +433,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
   fastify.get<{ Querystring: { city?: string } }>('/time-slots', async (request) => {
     const { city } = request.query;
     
+    // Get ALL slots (including globally disabled) for admin management
     const slots = await prisma.timeSlot.findMany({
-      where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,
@@ -455,9 +455,10 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     });
     const citySettingsMap = new Map(citySlotSettings.map((s: { timeSlotId: string; isActive: boolean }) => [s.timeSlotId, s.isActive]));
     
+    // For city view: slot is active if BOTH globally active AND city-specific active (or no city setting = default true)
     return slots.map((slot: typeof slots[number]) => ({
       ...slot,
-      isActive: citySettingsMap.has(slot.id) ? citySettingsMap.get(slot.id) : true,
+      isActive: slot.isActive && (citySettingsMap.has(slot.id) ? citySettingsMap.get(slot.id) : true),
     }));
   });
 
