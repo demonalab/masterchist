@@ -14,7 +14,7 @@ declare module 'fastify' {
   }
 }
 
-async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise<string> {
+async function upsertUser(tgUser: TelegramUser, isMax: boolean = false, phone?: string): Promise<string> {
   if (isMax) {
     // MAX user - use maxId field to avoid conflicts with Telegram IDs
     const existing = await prisma.user.findFirst({
@@ -30,6 +30,23 @@ async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise
         },
       });
       return existing.id;
+    }
+    
+    // Check if there's a Telegram user with same phone number - link MAX to existing account
+    if (phone) {
+      const userByPhone = await prisma.user.findFirst({
+        where: { phone, telegramId: { not: null } },
+        select: { id: true, maxId: true, telegramId: true },
+      });
+      
+      if (userByPhone && !userByPhone.maxId) {
+        await prisma.user.update({
+          where: { id: userByPhone.id },
+          data: { maxId: String(tgUser.id) },
+        });
+        console.log(`Linked MAX ID ${tgUser.id} to Telegram user ${userByPhone.telegramId} by phone ${phone}`);
+        return userByPhone.id;
+      }
     }
     
     // Check if there's a Telegram user with same ID (user may have both TG and MAX with same numeric ID)
@@ -53,6 +70,7 @@ async function upsertUser(tgUser: TelegramUser, isMax: boolean = false): Promise
       data: {
         maxId: String(tgUser.id),
         firstName: tgUser.first_name ?? null,
+        phone: phone ?? null,
       },
       select: { id: true },
     });
