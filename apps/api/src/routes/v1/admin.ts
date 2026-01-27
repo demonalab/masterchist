@@ -379,12 +379,22 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ============ CITY SETTINGS ============
 
-  // Get all city settings
+  // Get all city settings (returns all enum cities with their settings)
   fastify.get('/cities', async () => {
-    const cities = await prisma.citySettings.findMany({
-      orderBy: { city: 'asc' },
+    const allCities = ['ROSTOV_NA_DONU', 'BATAYSK', 'STAVROPOL'];
+    const dbSettings = await prisma.citySettings.findMany();
+    const settingsMap = new Map(dbSettings.map((s: { city: string }) => [s.city, s]));
+    
+    return allCities.map(city => {
+      const settings = settingsMap.get(city);
+      return settings || {
+        id: `default_${city}`,
+        city,
+        isActive: true,
+        deliveryPriceRub: 0,
+        minOrderRub: null,
+      };
     });
-    return cities;
   });
 
   // Update city settings (super admin only)
