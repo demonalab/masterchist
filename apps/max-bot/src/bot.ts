@@ -1,11 +1,11 @@
-import { Bot, Keyboard, ImageAttachment } from '@maxhub/max-bot-api';
+import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import { config } from './config';
 import path from 'path';
 
 const LOGO_GIF_PATH = path.join(__dirname, '../assets/logo.gif');
 
 let botInstance: Bot | null = null;
-let cachedImageAttachment: ImageAttachment | null = null;
+let cachedImageToken: string | null = null;
 
 export function getBotInstance(): Bot | null {
   return botInstance;
@@ -96,13 +96,17 @@ export function createBot() {
 
     // Upload GIF and send with welcome message
     try {
-      if (!cachedImageAttachment) {
+      if (!cachedImageToken) {
         console.log('Uploading GIF from:', LOGO_GIF_PATH);
-        cachedImageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
-        console.log('GIF uploaded successfully');
+        const imageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
+        cachedImageToken = (imageAttachment as any).token;
+        console.log('GIF uploaded, token:', cachedImageToken?.substring(0, 30) + '...');
       }
       await ctx.reply(welcomeText, { 
-        attachments: [cachedImageAttachment.toJson(), welcomeKeyboard()] 
+        attachments: [
+          { type: 'image', payload: { token: cachedImageToken! } },
+          welcomeKeyboard()
+        ] 
       });
     } catch (err) {
       console.error('GIF upload/send failed:', err);
@@ -178,13 +182,17 @@ export function createBot() {
 
     try {
       // Upload GIF and send with welcome message
-      if (!cachedImageAttachment) {
+      if (!cachedImageToken) {
         console.log('Uploading GIF from:', LOGO_GIF_PATH);
-        cachedImageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
-        console.log('GIF uploaded successfully');
+        const imageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
+        cachedImageToken = (imageAttachment as any).token;
+        console.log('GIF uploaded, token:', cachedImageToken?.substring(0, 30) + '...');
       }
       await ctx.reply(welcomeText, { 
-        attachments: [cachedImageAttachment.toJson(), welcomeKeyboard()] 
+        attachments: [
+          { type: 'image', payload: { token: cachedImageToken! } },
+          welcomeKeyboard()
+        ] 
       });
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
