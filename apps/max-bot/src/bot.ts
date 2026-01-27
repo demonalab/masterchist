@@ -11,8 +11,8 @@ let cachedVideoToken: string | null = null;
 async function getVideoToken(): Promise<string | null> {
   if (cachedVideoToken) return cachedVideoToken;
   try {
-    // Step 1: Get upload URL
-    const uploadUrlRes = await fetch(`${config.MAX_API_URL}/uploads?type=video`, {
+    // Step 1: Get upload URL (using 'file' type as 'video' returns XML instead of JSON)
+    const uploadUrlRes = await fetch(`${config.MAX_API_URL}/uploads?type=file`, {
       method: 'POST',
       headers: { 'Authorization': config.BOT_TOKEN },
     });
@@ -29,16 +29,26 @@ async function getVideoToken(): Promise<string | null> {
     formData.append('data', new Blob([videoBuffer], { type: 'video/mp4' }), 'logo.mp4');
     
     const uploadRes = await fetch(uploadData.url, { method: 'POST', body: formData });
-    const uploadResult = await uploadRes.json() as { videos?: Record<string, { token: string }> };
-    console.log('Upload result:', JSON.stringify(uploadResult));
+    const uploadText = await uploadRes.text();
+    console.log('Upload response text:', uploadText);
     
-    // Extract token from videos object: {"videos":{"videoId":{"token":"..."}}}
-    if (uploadResult.videos) {
-      const videoIds = Object.keys(uploadResult.videos);
-      const firstVideoId = videoIds[0];
-      if (firstVideoId && uploadResult.videos[firstVideoId]) {
-        cachedVideoToken = uploadResult.videos[firstVideoId].token;
-        console.log('Video token extracted:', cachedVideoToken?.substring(0, 30) + '...');
+    // Try to parse as JSON
+    let uploadResult: { files?: Record<string, { token: string }> } | null = null;
+    try {
+      uploadResult = JSON.parse(uploadText);
+      console.log('Upload result (JSON):', JSON.stringify(uploadResult));
+    } catch {
+      console.log('Upload returned non-JSON');
+      return null;
+    }
+    
+    // Extract token from files object: {"files":{"fileId":{"token":"..."}}}
+    if (uploadResult && uploadResult.files) {
+      const fileIds = Object.keys(uploadResult.files);
+      const firstFileId = fileIds[0];
+      if (firstFileId && uploadResult.files[firstFileId]) {
+        cachedVideoToken = uploadResult.files[firstFileId].token;
+        console.log('File token extracted:', cachedVideoToken?.substring(0, 30) + '...');
         return cachedVideoToken;
       }
     }
