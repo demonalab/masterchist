@@ -215,15 +215,21 @@ export function AdminStep() {
   };
 
   const handleUpdateTimeSlot = async (city: string, code: string, isActive: boolean) => {
+    if (actionLoading) return; // Prevent double clicks
     setActionLoading(true);
+    
+    // Optimistic update
+    setTimeSlots(prev => prev.map(s => s.code === code ? { ...s, isActive } : s));
+    
     const res = await api.updateTimeSlot(city, code, { isActive });
     setActionLoading(false);
     if (res.ok) {
       haptic.success();
-      loadTimeSlotsForCity(city);
     } else {
       haptic.error();
       toast.error(res.error);
+      // Revert on error
+      loadTimeSlotsForCity(city);
     }
   };
 
