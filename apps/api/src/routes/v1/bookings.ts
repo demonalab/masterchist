@@ -8,6 +8,11 @@ import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
 import { config } from '../../config';
 import { notifyUserAllChannels } from '../../lib/user-notifications';
 
+function formatDateRu(date: string): string {
+  const [year, month, day] = date.split('-');
+  return `${day}.${month}.${year}`;
+}
+
 const CITY_NAMES: Record<string, string> = {
   ROSTOV_NA_DONU: 'Ростов-на-Дону',
   BATAYSK: 'Батайск',
@@ -737,7 +742,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         message: `🎉 <b>Заказ оформлен!</b>
 
 📋 Номер: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
-📅 Дата: ${scheduledDate}
+📅 Дата: ${formatDateRu(scheduledDate)}
 🕐 Время: ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}
 
 Ожидайте внесения предоплаты для подтверждения заказа.`,
