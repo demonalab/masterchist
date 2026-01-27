@@ -389,7 +389,7 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
           </div>
           <div className="flex-1 text-left">
             <p className="font-medium text-white">Написать в поддержку</p>
-            <p className="text-xs text-white/40">@rim613</p>
+            <p className="text-xs text-white/40">@rim613 • +7 999 333-32-99</p>
           </div>
           <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
         </button>
