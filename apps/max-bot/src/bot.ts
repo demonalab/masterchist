@@ -185,16 +185,24 @@ export function createBot() {
       if (!cachedImageToken) {
         console.log('Uploading GIF from:', LOGO_GIF_PATH);
         const imageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
-        cachedImageToken = (imageAttachment as any).token;
+        console.log('imageAttachment object:', JSON.stringify(imageAttachment));
+        // Try different possible token locations
+        cachedImageToken = (imageAttachment as any).token 
+          || (imageAttachment as any).payload?.token
+          || (imageAttachment as any).payload?.photos?.token;
         console.log('GIF uploaded, token:', cachedImageToken?.substring(0, 30) + '...');
       }
-      await ctx.reply(welcomeText, { 
-        attachments: [
-          { type: 'image', payload: { token: cachedImageToken! } },
-          welcomeKeyboard()
-        ] 
-      });
-      console.log('bot_started: ctx.reply succeeded');
+      if (cachedImageToken) {
+        await ctx.reply(welcomeText, { 
+          attachments: [
+            { type: 'image', payload: { token: cachedImageToken } },
+            welcomeKeyboard()
+          ] 
+        });
+        console.log('bot_started: ctx.reply succeeded');
+      } else {
+        throw new Error('No token extracted from upload');
+      }
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
       
