@@ -127,12 +127,7 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
     window.open('https://t.me/rim613', '_blank');
   };
 
-  const callSupport = () => {
-    const link = document.createElement('a');
-    link.href = 'tel:+79993333299';
-    link.click();
-  };
-
+  
   const resetForm = () => {
     setNewCity('');
     setNewStreet('');
@@ -401,8 +396,8 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
             <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
           </button>
           
-          <button
-            onClick={callSupport}
+          <a
+            href="tel:+79993333299"
             className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors"
           >
             <div className="icon-box w-10 h-10">
@@ -413,7 +408,7 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
               <p className="text-xs text-white/40">+7 999 333-32-99</p>
             </div>
             <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
-          </button>
+          </a>
         </div>
       </motion.div>
 

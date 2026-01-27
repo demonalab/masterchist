@@ -8,12 +8,6 @@ interface HelpStepProps {
 }
 
 export function HelpStep({ onBack }: HelpStepProps) {
-  const handlePhoneCall = () => {
-    const link = document.createElement('a');
-    link.href = 'tel:+79993333299';
-    link.click();
-  };
-
   return (
     <div className="screen">
       {/* Header */}
@@ -132,13 +126,13 @@ export function HelpStep({ onBack }: HelpStepProps) {
             <TelegramLogo weight="duotone" className="w-5 h-5 text-blue-400" />
             <span className="text-sm text-white">@rim613</span>
           </a>
-          <button 
-            onClick={handlePhoneCall}
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors w-full"
+          <a 
+            href="tel:+79993333299"
+            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
           >
             <Phone weight="duotone" className="w-5 h-5 text-accent-green" />
             <span className="text-sm text-white">+7 999 333-32-99</span>
-          </button>
+          </a>
         </div>
       </motion.div>
     </div>
