@@ -417,6 +417,50 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     return updated;
   });
 
+  // ============ TIME SLOTS ============
+
+  // Get all time slots
+  fastify.get('/time-slots', async () => {
+    const slots = await prisma.timeSlot.findMany({
+      orderBy: { sortOrder: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        startTime: true,
+        endTime: true,
+        isActive: true,
+      },
+    });
+    return slots;
+  });
+
+  // Update time slot
+  fastify.patch<{ Params: { code: string }; Body: { isActive?: boolean } }>(
+    '/time-slots/:code',
+    async (request, reply) => {
+      if ((request as any).adminRole !== 'super_admin') {
+        return reply.forbidden('Только для супер-админа');
+      }
+
+      const { code } = request.params;
+      const { isActive } = request.body;
+
+      const slot = await prisma.timeSlot.findUnique({ where: { code } });
+      if (!slot) {
+        return reply.notFound('Слот не найден');
+      }
+
+      const updated = await prisma.timeSlot.update({
+        where: { code },
+        data: {
+          ...(isActive !== undefined && { isActive }),
+        },
+      });
+
+      return updated;
+    }
+  );
+
   // ============ EXPORT ============
 
   const STATUS_LABELS: Record<string, string> = {

@@ -709,6 +709,43 @@ class ApiClientExtended extends ApiClient {
       return { ok: false, status: 0, error: (err as Error).message };
     }
   }
+
+  async getTimeSlots(): Promise<ApiResult<Array<{ id: string; code: string; startTime: string; endTime: string; isActive: boolean }>>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/time-slots`, {
+        method: 'GET',
+        headers: this.headersNoBody,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async updateTimeSlot(code: string, data: { isActive?: boolean }): Promise<ApiResult<{ id: string; code: string; isActive: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/time-slots/${code}`, {
+        method: 'PATCH',
+        headers: this.headers,
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
 }
 
 export const api = new ApiClientExtended();

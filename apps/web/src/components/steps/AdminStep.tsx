@@ -5,7 +5,7 @@ import { useBookingStore } from '@/lib/booking-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CaretLeft, ChartBar, ClipboardText, Clock, Check, X, Phone,
-  SpinnerGap, User, MapPin, Package, Warning, Export, Trash, UserPlus, Users, Buildings
+  SpinnerGap, User, MapPin, Package, Warning, Export, Trash, UserPlus, Users, Wrench
 } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
 import { useHaptic } from '@/lib/haptic';
@@ -68,7 +68,7 @@ const STATUS_LABELS: Record<string, string> = {
   cancelled: 'Отменён',
 };
 
-type Tab = 'stats' | 'orders' | 'admins' | 'cities';
+type Tab = 'stats' | 'orders' | 'admins' | 'dev';
 type StatusFilter = 'all' | 'new' | 'awaiting_prepayment' | 'prepaid' | 'confirmed';
 
 interface Admin {
@@ -89,6 +89,14 @@ interface CitySettings {
   isActive: boolean;
   deliveryPriceRub: number;
   minOrderRub: number | null;
+}
+
+interface TimeSlotSettings {
+  id: string;
+  code: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
 }
 
 const CITY_LABELS: Record<string, string> = {
@@ -114,6 +122,7 @@ export function AdminStep() {
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [cities, setCities] = useState<CitySettings[]>([]);
   const [editingCity, setEditingCity] = useState<CitySettings | null>(null);
+  const [timeSlots, setTimeSlots] = useState<TimeSlotSettings[]>([]);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'booking' | 'admin'; id: string } | null>(null);
@@ -127,8 +136,8 @@ export function AdminStep() {
       loadBookings();
     } else if (tab === 'admins' && role === 'super_admin') {
       loadAdmins();
-    } else if (tab === 'cities' && role === 'super_admin') {
-      loadCities();
+    } else if (tab === 'dev' && role === 'super_admin') {
+      loadDevData();
     }
   }, [tab, statusFilter, role]);
 
@@ -172,10 +181,14 @@ export function AdminStep() {
     }
   };
 
-  const loadCities = async () => {
+  const loadDevData = async () => {
     try {
-      const res = await api.getCities();
-      if (res.ok) setCities(res.data);
+      const [citiesRes, slotsRes] = await Promise.all([
+        api.getCities(),
+        api.getTimeSlots(),
+      ]);
+      if (citiesRes.ok) setCities(citiesRes.data);
+      if (slotsRes.ok) setTimeSlots(slotsRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -187,8 +200,21 @@ export function AdminStep() {
     setActionLoading(false);
     if (res.ok) {
       haptic.success();
-      loadCities();
+      loadDevData();
       setEditingCity(null);
+    } else {
+      haptic.error();
+      toast.error(res.error);
+    }
+  };
+
+  const handleUpdateTimeSlot = async (code: string, isActive: boolean) => {
+    setActionLoading(true);
+    const res = await api.updateTimeSlot(code, { isActive });
+    setActionLoading(false);
+    if (res.ok) {
+      haptic.success();
+      loadDevData();
     } else {
       haptic.error();
       toast.error(res.error);
@@ -383,15 +409,15 @@ export function AdminStep() {
             Админы
           </button>
           <button
-            onClick={() => { haptic.light(); setTab('cities'); }}
+            onClick={() => { haptic.light(); setTab('dev'); }}
             className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-              tab === 'cities' 
+              tab === 'dev' 
                 ? 'bg-accent-green text-black' 
                 : 'bg-white/5 text-white/60 hover:bg-white/10'
             }`}
           >
-            <Buildings weight="duotone" className="w-4 h-4" />
-            Города
+            <Wrench weight="duotone" className="w-4 h-4" />
+            Dev
           </button>
           </>
         )}
@@ -924,86 +950,62 @@ export function AdminStep() {
         </motion.div>
       )}
 
-      {/* Cities Tab */}
-      {tab === 'cities' && role === 'super_admin' && (
+      {/* Dev Tab */}
+      {tab === 'dev' && role === 'super_admin' && (
         <motion.div 
           className="flex-1 flex flex-col overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <p className="text-sm text-white/60 mb-4">Управление городами и ценами доставки</p>
-          
-          <div className="flex-1 overflow-y-auto space-y-3">
-            {cities.length === 0 ? (
-              <div className="text-center text-white/40 py-8">
-                Загрузка городов...
-              </div>
-            ) : (
-              cities.map((city) => (
-                <div
-                  key={city.id}
-                  className="glass-card-static p-4"
-                >
-                  <div className="flex items-center justify-between mb-3">
+          <div className="flex-1 overflow-y-auto space-y-4">
+            {/* Cities Section */}
+            <div className="glass-card-static p-4">
+              <h3 className="text-sm font-medium text-white mb-3">🏙 Города</h3>
+              <div className="space-y-2">
+                {cities.map((city) => (
+                  <div key={city.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
                     <div>
-                      <p className="text-sm font-medium text-white">
-                        {CITY_LABELS[city.city] || city.city}
-                      </p>
-                      <p className="text-xs text-white/40">
-                        Доставка: {city.deliveryPriceRub} ₽
-                      </p>
+                      <p className="text-sm text-white">{CITY_LABELS[city.city] || city.city}</p>
+                      <p className="text-xs text-white/40">Доставка: {city.deliveryPriceRub} ₽</p>
                     </div>
                     <button
                       onClick={() => handleUpdateCity(city.city, { isActive: !city.isActive })}
                       disabled={actionLoading}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                        city.isActive
-                          ? 'bg-accent-green/20 text-accent-green'
-                          : 'bg-red-500/20 text-red-400'
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                        city.isActive ? 'bg-accent-green/20 text-accent-green' : 'bg-red-500/20 text-red-400'
                       }`}
                     >
-                      {city.isActive ? 'Активен' : 'Выключен'}
+                      {city.isActive ? 'Вкл' : 'Выкл'}
                     </button>
                   </div>
-                  
-                  {editingCity?.city === city.city ? (
-                    <div className="space-y-2 pt-3 border-t border-white/10">
-                      <div>
-                        <label className="text-xs text-white/40 block mb-1">Цена доставки (₽)</label>
-                        <input
-                          type="number"
-                          value={editingCity.deliveryPriceRub}
-                          onChange={(e) => setEditingCity({ ...editingCity, deliveryPriceRub: Number(e.target.value) })}
-                          className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-sm focus:outline-none focus:border-accent-green/50"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleUpdateCity(city.city, { deliveryPriceRub: editingCity.deliveryPriceRub })}
-                          disabled={actionLoading}
-                          className="flex-1 py-2 bg-accent-green text-black rounded-lg text-sm font-medium"
-                        >
-                          Сохранить
-                        </button>
-                        <button
-                          onClick={() => setEditingCity(null)}
-                          className="flex-1 py-2 bg-white/5 text-white/60 rounded-lg text-sm"
-                        >
-                          Отмена
-                        </button>
-                      </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Time Slots Section */}
+            <div className="glass-card-static p-4">
+              <h3 className="text-sm font-medium text-white mb-3">🕐 Временные слоты</h3>
+              <div className="space-y-2">
+                {timeSlots.length === 0 ? (
+                  <p className="text-xs text-white/40">Загрузка...</p>
+                ) : (
+                  timeSlots.map((slot) => (
+                    <div key={slot.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
+                      <p className="text-sm text-white">{slot.startTime} - {slot.endTime}</p>
+                      <button
+                        onClick={() => handleUpdateTimeSlot(slot.code, !slot.isActive)}
+                        disabled={actionLoading}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          slot.isActive ? 'bg-accent-green/20 text-accent-green' : 'bg-red-500/20 text-red-400'
+                        }`}
+                      >
+                        {slot.isActive ? 'Вкл' : 'Выкл'}
+                      </button>
                     </div>
-                  ) : (
-                    <button
-                      onClick={() => setEditingCity(city)}
-                      className="w-full py-2 mt-2 bg-white/5 text-white/60 rounded-lg text-sm hover:bg-white/10 transition-colors"
-                    >
-                      Изменить цену
-                    </button>
-                  )}
-                </div>
-              ))
-            )}
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </motion.div>
       )}
