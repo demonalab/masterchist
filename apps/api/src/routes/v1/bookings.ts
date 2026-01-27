@@ -105,7 +105,33 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
         console.error('Failed to send to admin', adminId, ':', adminErr);
       }
     }
-    console.log('Admin notifications completed for:', adminIds);
+    console.log('Admin Telegram notifications completed for:', adminIds);
+
+    // Send to MAX admins
+    if (config.MAX_BOT_TOKEN && config.ADMIN_MAX_ID) {
+      const maxAdminIds = config.ADMIN_MAX_ID.split(',').map(id => id.trim());
+      const maxMessage = message.replace(/<[^>]*>/g, ''); // Remove HTML tags for MAX
+      
+      for (const maxAdminId of maxAdminIds) {
+        try {
+          const maxRes = await fetch(`https://platform-api.max.ru/messages?user_id=${maxAdminId}`, {
+            method: 'POST',
+            headers: { 
+              'Authorization': config.MAX_BOT_TOKEN,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: maxMessage,
+            }),
+          });
+          const maxResult = await maxRes.json();
+          console.log('MAX admin notification response for', maxAdminId, ':', JSON.stringify(maxResult));
+        } catch (maxErr) {
+          console.error('Failed to send MAX notification to admin', maxAdminId, ':', maxErr);
+        }
+      }
+      console.log('Admin MAX notifications completed for:', maxAdminIds);
+    }
   } catch (err) {
     console.error('Failed to notify admins:', err);
   }
@@ -186,7 +212,33 @@ ${details || '—'}
         console.error('Failed to send to admin', adminId, ':', adminErr);
       }
     }
-    console.log('Pro cleaning notifications sent to:', adminIds);
+    console.log('Pro cleaning Telegram notifications sent to:', adminIds);
+
+    // Send to MAX admins
+    if (config.MAX_BOT_TOKEN && config.ADMIN_MAX_ID) {
+      const maxAdminIds = config.ADMIN_MAX_ID.split(',').map(id => id.trim());
+      const maxMessage = message.replace(/<[^>]*>/g, ''); // Remove HTML tags for MAX
+      
+      for (const maxAdminId of maxAdminIds) {
+        try {
+          const maxRes = await fetch(`https://platform-api.max.ru/messages?user_id=${maxAdminId}`, {
+            method: 'POST',
+            headers: { 
+              'Authorization': config.MAX_BOT_TOKEN,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: maxMessage,
+            }),
+          });
+          const maxResult = await maxRes.json();
+          console.log('MAX pro cleaning notification response for', maxAdminId, ':', JSON.stringify(maxResult));
+        } catch (maxErr) {
+          console.error('Failed to send MAX pro cleaning notification to admin', maxAdminId, ':', maxErr);
+        }
+      }
+      console.log('Pro cleaning MAX notifications sent to:', maxAdminIds);
+    }
   } catch (err) {
     console.error('Failed to notify admins about pro cleaning:', err);
   }
