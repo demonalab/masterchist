@@ -127,6 +127,10 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
     window.open('https://t.me/rim613', '_blank');
   };
 
+  const callSupport = () => {
+    window.location.href = 'tel:+79993333299';
+  };
+
   const resetForm = () => {
     setNewCity('');
     setNewStreet('');
@@ -380,19 +384,35 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
           Поддержка
         </h2>
         
-        <button
-          onClick={openSupport}
-          className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors"
-        >
-          <div className="icon-box w-10 h-10">
-            <TelegramLogo weight="duotone" className="w-5 h-5 text-blue-400" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="font-medium text-white">Написать в поддержку</p>
-            <p className="text-xs text-white/40">@rim613 • +7 999 333-32-99</p>
-          </div>
-          <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
-        </button>
+        <div className="space-y-2">
+          <button
+            onClick={openSupport}
+            className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors"
+          >
+            <div className="icon-box w-10 h-10">
+              <TelegramLogo weight="duotone" className="w-5 h-5 text-blue-400" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium text-white">Написать в Telegram</p>
+              <p className="text-xs text-white/40">@rim613</p>
+            </div>
+            <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
+          </button>
+          
+          <button
+            onClick={callSupport}
+            className="glass-card-static p-4 w-full flex items-center gap-3 hover:bg-white/10 transition-colors"
+          >
+            <div className="icon-box w-10 h-10">
+              <Phone weight="duotone" className="w-5 h-5 text-accent-green" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-medium text-white">Позвонить</p>
+              <p className="text-xs text-white/40">+7 999 333-32-99</p>
+            </div>
+            <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
+          </button>
+        </div>
       </motion.div>
 
       {/* Add Address Modal */}

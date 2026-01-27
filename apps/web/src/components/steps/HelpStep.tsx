@@ -126,13 +126,13 @@ export function HelpStep({ onBack }: HelpStepProps) {
             <TelegramLogo weight="duotone" className="w-5 h-5 text-blue-400" />
             <span className="text-sm text-white">@rim613</span>
           </a>
-          <a 
-            href="tel:+79993333299"
-            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+          <button 
+            onClick={() => window.location.href = 'tel:+79993333299'}
+            className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors w-full"
           >
             <Phone weight="duotone" className="w-5 h-5 text-accent-green" />
             <span className="text-sm text-white">+7 999 333-32-99</span>
-          </a>
+          </button>
         </div>
       </motion.div>
     </div>
