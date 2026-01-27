@@ -62,7 +62,7 @@ export function createBot() {
 
     try {
       const res = await fetch(`${config.API_BASE_URL}/api/v1/admin/stats`, {
-        headers: { 'x-max-id': String(userId) },
+        headers: { 'x-max-user-id': String(userId) },
       });
       
       if (!res.ok) {

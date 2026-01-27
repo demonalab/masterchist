@@ -25,7 +25,7 @@ export async function getAdminRole(telegramId: string): Promise<'super_admin' | 
     return 'super_admin';
   }
   
-  // Check database for admins
+  // Check database for admins by telegramId
   const admin = await prisma.admin.findUnique({
     where: { telegramId },
     select: { role: true, isActive: true },
@@ -33,6 +33,26 @@ export async function getAdminRole(telegramId: string): Promise<'super_admin' | 
   
   if (admin && admin.isActive) {
     return admin.role as 'super_admin' | 'admin';
+  }
+  
+  // Check if this is a MAX user linked to a Telegram admin
+  const userWithMaxId = await prisma.user.findFirst({
+    where: { maxId: telegramId },
+    select: { telegramId: true },
+  });
+  
+  if (userWithMaxId?.telegramId) {
+    // Check if linked Telegram ID is admin
+    if (SUPER_ADMIN_IDS.includes(userWithMaxId.telegramId) || FALLBACK_SUPER_ADMINS.includes(userWithMaxId.telegramId)) {
+      return 'super_admin';
+    }
+    const linkedAdmin = await prisma.admin.findUnique({
+      where: { telegramId: userWithMaxId.telegramId },
+      select: { role: true, isActive: true },
+    });
+    if (linkedAdmin && linkedAdmin.isActive) {
+      return linkedAdmin.role as 'super_admin' | 'admin';
+    }
   }
   
   return null;
