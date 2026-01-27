@@ -143,7 +143,8 @@ export function createBot() {
 
   // Handle first-time bot start (when user clicks "Start" button for the first time)
   bot.on('bot_started', async (ctx) => {
-    console.log('bot_started event received:', JSON.stringify(ctx, null, 2));
+    const update = ctx.update as any;
+    console.log('bot_started event received, user_id:', update?.user_id, 'chat_id:', update?.chat_id);
     
     const welcomeText = `👋 Добро пожаловать в МастерЧист!
 
@@ -159,19 +160,17 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     try {
-      // Try ctx.reply first
       await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
       
       // Fallback: send message directly via API
-      const update = ctx.update as any;
-      const userId = update?.user?.user_id || update?.chat_id;
+      const userId = update?.user_id || update?.user?.user_id;
       
       if (userId) {
         console.log('bot_started: trying direct API send to user:', userId);
-        await sendWelcomeMessage(userId);
+        await sendWelcomeMessage(String(userId));
       }
     }
   });
