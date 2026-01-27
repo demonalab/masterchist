@@ -55,7 +55,7 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
 
     // NEW LOGIC: 1 courier - if a time slot is booked on any of 3 days (yesterday, today, tomorrow),
     // it's unavailable for the requested date
-    const [timeSlots, bookingsIn3Days] = await Promise.all([
+    const [timeSlots, bookingsIn3Days, citySlotSettings] = await Promise.all([
       prisma.timeSlot.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
@@ -70,7 +70,16 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
         },
         select: { timeSlotId: true, scheduledDate: true },
       }),
+      // Get city-specific time slot settings
+      prisma.cityTimeSlotSettings.findMany({
+        where: { city: city as any },
+      }),
     ]);
+    
+    // Build map of city-specific disabled slots
+    const cityDisabledSlots = new Set(
+      citySlotSettings.filter((s: { isActive: boolean }) => !s.isActive).map((s: { timeSlotId: string }) => s.timeSlotId)
+    );
 
     // Build set of blocked time slots for the requested date
     // A slot is blocked if it's booked on yesterday, today, or tomorrow
@@ -81,16 +90,19 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
       }
     }
 
-    const result: TimeSlotAvailability[] = timeSlots.map((slot: typeof timeSlots[number]) => {
-      const available = !blockedSlotIds.has(slot.id);
+    // Filter out city-disabled slots and map to result
+    const result: TimeSlotAvailability[] = timeSlots
+      .filter((slot: typeof timeSlots[number]) => !cityDisabledSlots.has(slot.id))
+      .map((slot: typeof timeSlots[number]) => {
+        const available = !blockedSlotIds.has(slot.id);
 
-      return {
-        timeSlotId: slot.id,
-        startTime: slot.startTime,
-        endTime: slot.endTime,
-        available,
-      };
-    });
+        return {
+          timeSlotId: slot.id,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          available,
+        };
+      });
 
     return result;
   });
@@ -125,7 +137,7 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     const extendedEnd = new Date(endDate);
     extendedEnd.setUTCDate(extendedEnd.getUTCDate() + 1);
     
-    const [timeSlots, bookingsInRange] = await Promise.all([
+    const [timeSlots, bookingsInRange, citySlotSettings] = await Promise.all([
       prisma.timeSlot.findMany({
         where: { isActive: true },
         select: { id: true },
@@ -138,9 +150,17 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
         },
         select: { scheduledDate: true, timeSlotId: true },
       }),
+      prisma.cityTimeSlotSettings.findMany({
+        where: { city: city as any },
+      }),
     ]);
     
-    const totalSlots = timeSlots.length;
+    // Filter out city-disabled slots
+    const cityDisabledSlots = new Set(
+      citySlotSettings.filter((s: { isActive: boolean }) => !s.isActive).map((s: { timeSlotId: string }) => s.timeSlotId)
+    );
+    const activeSlots = timeSlots.filter((s: { id: string }) => !cityDisabledSlots.has(s.id));
+    const totalSlots = activeSlots.length;
     
     // Build map: date -> set of booked slot IDs
     const bookedSlotsPerDay = new Map<string, Set<string>>();
