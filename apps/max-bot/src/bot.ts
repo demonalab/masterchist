@@ -1,9 +1,46 @@
 import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import { config } from './config';
+import fs from 'fs';
+import path from 'path';
 
-const LOGO_VIDEO_URL = 'https://xn--80akjnwedee1c.xn--p1ai/logo.mp4';
+const LOGO_VIDEO_PATH = path.join(__dirname, '../assets/logo.mp4');
 
 let botInstance: Bot | null = null;
+let cachedVideoToken: string | null = null;
+
+async function getVideoToken(): Promise<string | null> {
+  if (cachedVideoToken) return cachedVideoToken;
+  try {
+    const uploadUrlRes = await fetch(`${config.MAX_API_URL}/uploads?type=video`, {
+      method: 'POST',
+      headers: { 'Authorization': config.BOT_TOKEN },
+    });
+    if (!uploadUrlRes.ok) {
+      console.error('Failed to get upload URL:', await uploadUrlRes.text());
+      return null;
+    }
+    const uploadData = await uploadUrlRes.json() as { url: string };
+    console.log('Got upload URL:', uploadData.url);
+    const videoBuffer = fs.readFileSync(LOGO_VIDEO_PATH);
+    const formData = new FormData();
+    formData.append('data', new Blob([videoBuffer], { type: 'video/mp4' }), 'logo.mp4');
+    const uploadRes = await fetch(uploadData.url, { method: 'POST', body: formData });
+    if (!uploadRes.ok) {
+      console.error('Failed to upload video:', await uploadRes.text());
+      return null;
+    }
+    const result = await uploadRes.json() as { token?: string };
+    console.log('Upload result:', result);
+    if (result.token) {
+      cachedVideoToken = result.token;
+      return result.token;
+    }
+    return null;
+  } catch (err) {
+    console.error('Error uploading video:', err);
+    return null;
+  }
+}
 
 export function getBotInstance(): Bot | null {
   return botInstance;
@@ -93,12 +130,17 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     // Send video with welcome message
-    await ctx.reply(welcomeText, { 
-      attachments: [
-        { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
-        welcomeKeyboard(),
-      ] 
-    });
+    const videoToken = await getVideoToken();
+    if (videoToken) {
+      await ctx.reply(welcomeText, { 
+        attachments: [
+          { type: 'video', payload: { token: videoToken } } as any,
+          welcomeKeyboard(),
+        ] 
+      });
+    } else {
+      await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+    }
   });
 
   bot.command('stats', async (ctx) => {
@@ -168,12 +210,17 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     try {
-      await ctx.reply(welcomeText, { 
-        attachments: [
-          { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
-          welcomeKeyboard(),
-        ] 
-      });
+      const videoToken = await getVideoToken();
+      if (videoToken) {
+        await ctx.reply(welcomeText, { 
+          attachments: [
+            { type: 'video', payload: { token: videoToken } } as any,
+            welcomeKeyboard(),
+          ] 
+        });
+      } else {
+        await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+      }
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
