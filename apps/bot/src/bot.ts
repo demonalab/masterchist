@@ -109,7 +109,8 @@ export function createBot(): Bot<BotContext> {
 
 🏠 <b>Клининг</b> — уборка помещений
 
-📞 Контакт: @rim613`,
+📞 Контакт: @rim613
+📱 Телефон: +7 999 333-32-99`,
       { parse_mode: 'HTML' }
     );
   });
