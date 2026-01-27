@@ -46,7 +46,7 @@ interface AdminStats {
 const STATUS_COLORS: Record<string, string> = {
   new: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   awaiting_prepayment: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  prepaid: 'bg-green-500/20 text-green-400 border-green-500/30',
+  prepaid: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   confirmed: 'bg-accent-green/20 text-accent-green border-accent-green/30',
   in_progress: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   completed: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
@@ -352,6 +352,11 @@ export function AdminStep() {
         >
           <ClipboardText weight="duotone" className="w-4 h-4" />
           Заказы
+          {stats && stats.newBookings > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
+              {stats.newBookings}
+            </span>
+          )}
         </button>
         {role === 'super_admin' && (
           <>
@@ -410,7 +415,7 @@ export function AdminStep() {
             </div>
             <div className="glass-card-static p-4">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 rounded-full bg-green-400" />
+                <div className="w-2 h-2 rounded-full bg-orange-400" />
                 <p className="text-xs text-white/40">Предоплачено</p>
               </div>
               <p className="text-2xl font-bold text-white">{stats.prepaidBookings}</p>
