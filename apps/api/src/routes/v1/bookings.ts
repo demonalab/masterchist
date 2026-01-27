@@ -14,7 +14,7 @@ const CITY_NAMES: Record<string, string> = {
   STAVROPOL: 'Ставрополь',
 };
 
-async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer, mimeType?: string): Promise<void> {
+async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer, mimeType?: string, photoUrl?: string): Promise<void> {
   if (!config.ADMIN_TELEGRAM_ID || !config.BOT_TOKEN) {
     console.log('ADMIN_TELEGRAM_ID or BOT_TOKEN not set, skipping notification');
     return;
@@ -120,18 +120,28 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       
       if (maxAdminIds.length > 0) {
         const maxMessage = message.replace(/<[^>]*>/g, ''); // Remove HTML tags for MAX
+        const fullPhotoUrl = photoUrl ? `https://masterchistbot.ru${photoUrl}` : null;
         
         for (const maxAdminId of maxAdminIds) {
           try {
+            const body: { text: string; attachments?: { type: string; payload: { url: string } }[] } = {
+              text: maxMessage,
+            };
+            
+            if (fullPhotoUrl) {
+              body.attachments = [{
+                type: 'image',
+                payload: { url: fullPhotoUrl },
+              }];
+            }
+            
             const maxRes = await fetch(`https://platform-api.max.ru/messages?user_id=${maxAdminId}`, {
               method: 'POST',
               headers: { 
                 'Authorization': config.MAX_BOT_TOKEN,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify({
-                text: maxMessage,
-              }),
+              body: JSON.stringify(body),
             });
             const maxResult = await maxRes.json();
             console.log('MAX admin notification response for', maxAdminId, ':', JSON.stringify(maxResult));
@@ -978,7 +988,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       });
 
       // Notify admins about payment with photo
-      notifyAdminsAboutPayment(id, fileBuffer, mimeType).catch(err => {
+      notifyAdminsAboutPayment(id, fileBuffer, mimeType, savedPhotoUrl).catch(err => {
         console.error('Admin notification failed:', err);
       });
 
