@@ -22,6 +22,9 @@ export interface BookingDraft {
   serviceCode?: string;
   city?: string;
   cityName?: string;
+  district?: string;
+  districtName?: string;
+  deliveryPrice?: number;
   scheduledDate?: string;
   timeSlotId?: string;
   timeSlotLabel?: string;

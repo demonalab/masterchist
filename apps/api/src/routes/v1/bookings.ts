@@ -28,7 +28,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
         scheduledDate: true,
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
-        address: { select: { city: true, addressLine: true, contactName: true, contactPhone: true } },
+        address: { select: { city: true, district: true, addressLine: true, contactName: true, contactPhone: true } },
         user: { select: { telegramId: true, firstName: true } },
         service: { select: { title: true } },
       },
@@ -46,6 +46,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       STAVROPOL: 'Ставрополь',
     };
     const cityName = booking.address?.city ? cityNames[booking.address.city] ?? booking.address.city : '—';
+    const districtName = booking.address?.district || null;
 
     const message = `💰 <b>Новая оплата!</b>
 
@@ -56,7 +57,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
 
 👤 ${booking.address?.contactName ?? '—'}
 📞 ${booking.address?.contactPhone ?? '—'}
-🏙 ${cityName}
+🏙 ${cityName}${districtName ? ` (${districtName})` : ''}
 📍 ${booking.address?.addressLine ?? '—'}
 
 ⏳ Подтвердите в админ-панели`;
@@ -209,7 +210,7 @@ async function notifyAdminsAboutProCleaning(bookingId: string, details: string, 
       where: { id: bookingId },
       select: {
         id: true,
-        address: { select: { city: true, addressLine: true, contactName: true, contactPhone: true } },
+        address: { select: { city: true, district: true, addressLine: true, contactName: true, contactPhone: true } },
         user: { select: { telegramId: true, firstName: true, phone: true } },
         service: { select: { title: true } },
         proCleaningPhotoFileIds: true,
@@ -219,11 +220,12 @@ async function notifyAdminsAboutProCleaning(bookingId: string, details: string, 
     if (!booking) return;
 
     const cityName = CITY_NAMES[booking.address?.city ?? ''] || booking.address?.city || '—';
+    const districtName = booking.address?.district || null;
     
     const message = `🧹 <b>Новая заявка на проф. химчистку!</b>
 
 📋 ID: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
-🏙 ${cityName}
+🏙 ${cityName}${districtName ? ` (${districtName})` : ''}
 
 📝 <b>Описание:</b>
 ${details || '—'}
@@ -326,6 +328,7 @@ const BookingSources = {
 const createSelfCleaningSchema = z.object({
   serviceCode: z.literal(ServiceCodes.SELF_CLEANING),
   city: z.enum([Cities.ROSTOV_NA_DONU, Cities.BATAYSK, Cities.STAVROPOL]),
+  district: z.string().max(64).optional(),
   scheduledDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be YYYY-MM-DD'),
   timeSlotId: z.string().uuid(),
   address: z.object({
@@ -344,6 +347,7 @@ const createSelfCleaningSchema = z.object({
 const createProCleaningSchema = z.object({
   serviceCode: z.literal(ServiceCodes.PRO_CLEANING),
   city: z.enum([Cities.ROSTOV_NA_DONU, Cities.BATAYSK, Cities.STAVROPOL]),
+  district: z.string().max(64).optional(),
   address: z.object({
     city: z.string().min(1).max(128),
     street: z.string().min(1).max(256),
@@ -407,7 +411,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
         service: { select: { code: true, title: true } },
-        address: { select: { addressLine: true, city: true } },
+        address: { select: { addressLine: true, city: true, district: true } },
         proCleaningDetails: true,
         proCleaningPhotoFileIds: true,
         paymentProofs: { select: { photoUrl: true }, take: 1 },
@@ -424,6 +428,8 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       timeSlot: b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : null,
       service: b.service?.title ?? b.service?.code ?? null,
       address: b.address?.addressLine ?? null,
+      city: b.address?.city ?? null,
+      district: (b.address as any)?.district ?? null,
       proCleaningDetails: b.proCleaningDetails ?? null,
       proCleaningPhotoUrls: b.proCleaningPhotoFileIds ?? [],
       paymentProofUrl: b.paymentProofs?.[0]?.photoUrl ?? null,
@@ -491,7 +497,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.badRequest(parseResult.error.errors[0]?.message ?? 'Invalid request body');
       }
 
-      const { city, address, contact, proCleaningDetails } = parseResult.data;
+      const { city, district, address, contact, proCleaningDetails } = parseResult.data;
       if (!userId) {
         return reply.unauthorized('User not authenticated');
       }
@@ -517,6 +523,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         data: {
           userId,
           city: city,
+          district: district || null,
           addressLine,
           contactName: contact.name,
           contactPhone: contact.phone,
@@ -563,7 +570,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.badRequest(parseResult.error.errors[0]?.message ?? 'Invalid request body');
     }
 
-    const { serviceCode, city, scheduledDate, timeSlotId, address, contact } = parseResult.data;
+    const { serviceCode, city, district, scheduledDate, timeSlotId, address, contact } = parseResult.data;
     // userId already set at the top (from Telegram auth or MAX bot)
     if (!userId) {
       return reply.unauthorized('User not authenticated');
@@ -624,6 +631,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           data: {
             userId,
             city: city,
+            district: district || null,
             addressLine,
             contactName: contact.name,
             contactPhone: contact.phone,

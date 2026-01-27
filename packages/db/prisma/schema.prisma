@@ -97,6 +97,7 @@ model Address {
   id           String   @id @default(uuid())
   userId       String
   city         City
+  district     String?  @db.VarChar(64)
   addressLine  String   @db.Text
   contactName  String   @db.VarChar(128)
   contactPhone String   @db.VarChar(32)

@@ -24,6 +24,8 @@ interface AdminBooking {
   paymentProofUrl?: string | null;
   proCleaningDetails?: string | null;
   proCleaningPhotoUrls?: string[];
+  city?: string | null;
+  district?: string | null;
   user: { telegramId: string; firstName: string } | null;
   address: { addressLine: string; contactName: string; contactPhone: string } | null;
 }
@@ -622,7 +624,18 @@ export function AdminStep() {
                       <MapPin weight="duotone" className="w-5 h-5 text-accent-blue" />
                       <div>
                         <p className="text-xs text-white/40">Адрес</p>
-                        <p className="text-sm text-white">{selectedBooking.address.addressLine}</p>
+                        <p className="text-sm text-white">
+                          {selectedBooking.city && (
+                            <span className="text-white/60">
+                              {selectedBooking.city === 'ROSTOV_NA_DONU' ? 'Ростов-на-Дону' : 
+                               selectedBooking.city === 'BATAYSK' ? 'Батайск' : 
+                               selectedBooking.city === 'STAVROPOL' ? 'Ставрополь' : selectedBooking.city}
+                              {selectedBooking.district && ` (${selectedBooking.district})`}
+                              {' — '}
+                            </span>
+                          )}
+                          {selectedBooking.address.addressLine}
+                        </p>
                       </div>
                     </div>
 

@@ -11,18 +11,28 @@ import { api, SavedAddress } from '@/lib/api';
 import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
 
 const CITIES = [
-  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону' },
-  { code: 'BATAYSK', name: 'Батайск' },
-  { code: 'STAVROPOL', name: 'Ставрополь' },
+  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', hasDistricts: true },
+  { code: 'BATAYSK', name: 'Батайск', hasDistricts: false },
+  { code: 'STAVROPOL', name: 'Ставрополь', hasDistricts: false },
+];
+
+const ROSTOV_DISTRICTS = [
+  { code: 'sovetsky', name: 'Советский', deliveryPrice: 0 },
+  { code: 'zhd', name: 'Железнодорожный', deliveryPrice: 0 },
+  { code: 'leninsky', name: 'Ленинский', deliveryPrice: 0 },
+  { code: 'kirovsky', name: 'Кировский', deliveryPrice: 0 },
+  { code: 'other', name: 'Другой район', deliveryPrice: 200 },
 ];
 
 export function ProCleaningStep() {
   const { setStep } = useBookingStore();
-  const [currentStep, setCurrentStep] = useState<'city' | 'details' | 'contact' | 'success'>('city');
+  const [currentStep, setCurrentStep] = useState<'city' | 'district' | 'details' | 'contact' | 'success'>('city');
   
   // Form state
   const [city, setCity] = useState('');
   const [cityName, setCityName] = useState('');
+  const [district, setDistrict] = useState('');
+  const [districtName, setDistrictName] = useState('');
   const [description, setDescription] = useState('');
   const [photos, setPhotos] = useState<File[]>([]);
   const [photosPreviews, setPhotosPreviews] = useState<string[]>([]);
@@ -43,8 +53,14 @@ export function ProCleaningStep() {
   const handleBack = () => {
     if (currentStep === 'city') {
       setStep('service');
-    } else if (currentStep === 'details') {
+    } else if (currentStep === 'district') {
       setCurrentStep('city');
+    } else if (currentStep === 'details') {
+      if (district) {
+        setCurrentStep('district');
+      } else {
+        setCurrentStep('city');
+      }
     } else if (currentStep === 'contact') {
       setCurrentStep('details');
     }
@@ -74,9 +90,21 @@ export function ProCleaningStep() {
     loadAddresses();
   }, [city]);
 
-  const handleCitySelect = (cityCode: string, name: string) => {
-    setCity(cityCode);
-    setCityName(name);
+  const handleCitySelect = (cityItem: typeof CITIES[0]) => {
+    setCity(cityItem.code);
+    setCityName(cityItem.name);
+    if (cityItem.hasDistricts) {
+      setCurrentStep('district');
+    } else {
+      setDistrict('');
+      setDistrictName('');
+      setCurrentStep('details');
+    }
+  };
+
+  const handleDistrictSelect = (districtItem: typeof ROSTOV_DISTRICTS[0]) => {
+    setDistrict(districtItem.code);
+    setDistrictName(districtItem.name);
     setCurrentStep('details');
   };
 
@@ -149,6 +177,7 @@ export function ProCleaningStep() {
       const result = await api.createBooking({
         serviceCode: 'pro_cleaning',
         city,
+        district: district || undefined,
         address: {
           city: cityName,
           street: street.trim(),
@@ -247,7 +276,7 @@ export function ProCleaningStep() {
           {CITIES.map((c, index) => (
             <motion.button
               key={c.code}
-              onClick={() => handleCitySelect(c.code, c.name)}
+              onClick={() => handleCitySelect(c)}
               className="glass-card-static p-4 w-full flex items-center gap-4 hover:bg-white/10 transition-colors"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -257,6 +286,37 @@ export function ProCleaningStep() {
                 <Buildings weight="duotone" className="w-5 h-5 text-accent-purple" />
               </div>
               <span className="font-medium text-white">{c.name}</span>
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
+
+      {/* District selection */}
+      {currentStep === 'district' && (
+        <motion.div 
+          className="space-y-3"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <p className="text-sm text-white/50 mb-2">{cityName}</p>
+          {ROSTOV_DISTRICTS.map((d, index) => (
+            <motion.button
+              key={d.code}
+              onClick={() => handleDistrictSelect(d)}
+              className="glass-card-static p-4 w-full flex items-center gap-4 hover:bg-white/10 transition-colors"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.05 }}
+            >
+              <div className="icon-box w-10 h-10">
+                <MapPin weight="duotone" className="w-5 h-5 text-accent-purple" />
+              </div>
+              <div className="flex-1 text-left">
+                <span className="font-medium text-white">{d.name}</span>
+                <p className={`text-xs ${d.deliveryPrice === 0 ? 'text-accent-green' : 'text-accent-yellow'}`}>
+                  {d.deliveryPrice === 0 ? 'Бесплатная доставка' : `Доставка +${d.deliveryPrice}₽`}
+                </p>
+              </div>
             </motion.button>
           ))}
         </motion.div>

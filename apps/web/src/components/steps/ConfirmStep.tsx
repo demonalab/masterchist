@@ -25,7 +25,8 @@ export function ConfirmStep() {
     setLoading(true);
     api.setInitData(initData);
     const result = await api.createBooking({
-      serviceCode: draft.serviceCode, city: draft.city, scheduledDate: draft.scheduledDate,
+      serviceCode: draft.serviceCode, city: draft.city, district: draft.district,
+      scheduledDate: draft.scheduledDate,
       timeSlotId: draft.timeSlotId,
       address: { city: draft.cityName, street: draft.street, house: draft.house, apartment: draft.apartment },
       contact: { name: draft.contactName, phone: draft.contactPhone },

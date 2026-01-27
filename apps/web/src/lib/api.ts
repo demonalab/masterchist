@@ -41,6 +41,7 @@ export interface MyBooking {
 export interface CreateBookingRequest {
   serviceCode: string;
   city: string;
+  district?: string;
   scheduledDate?: string;
   timeSlotId?: string;
   address: {
