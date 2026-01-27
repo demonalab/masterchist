@@ -126,6 +126,37 @@ export class MaxApi {
     });
   }
 
+  async sendVideo(chatId: number, videoUrl: string, caption?: string, keyboard?: InlineButton[][]): Promise<void> {
+    const attachments: any[] = [{
+      type: 'video',
+      payload: { url: videoUrl },
+    }];
+
+    if (keyboard && keyboard.length > 0) {
+      attachments.push({
+        type: 'inline_keyboard',
+        payload: { buttons: keyboard },
+      });
+    }
+
+    const body = {
+      text: caption || '',
+      format: 'html',
+      attachments,
+    };
+
+    const res = await fetch(`${this.baseUrl}/messages?chat_id=${chatId}`, {
+      method: 'POST',
+      headers: this.headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.text();
+      console.error('sendVideo error:', err);
+    }
+  }
+
   async answerCallback(callbackId: string, text?: string): Promise<void> {
     await fetch(`${this.baseUrl}/answers`, {
       method: 'POST',

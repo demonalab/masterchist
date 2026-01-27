@@ -30,13 +30,9 @@ export function createBot(): Bot<Context> {
 
   setBotInstance(bot);
 
-  // Welcome message on /start - first remove old keyboard, then show video with inline keyboard
+  // Welcome message on /start - send video with inline keyboard
   bot.command('start', async (ctx) => {
-    // Remove old reply keyboard
-    await ctx.reply('👋', {
-      reply_markup: { remove_keyboard: true },
-    });
-    // Send looped video with welcome message
+    // Send looped video with welcome message (also removes old reply keyboard)
     await ctx.replyWithAnimation(new InputFile(LOGO_VIDEO_PATH), {
       caption: WELCOME_TEXT,
       reply_markup: welcomeKeyboard(),

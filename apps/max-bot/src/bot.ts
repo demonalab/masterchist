@@ -1,6 +1,8 @@
 import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import { config } from './config';
 
+const LOGO_VIDEO_URL = 'https://xn--80akjnwedee1c.xn--p1ai/logo.mp4';
+
 let botInstance: Bot | null = null;
 
 export function getBotInstance(): Bot | null {
@@ -90,7 +92,13 @@ export function createBot() {
 
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
-    await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+    // Send video with welcome message
+    await ctx.reply(welcomeText, { 
+      attachments: [
+        { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
+        welcomeKeyboard(),
+      ] 
+    });
   });
 
   bot.command('stats', async (ctx) => {
@@ -160,7 +168,12 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     try {
-      await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+      await ctx.reply(welcomeText, { 
+        attachments: [
+          { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
+          welcomeKeyboard(),
+        ] 
+      });
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
