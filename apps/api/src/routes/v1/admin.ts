@@ -110,16 +110,19 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Get stats
   fastify.get('/stats', async () => {
-    const [total, newCount, awaitingPrepayment, prepaid, confirmed, cancelled] = await Promise.all([
+    const [total, newCount, awaitingPrepayment, prepaid, confirmed, cancelled, totalUsers, telegramUsers, maxUsers] = await Promise.all([
       prisma.booking.count(),
       prisma.booking.count({ where: { status: BookingStatuses.NEW } }),
       prisma.booking.count({ where: { status: BookingStatuses.AWAITING_PREPAYMENT } }),
       prisma.booking.count({ where: { status: BookingStatuses.PREPAID } }),
       prisma.booking.count({ where: { status: BookingStatuses.CONFIRMED } }),
       prisma.booking.count({ where: { status: BookingStatuses.CANCELLED } }),
+      prisma.user.count(),
+      prisma.user.count({ where: { telegramId: { not: null } } }),
+      prisma.user.count({ where: { maxId: { not: null } } }),
     ]);
 
-    console.log(`Stats: total=${total}, new=${newCount}, awaiting=${awaitingPrepayment}, prepaid=${prepaid}, confirmed=${confirmed}, cancelled=${cancelled}`);
+    console.log(`Stats: total=${total}, new=${newCount}, awaiting=${awaitingPrepayment}, prepaid=${prepaid}, confirmed=${confirmed}, cancelled=${cancelled}, users=${totalUsers}`);
 
     return {
       totalBookings: total,
@@ -128,6 +131,9 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       prepaidBookings: prepaid,
       confirmedBookings: confirmed,
       cancelledBookings: cancelled,
+      totalUsers,
+      telegramUsers,
+      maxUsers,
     };
   });
 

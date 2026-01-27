@@ -41,6 +41,9 @@ interface AdminStats {
   prepaidBookings: number;
   confirmedBookings: number;
   cancelledBookings: number;
+  totalUsers: number;
+  telegramUsers: number;
+  maxUsers: number;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -344,7 +347,7 @@ export function AdminStep() {
         </button>
         <button
           onClick={() => { haptic.light(); setTab('orders'); }}
-          className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+          className={`relative flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
             tab === 'orders' 
               ? 'bg-accent-green text-black' 
               : 'bg-white/5 text-white/60 hover:bg-white/10'
@@ -353,7 +356,7 @@ export function AdminStep() {
           <ClipboardText weight="duotone" className="w-4 h-4" />
           Заказы
           {stats && (stats.newBookings + stats.awaitingPrepaymentBookings + stats.prepaidBookings) > 0 && (
-            <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
               {stats.newBookings + stats.awaitingPrepaymentBookings + stats.prepaidBookings}
             </span>
           )}
@@ -435,6 +438,29 @@ export function AdminStep() {
               <p className="text-xs text-white/40">Отменено</p>
             </div>
             <p className="text-2xl font-bold text-white">{stats.cancelledBookings}</p>
+          </div>
+
+          {/* Users Stats */}
+          <div className="glass-card-static p-4">
+            <p className="text-xs text-white/40 mb-1">Всего пользователей</p>
+            <p className="text-3xl font-bold text-white">{stats.totalUsers}</p>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-3">
+            <div className="glass-card-static p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-blue-400" />
+                <p className="text-xs text-white/40">Telegram</p>
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.telegramUsers}</p>
+            </div>
+            <div className="glass-card-static p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-purple-400" />
+                <p className="text-xs text-white/40">MAX</p>
+              </div>
+              <p className="text-2xl font-bold text-white">{stats.maxUsers}</p>
+            </div>
           </div>
 
           {/* Export */}

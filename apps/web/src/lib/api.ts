@@ -400,6 +400,9 @@ class ApiClientExtended extends ApiClient {
     prepaidBookings: number;
     confirmedBookings: number;
     cancelledBookings: number;
+    totalUsers: number;
+    telegramUsers: number;
+    maxUsers: number;
   }>> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/stats`, {
