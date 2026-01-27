@@ -6,9 +6,14 @@ import { MapPin, Buildings, CaretRight, CaretLeft, Truck } from '@phosphor-icons
 import { useHaptic } from '@/lib/haptic';
 
 const cities = [
-  { code: 'ROSTOV_NA_DONU', name: 'Ростов-на-Дону', available: true },
-  { code: 'BATAYSK', name: 'Батайск', available: true },
-  { code: 'STAVROPOL', name: 'Ставрополь', available: true },
+  { 
+    code: 'ROSTOV_NA_DONU', 
+    name: 'Ростов-на-Дону', 
+    available: true,
+    deliveryInfo: 'Бесплатно: Советский, ЖД, Ленинский, Кировский. Другие районы +200₽'
+  },
+  { code: 'BATAYSK', name: 'Батайск', available: true, deliveryInfo: 'Бесплатная доставка' },
+  { code: 'STAVROPOL', name: 'Ставрополь', available: true, deliveryInfo: 'Бесплатная доставка' },
 ];
 
 export function CityStep() {
@@ -73,7 +78,7 @@ export function CityStep() {
             </div>
             <div className="flex-1">
               <p className="font-medium text-white">{city.name}</p>
-              <p className="text-sm text-white/40">Доставка доступна</p>
+              <p className="text-xs text-white/40">{city.deliveryInfo}</p>
             </div>
             <CaretRight weight="bold" className="w-5 h-5 text-white/30" />
           </motion.button>

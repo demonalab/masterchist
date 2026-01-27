@@ -10,5 +10,8 @@
   },
   "devDependencies": {
     "turbo": "^2.3.3"
+  },
+  "dependencies": {
+    "styled-jsx": "^5.1.7"
   }
 }

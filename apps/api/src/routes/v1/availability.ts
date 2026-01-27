@@ -39,125 +39,50 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     const { scheduledDate } = parseResult.data;
     const dateObj = new Date(scheduledDate + 'T00:00:00.000Z');
     
-    // Previous day - kits booked yesterday are unavailable until their slot time today
+    // Previous day
     const prevDateObj = new Date(dateObj);
     prevDateObj.setUTCDate(prevDateObj.getUTCDate() - 1);
     
-    // Next day - kits booked tomorrow block today's late slots (must return before tomorrow's booking)
+    // Next day
     const nextDateObj = new Date(dateObj);
     nextDateObj.setUTCDate(nextDateObj.getUTCDate() + 1);
 
-    const [timeSlots, activeKits, todayBookings, yesterdayBookings, tomorrowBookings] = await Promise.all([
+    // NEW LOGIC: 1 courier - if a time slot is booked on any of 3 days (yesterday, today, tomorrow),
+    // it's unavailable for the requested date
+    const [timeSlots, bookingsIn3Days] = await Promise.all([
       prisma.timeSlot.findMany({
         where: { isActive: true },
         orderBy: { sortOrder: 'asc' },
         select: { id: true, startTime: true, endTime: true, sortOrder: true },
       }),
-      prisma.cleaningKit.findMany({
-        where: { isActive: true },
-        orderBy: { number: 'asc' },
-        select: { id: true, number: true },
-      }),
-      // Bookings for requested date
+      // Get all bookings for yesterday, today, and tomorrow
       prisma.booking.findMany({
         where: {
-          scheduledDate: dateObj,
+          scheduledDate: { in: [prevDateObj, dateObj, nextDateObj] },
           status: { in: [...BLOCKING_STATUSES] },
-          cleaningKitId: { not: null },
+          timeSlotId: { not: null },
         },
-        select: { timeSlotId: true, cleaningKitId: true },
-      }),
-      // Bookings from previous day (kit rented for 24h)
-      prisma.booking.findMany({
-        where: {
-          scheduledDate: prevDateObj,
-          status: { in: [...BLOCKING_STATUSES] },
-          cleaningKitId: { not: null },
-        },
-        select: { timeSlotId: true, cleaningKitId: true },
-      }),
-      // Bookings for next day (need kit back before this)
-      prisma.booking.findMany({
-        where: {
-          scheduledDate: nextDateObj,
-          status: { in: [...BLOCKING_STATUSES] },
-          cleaningKitId: { not: null },
-        },
-        select: { timeSlotId: true, cleaningKitId: true },
+        select: { timeSlotId: true, scheduledDate: true },
       }),
     ]);
 
-    const totalKits = activeKits.length;
-    
-    // Build map: slotId -> sortOrder for comparison
-    const slotSortOrder = new Map<string, number>();
-    for (const slot of timeSlots) {
-      slotSortOrder.set(slot.id, slot.sortOrder);
-    }
-
-    // Kits booked today per slot
-    const bookedKitsPerSlot = new Map<string, Set<string>>();
-    for (const booking of todayBookings) {
-      if (!booking.timeSlotId || !booking.cleaningKitId) continue;
-      const existing = bookedKitsPerSlot.get(booking.timeSlotId) ?? new Set();
-      existing.add(booking.cleaningKitId);
-      bookedKitsPerSlot.set(booking.timeSlotId, existing);
-    }
-    
-    // Kits booked yesterday - blocked until same slot today
-    // Map: kitId -> slotSortOrder (kit is blocked for slots with sortOrder <= this value)
-    const kitBlockedUntilSlot = new Map<string, number>();
-    for (const booking of yesterdayBookings) {
-      if (!booking.timeSlotId || !booking.cleaningKitId) continue;
-      const slotOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
-      kitBlockedUntilSlot.set(booking.cleaningKitId, slotOrder);
-    }
-    
-    // Kits booked tomorrow - blocked from same slot today onwards
-    // Map: kitId -> slotSortOrder (kit is blocked for slots with sortOrder >= this value)
-    const kitBlockedFromSlot = new Map<string, number>();
-    for (const booking of tomorrowBookings) {
-      if (!booking.timeSlotId || !booking.cleaningKitId) continue;
-      const slotOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
-      // If same kit has multiple bookings tomorrow, use the earliest slot
-      const existing = kitBlockedFromSlot.get(booking.cleaningKitId);
-      if (existing === undefined || slotOrder < existing) {
-        kitBlockedFromSlot.set(booking.cleaningKitId, slotOrder);
+    // Build set of blocked time slots for the requested date
+    // A slot is blocked if it's booked on yesterday, today, or tomorrow
+    const blockedSlotIds = new Set<string>();
+    for (const booking of bookingsIn3Days) {
+      if (booking.timeSlotId) {
+        blockedSlotIds.add(booking.timeSlotId);
       }
     }
 
-    const result: TimeSlotAvailability[] = timeSlots.map((slot) => {
-      const bookedKitIds = new Set(bookedKitsPerSlot.get(slot.id) ?? []);
-      
-      // Add kits blocked from yesterday's bookings (kit rented for 24h, available after same slot next day)
-      for (const [kitId, blockedUntilOrder] of kitBlockedUntilSlot) {
-        if (slot.sortOrder <= blockedUntilOrder) {
-          bookedKitIds.add(kitId);
-        }
-      }
-      
-      // Add kits blocked by tomorrow's bookings (must return before tomorrow's use)
-      for (const [kitId, blockedFromOrder] of kitBlockedFromSlot) {
-        if (slot.sortOrder >= blockedFromOrder) {
-          bookedKitIds.add(kitId);
-        }
-      }
-      
-      const available = bookedKitIds.size < totalKits;
-
-      // Find first available kit number
-      let availableKitNumber: number | undefined;
-      if (available) {
-        const freeKit = activeKits.find(kit => !bookedKitIds.has(kit.id));
-        availableKitNumber = freeKit?.number;
-      }
+    const result: TimeSlotAvailability[] = timeSlots.map((slot: typeof timeSlots[number]) => {
+      const available = !blockedSlotIds.has(slot.id);
 
       return {
         timeSlotId: slot.id,
         startTime: slot.startTime,
         endTime: slot.endTime,
         available,
-        availableKitNumber,
       };
     });
 
@@ -165,6 +90,7 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Monthly availability - for calendar view
+  // With new 1-courier logic, we need to check 3-day windows
   fastify.get<{ Querystring: { city: string; month: string; serviceCode: string } }>('/monthly', async (request, reply) => {
     const { city, month, serviceCode } = request.query;
     
@@ -178,39 +104,40 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.badRequest('month must be YYYY-MM format');
     }
     
-    // Get first and last day of month
+    // Get first and last day of month, plus 1 day before and after for 3-day window check
     const startDate = new Date(Date.UTC(year, monthNum - 1, 1));
     const endDate = new Date(Date.UTC(year, monthNum, 0)); // Last day of month
     
-    const [timeSlots, activeKits, bookingsInMonth] = await Promise.all([
+    const extendedStart = new Date(startDate);
+    extendedStart.setUTCDate(extendedStart.getUTCDate() - 1);
+    const extendedEnd = new Date(endDate);
+    extendedEnd.setUTCDate(extendedEnd.getUTCDate() + 1);
+    
+    const [timeSlots, bookingsInRange] = await Promise.all([
       prisma.timeSlot.findMany({
-        where: { isActive: true },
-        select: { id: true },
-      }),
-      prisma.cleaningKit.findMany({
         where: { isActive: true },
         select: { id: true },
       }),
       prisma.booking.findMany({
         where: {
-          scheduledDate: { gte: startDate, lte: endDate },
+          scheduledDate: { gte: extendedStart, lte: extendedEnd },
           status: { in: [...BLOCKING_STATUSES] },
-          cleaningKitId: { not: null },
+          timeSlotId: { not: null },
         },
-        select: { scheduledDate: true, timeSlotId: true, cleaningKitId: true },
+        select: { scheduledDate: true, timeSlotId: true },
       }),
     ]);
     
-    const totalKits = activeKits.length;
     const totalSlots = timeSlots.length;
-    const maxBookingsPerDay = totalKits * totalSlots;
     
-    // Count bookings per day
-    const bookingsPerDay = new Map<string, number>();
-    for (const booking of bookingsInMonth) {
-      if (!booking.scheduledDate) continue;
+    // Build map: date -> set of booked slot IDs
+    const bookedSlotsPerDay = new Map<string, Set<string>>();
+    for (const booking of bookingsInRange) {
+      if (!booking.scheduledDate || !booking.timeSlotId) continue;
       const dateStr = booking.scheduledDate.toISOString().split('T')[0] as string;
-      bookingsPerDay.set(dateStr, (bookingsPerDay.get(dateStr) ?? 0) + 1);
+      const existing = bookedSlotsPerDay.get(dateStr) ?? new Set();
+      existing.add(booking.timeSlotId);
+      bookedSlotsPerDay.set(dateStr, existing);
     }
     
     // Build result for each day
@@ -220,8 +147,23 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
       const dateStr = d.toISOString().split('T')[0] as string;
-      const bookingsCount = bookingsPerDay.get(dateStr) || 0;
-      const slotsLeft = maxBookingsPerDay - bookingsCount;
+      
+      // For 3-day window logic: a slot is blocked if booked on prev, current, or next day
+      const prevDate = new Date(d);
+      prevDate.setUTCDate(prevDate.getUTCDate() - 1);
+      const nextDate = new Date(d);
+      nextDate.setUTCDate(nextDate.getUTCDate() + 1);
+      
+      const prevDateStr = prevDate.toISOString().split('T')[0] as string;
+      const nextDateStr = nextDate.toISOString().split('T')[0] as string;
+      
+      // Collect all blocked slots for this day
+      const blockedSlots = new Set<string>();
+      for (const slotId of bookedSlotsPerDay.get(prevDateStr) ?? []) blockedSlots.add(slotId);
+      for (const slotId of bookedSlotsPerDay.get(dateStr) ?? []) blockedSlots.add(slotId);
+      for (const slotId of bookedSlotsPerDay.get(nextDateStr) ?? []) blockedSlots.add(slotId);
+      
+      const slotsLeft = totalSlots - blockedSlots.size;
       
       let status: 'available' | 'limited' | 'full' | 'past';
       
@@ -229,7 +171,7 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
         status = 'past';
       } else if (slotsLeft === 0) {
         status = 'full';
-      } else if (slotsLeft <= Math.ceil(maxBookingsPerDay * 0.3)) {
+      } else if (slotsLeft <= Math.ceil(totalSlots * 0.3)) {
         status = 'limited';
       } else {
         status = 'available';

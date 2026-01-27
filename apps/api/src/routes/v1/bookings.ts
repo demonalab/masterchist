@@ -259,7 +259,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         where: { phone: currentUser.phone },
         select: { id: true },
       });
-      userIds = linkedUsers.map(u => u.id);
+      userIds = linkedUsers.map((u: { id: string }) => u.id);
     }
 
     const bookings = await prisma.booking.findMany({
@@ -282,7 +282,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
       },
     });
 
-    return bookings.map(b => ({
+    return bookings.map((b: typeof bookings[number]) => ({
       id: b.id,
       status: b.status,
       source: (b as any).source ?? 'telegram_bot',
@@ -459,88 +459,25 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
 
     try {
       const booking = await prisma.$transaction(async (tx) => {
-        // Previous day - kits booked yesterday are unavailable until their slot time today
+        // NEW LOGIC: 1 courier - check if this time slot is booked on yesterday, today, or tomorrow
         const prevDateObj = new Date(dateObj);
         prevDateObj.setUTCDate(prevDateObj.getUTCDate() - 1);
         
-        // Next day - kits booked tomorrow block today's late slots
         const nextDateObj = new Date(dateObj);
         nextDateObj.setUTCDate(nextDateObj.getUTCDate() + 1);
 
-        const [activeKits, timeSlots, todayBookings, yesterdayBookings, tomorrowBookings] = await Promise.all([
-          tx.cleaningKit.findMany({
-            where: { isActive: true },
-            select: { id: true },
-          }),
-          tx.timeSlot.findMany({
-            where: { isActive: true },
-            select: { id: true, sortOrder: true },
-          }),
-          tx.booking.findMany({
-            where: {
-              scheduledDate: dateObj,
-              status: { in: [...BLOCKING_STATUSES] },
-              cleaningKitId: { not: null },
-            },
-            select: { timeSlotId: true, cleaningKitId: true },
-          }),
-          tx.booking.findMany({
-            where: {
-              scheduledDate: prevDateObj,
-              status: { in: [...BLOCKING_STATUSES] },
-              cleaningKitId: { not: null },
-            },
-            select: { timeSlotId: true, cleaningKitId: true },
-          }),
-          tx.booking.findMany({
-            where: {
-              scheduledDate: nextDateObj,
-              status: { in: [...BLOCKING_STATUSES] },
-              cleaningKitId: { not: null },
-            },
-            select: { timeSlotId: true, cleaningKitId: true },
-          }),
-        ]);
+        // Check if this specific time slot is already booked on any of the 3 days
+        const conflictingBooking = await prisma.booking.findFirst({
+          where: {
+            scheduledDate: { in: [prevDateObj, dateObj, nextDateObj] },
+            timeSlotId: timeSlotId,
+            status: { in: [...BLOCKING_STATUSES] },
+          },
+          select: { id: true },
+        });
 
-        // Build slot sort order map
-        const slotSortOrder = new Map<string, number>();
-        for (const slot of timeSlots) {
-          slotSortOrder.set(slot.id, slot.sortOrder);
-        }
-        const requestedSlotOrder = slotSortOrder.get(timeSlotId) ?? 0;
-
-        // Collect all blocked kit IDs for the requested slot
-        const bookedSet = new Set<string>();
-
-        // Kits booked today for this specific slot
-        for (const booking of todayBookings) {
-          if (booking.timeSlotId === timeSlotId && booking.cleaningKitId) {
-            bookedSet.add(booking.cleaningKitId);
-          }
-        }
-
-        // Kits blocked from yesterday (kit rented for 24h, blocked until same slot today)
-        for (const booking of yesterdayBookings) {
-          if (!booking.timeSlotId || !booking.cleaningKitId) continue;
-          const blockedUntilOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
-          if (requestedSlotOrder <= blockedUntilOrder) {
-            bookedSet.add(booking.cleaningKitId);
-          }
-        }
-
-        // Kits blocked by tomorrow's bookings (must return before tomorrow's use)
-        for (const booking of tomorrowBookings) {
-          if (!booking.timeSlotId || !booking.cleaningKitId) continue;
-          const blockedFromOrder = slotSortOrder.get(booking.timeSlotId) ?? 0;
-          if (requestedSlotOrder >= blockedFromOrder) {
-            bookedSet.add(booking.cleaningKitId);
-          }
-        }
-
-        const availableKit = activeKits.find((kit) => !bookedSet.has(kit.id));
-
-        if (!availableKit) {
-          throw new Error('NO_AVAILABLE_KIT');
+        if (conflictingBooking) {
+          throw new Error('TIME_SLOT_BLOCKED');
         }
 
         const addressLine = [
@@ -551,7 +488,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           .filter(Boolean)
           .join(', ');
 
-        const newAddress = await tx.address.create({
+        const newAddress = await prisma.address.create({
           data: {
             userId,
             city: city,
@@ -565,7 +502,7 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
         // Determine source based on request origin
         const source = body.source || (body.maxUserId ? 'max_bot' : 'telegram_miniapp');
 
-        const newBooking = await tx.booking.create({
+        const newBooking = await prisma.booking.create({
           data: {
             userId,
             serviceId: service.id,
@@ -573,7 +510,6 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
             addressId: newAddress.id,
             scheduledDate: dateObj,
             timeSlotId: timeSlotId,
-            cleaningKitId: availableKit.id,
             source: source as any,
           },
           select: {
@@ -581,7 +517,6 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
             status: true,
             scheduledDate: true,
             createdAt: true,
-            cleaningKit: { select: { number: true } },
             timeSlot: { select: { startTime: true, endTime: true } },
             address: { select: { addressLine: true, contactName: true, contactPhone: true } },
           },
@@ -598,7 +533,6 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
 📋 Номер: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
 📅 Дата: ${scheduledDate}
 🕐 Время: ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}
-📦 Набор #${booking.cleaningKit?.number ?? '—'}
 
 Ожидайте внесения предоплаты для подтверждения заказа.`,
       }).catch(console.error);
@@ -611,13 +545,12 @@ const bookingsRoutes: FastifyPluginAsync = async (fastify) => {
           startTime: booking.timeSlot?.startTime,
           endTime: booking.timeSlot?.endTime,
         },
-        kitNumber: booking.cleaningKit?.number,
         address: booking.address,
         createdAt: booking.createdAt.toISOString(),
       });
     } catch (error) {
-      if (error instanceof Error && error.message === 'NO_AVAILABLE_KIT') {
-        return reply.conflict('No available cleaning kits for this time slot');
+      if (error instanceof Error && error.message === 'TIME_SLOT_BLOCKED') {
+        return reply.conflict('Это время уже занято. Выберите другое время.');
       }
 
       if (

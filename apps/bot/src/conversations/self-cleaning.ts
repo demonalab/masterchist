@@ -20,6 +20,12 @@ const CITY_NAMES: Record<string, string> = {
   STAVROPOL: 'Ставрополь',
 };
 
+const CITY_DELIVERY_INFO: Record<string, string> = {
+  ROSTOV_NA_DONU: '🚚 Бесплатная доставка: Советский, ЖД, Ленинский, Кировский районы.\nДругие районы: +200₽',
+  BATAYSK: '🚚 Бесплатная доставка',
+  STAVROPOL: '🚚 Бесплатная доставка',
+};
+
 export async function selfCleaningConversation(
   conversation: Conversation<BotContext>,
   ctx: BotContext
@@ -64,6 +70,12 @@ export async function selfCleaningConversation(
 
   const city = cityCtx.callbackQuery.data.replace('city:', '');
   ctx.session.draft.city = city;
+
+  // Show delivery info for selected city
+  const deliveryInfo = CITY_DELIVERY_INFO[city];
+  if (deliveryInfo) {
+    await ctx.reply(deliveryInfo);
+  }
 
   // Step 2-3: Date and slot selection (with back:date support)
   let scheduledDate = '';
@@ -261,7 +273,6 @@ export async function selfCleaningConversation(
     `✅ <b>Бронирование создано!</b>
 
 📋 ID: <code>${booking.id}</code>
-🧹 Набор: #${booking.kitNumber}
 📅 Дата: ${displayDate}
 🕐 Время: ${booking.timeSlot.startTime} - ${booking.timeSlot.endTime}
 📍 Адрес: ${booking.address.addressLine}

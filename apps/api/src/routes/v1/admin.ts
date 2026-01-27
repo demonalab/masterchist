@@ -87,7 +87,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       },
     });
 
-    return bookings.map((b) => ({
+    return bookings.map((b: typeof bookings[number]) => ({
       id: b.id,
       status: b.status,
       scheduledDate: b.scheduledDate?.toISOString().split('T')[0] ?? null,
@@ -383,12 +383,12 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     // Calculate statistics
     const stats = {
       total: bookings.length,
-      new: bookings.filter(b => b.status.toLowerCase() === 'new').length,
-      awaitingPrepayment: bookings.filter(b => b.status.toLowerCase() === 'awaiting_prepayment').length,
-      prepaid: bookings.filter(b => b.status.toLowerCase() === 'prepaid').length,
-      confirmed: bookings.filter(b => b.status.toLowerCase() === 'confirmed').length,
-      completed: bookings.filter(b => b.status.toLowerCase() === 'completed').length,
-      cancelled: bookings.filter(b => b.status.toLowerCase() === 'cancelled').length,
+      new: bookings.filter((b: any) => b.status.toLowerCase() === 'new').length,
+      awaitingPrepayment: bookings.filter((b: any) => b.status.toLowerCase() === 'awaiting_prepayment').length,
+      prepaid: bookings.filter((b: any) => b.status.toLowerCase() === 'prepaid').length,
+      confirmed: bookings.filter((b: any) => b.status.toLowerCase() === 'confirmed').length,
+      completed: bookings.filter((b: any) => b.status.toLowerCase() === 'completed').length,
+      cancelled: bookings.filter((b: any) => b.status.toLowerCase() === 'cancelled').length,
     };
 
     // Create Excel workbook
@@ -499,7 +499,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     // Data rows with zebra striping
-    bookings.forEach((b, index) => {
+    bookings.forEach((b: any, index: number) => {
       const rowNum = dataStartRow + index + 1;
       const row = sheet.getRow(rowNum);
       

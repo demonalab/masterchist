@@ -151,8 +151,8 @@ const paymentProofsRoutes: FastifyPluginAsync = async (fastify) => {
     
     const photoUrl = `/uploads/proofs/${fileName}`;
 
-    const result = await prisma.$transaction(async (tx) => {
-      await tx.paymentProof.create({
+    const result = await prisma.$transaction(async () => {
+      await prisma.paymentProof.create({
         data: {
           bookingId: booking.id,
           telegramFileId: `local_${fileHash.slice(0, 32)}`,
@@ -162,7 +162,7 @@ const paymentProofsRoutes: FastifyPluginAsync = async (fastify) => {
         },
       });
 
-      const updatedBooking = await tx.booking.update({
+      const updatedBooking = await prisma.booking.update({
         where: { id: booking.id },
         data: { status: BookingStatuses.PREPAID },
         select: { id: true, status: true },

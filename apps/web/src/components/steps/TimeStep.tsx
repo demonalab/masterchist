@@ -5,7 +5,7 @@ import { useBookingStore } from '@/lib/booking-store';
 import { useTelegram } from '@/lib/telegram-provider';
 import { api, TimeSlotAvailability } from '@/lib/api';
 import { motion } from 'framer-motion';
-import { CaretLeft, Clock, Package, CheckCircle, XCircle, CaretRight } from '@phosphor-icons/react';
+import { CaretLeft, Clock, CheckCircle, XCircle, CaretRight } from '@phosphor-icons/react';
 import { useHaptic } from '@/lib/haptic';
 
 export function TimeStep() {
@@ -106,13 +106,7 @@ export function TimeStep() {
                 <p className={`font-semibold ${slot.available ? 'text-white' : 'text-white/30 line-through'}`}>
                   {slot.startTime} – {slot.endTime}
                 </p>
-                {slot.available && slot.availableKitNumber && (
-                  <p className="text-xs text-accent-green mt-1 flex items-center gap-1">
-                    <Package weight="duotone" className="w-3 h-3" />
-                    Набор №{slot.availableKitNumber}
-                  </p>
-                )}
-                {!slot.available && <p className="text-xs text-white/20 mt-1">Занято</p>}
+                                {!slot.available && <p className="text-xs text-white/20 mt-1">Занято</p>}
               </div>
               {slot.available && <CaretRight weight="bold" className="w-5 h-5 text-white/30" />}
             </motion.button>

@@ -365,7 +365,7 @@ const authRoutes: FastifyPluginAsync = async (fastify) => {
       },
     });
 
-    return bookings.map(b => ({
+    return bookings.map((b: typeof bookings[number]) => ({
       id: b.id,
       status: b.status,
       source: (b as any).source ?? 'telegram_bot',
