@@ -33,7 +33,7 @@ async function getVideoToken(): Promise<string | null> {
     console.log('Upload response text:', uploadText);
     
     // Try to parse as JSON
-    let uploadResult: { files?: Record<string, { token: string }> } | null = null;
+    let uploadResult: { token?: string; fileId?: number } | null = null;
     try {
       uploadResult = JSON.parse(uploadText);
       console.log('Upload result (JSON):', JSON.stringify(uploadResult));
@@ -42,15 +42,11 @@ async function getVideoToken(): Promise<string | null> {
       return null;
     }
     
-    // Extract token from files object: {"files":{"fileId":{"token":"..."}}}
-    if (uploadResult && uploadResult.files) {
-      const fileIds = Object.keys(uploadResult.files);
-      const firstFileId = fileIds[0];
-      if (firstFileId && uploadResult.files[firstFileId]) {
-        cachedVideoToken = uploadResult.files[firstFileId].token;
-        console.log('File token extracted:', cachedVideoToken?.substring(0, 30) + '...');
-        return cachedVideoToken;
-      }
+    // Extract token directly from response: {"fileId":123,"token":"..."}
+    if (uploadResult && uploadResult.token) {
+      cachedVideoToken = uploadResult.token;
+      console.log('File token extracted:', cachedVideoToken?.substring(0, 30) + '...');
+      return cachedVideoToken;
     }
     
     console.error('No video token in upload response');
