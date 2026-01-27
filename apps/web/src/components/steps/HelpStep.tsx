@@ -2,12 +2,24 @@
 
 import { motion } from 'framer-motion';
 import { ArrowLeft, Question, SprayBottle, Sparkle, Phone, TelegramLogo } from '@phosphor-icons/react';
+import { getTelegramWebApp } from '@/lib/telegram';
 
 interface HelpStepProps {
   onBack: () => void;
 }
 
 export function HelpStep({ onBack }: HelpStepProps) {
+  const handlePhoneCall = () => {
+    const webApp = getTelegramWebApp();
+    const phoneUrl = 'tel:+79993333299';
+    
+    if (webApp?.openLink) {
+      webApp.openLink(phoneUrl);
+    } else {
+      window.location.href = phoneUrl;
+    }
+  };
+
   return (
     <div className="screen">
       {/* Header */}
@@ -127,7 +139,7 @@ export function HelpStep({ onBack }: HelpStepProps) {
             <span className="text-sm text-white">@rim613</span>
           </a>
           <button 
-            onClick={() => window.location.href = 'tel:+79993333299'}
+            onClick={handlePhoneCall}
             className="flex items-center gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors w-full"
           >
             <Phone weight="duotone" className="w-5 h-5 text-accent-green" />
