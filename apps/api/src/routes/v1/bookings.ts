@@ -143,11 +143,17 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
                 method: 'POST',
                 body: formData,
               });
-              const uploadResult = await uploadRes.json() as { token?: string };
+              const uploadResult = await uploadRes.json() as { photos?: Record<string, { token: string }> };
               console.log('MAX file upload response:', JSON.stringify(uploadResult));
               
-              if (uploadResult.token) {
-                imageToken = uploadResult.token;
+              // Extract token from photos object: {"photos":{"photoId":{"token":"..."}}}
+              if (uploadResult.photos) {
+                const photoIds = Object.keys(uploadResult.photos);
+                const firstPhotoId = photoIds[0];
+                if (firstPhotoId && uploadResult.photos[firstPhotoId]) {
+                  imageToken = uploadResult.photos[firstPhotoId].token;
+                  console.log('MAX image token extracted:', imageToken?.substring(0, 30) + '...');
+                }
               }
             }
           } catch (uploadErr) {
