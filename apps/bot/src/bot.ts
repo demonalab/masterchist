@@ -1,9 +1,11 @@
-import { Bot, InlineKeyboard, BotError, GrammyError, HttpError, Context, Keyboard } from 'grammy';
+import { Bot, InlineKeyboard, BotError, GrammyError, HttpError, Context, Keyboard, InputFile } from 'grammy';
 import { config } from './config';
 import { setBotInstance } from './handlers/payment-proof';
 import { handleAdminConfirm, handleAdminReject } from './handlers/admin';
+import path from 'path';
 
 const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
+const LOGO_VIDEO_PATH = path.join(__dirname, '../assets/logo.mp4');
 
 function welcomeKeyboard() {
   return new InlineKeyboard()
@@ -28,14 +30,15 @@ export function createBot(): Bot<Context> {
 
   setBotInstance(bot);
 
-  // Welcome message on /start - first remove old keyboard, then show inline
+  // Welcome message on /start - first remove old keyboard, then show video with inline keyboard
   bot.command('start', async (ctx) => {
     // Remove old reply keyboard
     await ctx.reply('👋', {
       reply_markup: { remove_keyboard: true },
     });
-    // Send welcome with inline keyboard
-    await ctx.reply(WELCOME_TEXT, {
+    // Send looped video with welcome message
+    await ctx.replyWithAnimation(new InputFile(LOGO_VIDEO_PATH), {
+      caption: WELCOME_TEXT,
       reply_markup: welcomeKeyboard(),
     });
   });
