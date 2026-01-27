@@ -2,7 +2,6 @@
 
 import { motion } from 'framer-motion';
 import { ArrowLeft, Question, SprayBottle, Sparkle, Phone, TelegramLogo } from '@phosphor-icons/react';
-import { getTelegramWebApp } from '@/lib/telegram';
 
 interface HelpStepProps {
   onBack: () => void;
@@ -10,14 +9,9 @@ interface HelpStepProps {
 
 export function HelpStep({ onBack }: HelpStepProps) {
   const handlePhoneCall = () => {
-    const webApp = getTelegramWebApp();
-    const phoneUrl = 'tel:+79993333299';
-    
-    if (webApp?.openLink) {
-      webApp.openLink(phoneUrl);
-    } else {
-      window.location.href = phoneUrl;
-    }
+    const link = document.createElement('a');
+    link.href = 'tel:+79993333299';
+    link.click();
   };
 
   return (

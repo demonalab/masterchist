@@ -8,7 +8,6 @@ import {
 } from '@phosphor-icons/react';
 import { api, SavedAddress } from '@/lib/api';
 import { useTelegram } from '@/lib/telegram-provider';
-import { getTelegramWebApp } from '@/lib/telegram';
 import { formatPhoneInput, isValidPhone } from '@/lib/phone-utils';
 import { useBookingStore } from '@/lib/booking-store';
 
@@ -129,14 +128,9 @@ export function ProfileStep({ onBack }: ProfileStepProps) {
   };
 
   const callSupport = () => {
-    const webApp = getTelegramWebApp();
-    const phoneUrl = 'tel:+79993333299';
-    
-    if (webApp?.openLink) {
-      webApp.openLink(phoneUrl);
-    } else {
-      window.location.href = phoneUrl;
-    }
+    const link = document.createElement('a');
+    link.href = 'tel:+79993333299';
+    link.click();
   };
 
   const resetForm = () => {
