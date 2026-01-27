@@ -1,5 +1,4 @@
-import { Bot } from 'grammy';
-import { BotContext } from '../types';
+import { Bot, Context } from 'grammy';
 import { config } from '../config';
 
 const API_BASE_URL = config.API_BASE_URL;
@@ -43,7 +42,7 @@ export async function completeConversationTracking(telegramId: number, serviceCo
   }
 }
 
-export async function sendReminders(bot: Bot<BotContext>): Promise<void> {
+export async function sendReminders(bot: Bot<Context>): Promise<void> {
   try {
     // Get conversations needing 2h reminder
     const res2h = await fetch(`${API_BASE_URL}/api/v1/conversations/reminders/2h`);
@@ -99,7 +98,7 @@ export async function sendReminders(bot: Bot<BotContext>): Promise<void> {
   }
 }
 
-export function startReminderCron(bot: Bot<BotContext>): void {
+export function startReminderCron(bot: Bot<Context>): void {
   // Check every 10 minutes
   setInterval(() => {
     sendReminders(bot).catch(console.error);

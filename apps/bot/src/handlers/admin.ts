@@ -1,8 +1,12 @@
-import { Bot, InlineKeyboard } from 'grammy';
-import { BotContext } from '../types';
+import { Bot, InlineKeyboard, Context } from 'grammy';
 import { ApiClient, BookingDetails } from '../api-client';
 import { config } from '../config';
-import { mainMenuKeyboard } from '../keyboards';
+
+const WEBAPP_URL = 'https://xn--80akjnwedee1c.xn--p1ai';
+
+function welcomeKeyboard() {
+  return new InlineKeyboard().webApp('🚀 Открыть приложение', WEBAPP_URL);
+}
 
 export function isAdmin(telegramId: number): boolean {
   if (!config.ADMIN_TELEGRAM_ID) return false;
@@ -36,7 +40,7 @@ export function formatAdminNotification(booking: BookingDetails): string {
 }
 
 export async function notifyAdminAboutPayment(
-  bot: Bot<BotContext>,
+  bot: Bot<Context>,
   booking: BookingDetails,
   receiptFileId?: string
 ): Promise<void> {
@@ -66,7 +70,7 @@ export async function notifyAdminAboutPayment(
   }
 }
 
-export async function handleAdminConfirm(ctx: BotContext): Promise<void> {
+export async function handleAdminConfirm(ctx: Context): Promise<void> {
   const telegramId = ctx.from?.id;
   if (!telegramId || !isAdmin(telegramId)) {
     await ctx.answerCallbackQuery('Нет доступа');
@@ -105,14 +109,14 @@ export async function handleAdminConfirm(ctx: BotContext): Promise<void> {
 Набор будет доставлен в указанное время.
 
 Спасибо, что выбрали нас! 🙏`,
-      { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
+      { parse_mode: 'HTML', reply_markup: welcomeKeyboard() }
     );
   } catch (err) {
     console.error('Failed to notify user about confirmation:', err);
   }
 }
 
-export async function handleAdminReject(ctx: BotContext): Promise<void> {
+export async function handleAdminReject(ctx: Context): Promise<void> {
   const telegramId = ctx.from?.id;
   if (!telegramId || !isAdmin(telegramId)) {
     await ctx.answerCallbackQuery('Нет доступа');
@@ -151,7 +155,7 @@ export async function handleAdminReject(ctx: BotContext): Promise<void> {
 Слот освобождён для других клиентов.
 
 Если это ошибка, свяжитесь с нами или создайте новое бронирование.`,
-      { parse_mode: 'HTML', reply_markup: mainMenuKeyboard }
+      { parse_mode: 'HTML', reply_markup: welcomeKeyboard() }
     );
   } catch (err) {
     console.error('Failed to notify user about rejection:', err);
