@@ -1,11 +1,58 @@
 import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import { config } from './config';
 import path from 'path';
+import fs from 'fs';
 
 const LOGO_GIF_PATH = path.join(__dirname, '../assets/logo.gif');
 
 let botInstance: Bot | null = null;
 let cachedImageToken: string | null = null;
+
+// Manual upload to MAX API (library doesn't work for GIF)
+async function uploadGifToMax(): Promise<string | null> {
+  try {
+    // Step 1: Get upload URL
+    const uploadUrlRes = await fetch('https://platform-api.max.ru/uploads?type=image', {
+      method: 'POST',
+      headers: { 'Authorization': config.BOT_TOKEN },
+    });
+    const uploadUrlData = await uploadUrlRes.json() as { url?: string };
+    console.log('MAX upload URL response:', JSON.stringify(uploadUrlData));
+    
+    if (!uploadUrlData.url) {
+      console.error('No upload URL received');
+      return null;
+    }
+    
+    // Step 2: Upload the file
+    const fileBuffer = fs.readFileSync(LOGO_GIF_PATH);
+    const formData = new FormData();
+    const blob = new Blob([fileBuffer], { type: 'image/gif' });
+    formData.append('data', blob, 'logo.gif');
+    
+    const uploadRes = await fetch(uploadUrlData.url, {
+      method: 'POST',
+      body: formData,
+    });
+    const uploadResult = await uploadRes.json() as { photos?: Record<string, { token: string }> };
+    console.log('MAX file upload response:', JSON.stringify(uploadResult));
+    
+    // Extract token from photos object
+    if (uploadResult.photos) {
+      const photoIds = Object.keys(uploadResult.photos);
+      const firstPhotoId = photoIds[0];
+      if (firstPhotoId && uploadResult.photos[firstPhotoId]) {
+        const token = uploadResult.photos[firstPhotoId].token;
+        console.log('MAX image token extracted:', token?.substring(0, 30) + '...');
+        return token;
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error('uploadGifToMax error:', err);
+    return null;
+  }
+}
 
 export function getBotInstance(): Bot | null {
   return botInstance;
@@ -98,18 +145,23 @@ export function createBot() {
     try {
       if (!cachedImageToken) {
         console.log('Uploading GIF from:', LOGO_GIF_PATH);
-        const imageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
-        cachedImageToken = (imageAttachment as any).token;
-        console.log('GIF uploaded, token:', cachedImageToken?.substring(0, 30) + '...');
+        cachedImageToken = await uploadGifToMax();
       }
-      await ctx.reply(welcomeText, { 
-        attachments: [
-          { type: 'image', payload: { token: cachedImageToken! } },
-          welcomeKeyboard()
-        ] 
-      });
+      if (cachedImageToken) {
+        await ctx.reply(welcomeText, { 
+          attachments: [
+            { type: 'image', payload: { token: cachedImageToken } },
+            welcomeKeyboard()
+          ] 
+        });
+        console.log('ctx.reply succeeded with GIF');
+      } else {
+        // Send without GIF if upload failed
+        await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+        console.log('ctx.reply succeeded without GIF');
+      }
     } catch (err) {
-      console.error('GIF upload/send failed:', err);
+      console.error('ctx.reply failed:', err);
       await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
     }
   });
@@ -184,13 +236,7 @@ export function createBot() {
       // Upload GIF and send with welcome message
       if (!cachedImageToken) {
         console.log('Uploading GIF from:', LOGO_GIF_PATH);
-        const imageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
-        console.log('imageAttachment object:', JSON.stringify(imageAttachment));
-        // Try different possible token locations
-        cachedImageToken = (imageAttachment as any).token 
-          || (imageAttachment as any).payload?.token
-          || (imageAttachment as any).payload?.photos?.token;
-        console.log('GIF uploaded, token:', cachedImageToken?.substring(0, 30) + '...');
+        cachedImageToken = await uploadGifToMax();
       }
       if (cachedImageToken) {
         await ctx.reply(welcomeText, { 
@@ -199,9 +245,11 @@ export function createBot() {
             welcomeKeyboard()
           ] 
         });
-        console.log('bot_started: ctx.reply succeeded');
+        console.log('bot_started: ctx.reply succeeded with GIF');
       } else {
-        throw new Error('No token extracted from upload');
+        // Send without GIF if upload failed
+        await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+        console.log('bot_started: ctx.reply succeeded without GIF');
       }
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
