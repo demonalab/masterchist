@@ -34,6 +34,44 @@ function welcomeKeyboard() {
   ]);
 }
 
+async function sendWelcomeMessage(userId: string) {
+  const welcomeText = `👋 Добро пожаловать в МастерЧист!
+
+🧹 Сервис химчистки мебели
+
+Что мы предлагаем:
+• Химчистка самообслуживания — оборудование на сутки
+• Профессиональная химчистка — мастер приедет к вам
+
+💰 Акция: 1500 ₽/сутки
+🎁 Сушка мебели и химия в подарок!
+
+📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
+
+  try {
+    const keyboard = welcomeKeyboard();
+    const res = await fetch(`${config.MAX_API_URL}/messages?user_id=${userId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': config.BOT_TOKEN,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        text: welcomeText, 
+        format: 'html',
+        attachments: [keyboard],
+      }),
+    });
+    if (!res.ok) {
+      console.error('sendWelcomeMessage failed:', await res.text());
+    } else {
+      console.log('sendWelcomeMessage succeeded for user:', userId);
+    }
+  } catch (err) {
+    console.error('sendWelcomeMessage error:', err);
+  }
+}
+
 export function createBot() {
   const bot = new Bot(config.BOT_TOKEN);
   botInstance = bot;
@@ -105,6 +143,8 @@ export function createBot() {
 
   // Handle first-time bot start (when user clicks "Start" button for the first time)
   bot.on('bot_started', async (ctx) => {
+    console.log('bot_started event received:', JSON.stringify(ctx, null, 2));
+    
     const welcomeText = `👋 Добро пожаловать в МастерЧист!
 
 🧹 Сервис химчистки мебели
@@ -118,7 +158,22 @@ export function createBot() {
 
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
-    await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+    try {
+      // Try ctx.reply first
+      await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+      console.log('bot_started: ctx.reply succeeded');
+    } catch (err) {
+      console.error('bot_started: ctx.reply failed:', err);
+      
+      // Fallback: send message directly via API
+      const update = ctx.update as any;
+      const userId = update?.user?.user_id || update?.chat_id;
+      
+      if (userId) {
+        console.log('bot_started: trying direct API send to user:', userId);
+        await sendWelcomeMessage(userId);
+      }
+    }
   });
 
   return bot;
