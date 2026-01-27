@@ -298,7 +298,12 @@ export async function handleAdminStats(ctx: BotContext) {
 ⏳ Ожидают предоплаты: ${stats.awaitingPrepaymentBookings}
 💳 Предоплачено: ${stats.prepaidBookings}
 ✅ Подтверждено: ${stats.confirmedBookings}
-❌ Отменено: ${stats.cancelledBookings}`;
+❌ Отменено: ${stats.cancelledBookings}
+
+👥 <b>Пользователи</b>
+📱 Всего: ${stats.totalUsers ?? 0}
+💬 Telegram: ${stats.telegramUsers ?? 0}
+💜 MAX: ${stats.maxUsers ?? 0}`;
 
   await ctx.reply(message, { parse_mode: 'HTML' });
 }

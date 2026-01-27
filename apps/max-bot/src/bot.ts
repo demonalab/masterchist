@@ -55,6 +55,43 @@ export function createBot() {
     await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
   });
 
+  bot.command('stats', async (ctx) => {
+    const message = ctx.message as any;
+    const userId = message?.sender?.user_id;
+    if (!userId) return;
+
+    try {
+      const res = await fetch(`${config.API_BASE_URL}/api/v1/admin/stats`, {
+        headers: { 'x-max-id': String(userId) },
+      });
+      
+      if (!res.ok) {
+        await ctx.reply('❌ Нет доступа к статистике (только для админов)');
+        return;
+      }
+      
+      const stats = await res.json() as any;
+      const statsText = `📈 Статистика
+
+📊 Всего заказов: ${stats.totalBookings}
+🆕 Новых: ${stats.newBookings}
+⏳ Ожидают предоплаты: ${stats.awaitingPrepaymentBookings}
+💳 Предоплачено: ${stats.prepaidBookings}
+✅ Подтверждено: ${stats.confirmedBookings}
+❌ Отменено: ${stats.cancelledBookings}
+
+👥 Пользователи
+📱 Всего: ${stats.totalUsers ?? 0}
+💬 Telegram: ${stats.telegramUsers ?? 0}
+💜 MAX: ${stats.maxUsers ?? 0}`;
+
+      await ctx.reply(statsText);
+    } catch (err) {
+      console.error('Stats error:', err);
+      await ctx.reply('❌ Ошибка при загрузке статистики');
+    }
+  });
+
   bot.on('message_created', async (ctx) => {
     const message = ctx.message as any;
     const text = message?.body?.text || '';

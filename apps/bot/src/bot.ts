@@ -40,6 +40,7 @@ export function createBot(): Bot<BotContext> {
   bot.use(createConversation(proCleaningConversation));
 
   bot.command('start', handleStart);
+  bot.command('stats', handleAdminStats);
 
   bot.callbackQuery('service:self_cleaning', async (ctx) => {
     await ctx.answerCallbackQuery();

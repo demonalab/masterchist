@@ -72,6 +72,9 @@ export interface AdminStats {
   prepaidBookings: number;
   confirmedBookings: number;
   cancelledBookings: number;
+  totalUsers: number;
+  telegramUsers: number;
+  maxUsers: number;
 }
 
 export interface AdminInfo {
