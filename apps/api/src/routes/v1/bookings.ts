@@ -46,6 +46,14 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       STAVROPOL: 'Ставрополь',
     };
     const districtNames: Record<string, string> = {
+      sovetsky: 'Советский',
+      kirovsky: 'Кировский',
+      leninsky: 'Ленинский',
+      oktyabrsky: 'Октябрьский',
+      pervomaysky: 'Первомайский',
+      proletarsky: 'Пролетарский',
+      voroshilovsky: 'Ворошиловский',
+      zheleznodorozhny: 'Железнодорожный',
       other: 'Другой район',
     };
     const cityName = booking.address?.city ? cityNames[booking.address.city] ?? booking.address.city : '—';
@@ -244,7 +252,17 @@ async function notifyAdminsAboutProCleaning(bookingId: string, details: string, 
 
     if (!booking) return;
 
-    const DISTRICT_NAMES: Record<string, string> = { other: 'Другой район' };
+    const DISTRICT_NAMES: Record<string, string> = {
+      sovetsky: 'Советский',
+      kirovsky: 'Кировский',
+      leninsky: 'Ленинский',
+      oktyabrsky: 'Октябрьский',
+      pervomaysky: 'Первомайский',
+      proletarsky: 'Пролетарский',
+      voroshilovsky: 'Ворошиловский',
+      zheleznodorozhny: 'Железнодорожный',
+      other: 'Другой район',
+    };
     const cityName = CITY_NAMES[booking.address?.city ?? ''] || booking.address?.city || '—';
     const districtName = booking.address?.district ? (DISTRICT_NAMES[booking.address.district] ?? booking.address.district) : null;
     

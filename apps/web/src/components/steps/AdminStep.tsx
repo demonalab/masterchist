@@ -636,7 +636,9 @@ export function AdminStep() {
                               {selectedBooking.city === 'ROSTOV_NA_DONU' ? 'Ростов-на-Дону' : 
                                selectedBooking.city === 'BATAYSK' ? 'Батайск' : 
                                selectedBooking.city === 'STAVROPOL' ? 'Ставрополь' : selectedBooking.city}
-                              {selectedBooking.district && ` (${selectedBooking.district === 'other' ? 'Другой район' : selectedBooking.district})`}
+                              {selectedBooking.district && ` (${
+                                ({'sovetsky': 'Советский', 'kirovsky': 'Кировский', 'leninsky': 'Ленинский', 'oktyabrsky': 'Октябрьский', 'pervomaysky': 'Первомайский', 'proletarsky': 'Пролетарский', 'voroshilovsky': 'Ворошиловский', 'zheleznodorozhny': 'Железнодорожный', 'other': 'Другой район'} as Record<string, string>)[selectedBooking.district] || selectedBooking.district
+                              })`}
                               {' — '}
                             </span>
                           )}
