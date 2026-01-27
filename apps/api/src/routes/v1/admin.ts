@@ -240,19 +240,19 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     });
 
     // Get linked MAX IDs for admins
-    const adminTelegramIds = dbAdmins.map(a => a.telegramId);
+    const adminTelegramIds = dbAdmins.map((a: { telegramId: string }) => a.telegramId);
     const linkedUsers = await prisma.user.findMany({
       where: { telegramId: { in: [...adminTelegramIds, ...SUPER_ADMIN_IDS] } },
       select: { telegramId: true, maxId: true, firstName: true },
     });
-    const linkedMap = new Map(linkedUsers.map(u => [u.telegramId, { maxId: u.maxId, firstName: u.firstName }]));
+    const linkedMap = new Map<string, { maxId: string | null; firstName: string | null }>(linkedUsers.map((u: { telegramId: string | null; maxId: string | null; firstName: string | null }) => [u.telegramId!, { maxId: u.maxId, firstName: u.firstName }]));
 
     // Get notification settings for env admins from DB (if they exist)
     const envAdminSettings = await prisma.admin.findMany({
       where: { telegramId: { in: SUPER_ADMIN_IDS } },
       select: { telegramId: true, notifyTelegram: true, notifyMax: true },
     });
-    const envSettingsMap = new Map(envAdminSettings.map(a => [a.telegramId, a]));
+    const envSettingsMap = new Map<string, { telegramId: string; notifyTelegram: boolean; notifyMax: boolean }>(envAdminSettings.map((a: { telegramId: string; notifyTelegram: boolean; notifyMax: boolean }) => [a.telegramId, a]));
 
     // Get super admins from env
     const envSuperAdmins = SUPER_ADMIN_IDS.filter(id => id.length > 0).map(id => {
@@ -272,14 +272,17 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       };
     });
 
-    const formattedDbAdmins = dbAdmins.map(a => {
-      const linked = linkedMap.get(a.telegramId);
-      return {
-        ...a,
-        maxId: linked?.maxId || null,
-        isEnvAdmin: false,
-      };
-    });
+    // Filter out DB admins that are already in env SUPER_ADMIN_IDS to avoid duplicates
+    const formattedDbAdmins = dbAdmins
+      .filter((a: { telegramId: string }) => !SUPER_ADMIN_IDS.includes(a.telegramId))
+      .map((a: any) => {
+        const linked = linkedMap.get(a.telegramId);
+        return {
+          ...a,
+          maxId: linked?.maxId || null,
+          isEnvAdmin: false,
+        };
+      });
 
     return [...envSuperAdmins, ...formattedDbAdmins];
   });
