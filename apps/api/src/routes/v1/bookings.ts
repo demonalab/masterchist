@@ -120,18 +120,51 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       
       if (maxAdminIds.length > 0) {
         const maxMessage = message.replace(/<[^>]*>/g, ''); // Remove HTML tags for MAX
-        const fullPhotoUrl = photoUrl ? `https://masterchistbot.ru${photoUrl}` : null;
+        
+        // Upload photo to MAX if available
+        let imageToken: string | null = null;
+        if (photoBuffer && mimeType?.startsWith('image/')) {
+          try {
+            // Step 1: Get upload URL
+            const uploadUrlRes = await fetch('https://platform-api.max.ru/uploads?type=image', {
+              method: 'POST',
+              headers: { 'Authorization': config.MAX_BOT_TOKEN! },
+            });
+            const uploadUrlData = await uploadUrlRes.json() as { url?: string };
+            console.log('MAX upload URL response:', JSON.stringify(uploadUrlData));
+            
+            if (uploadUrlData.url) {
+              // Step 2: Upload the file
+              const formData = new FormData();
+              const blob = new Blob([photoBuffer], { type: mimeType });
+              formData.append('data', blob, 'payment_proof.jpg');
+              
+              const uploadRes = await fetch(uploadUrlData.url, {
+                method: 'POST',
+                body: formData,
+              });
+              const uploadResult = await uploadRes.json() as { token?: string };
+              console.log('MAX file upload response:', JSON.stringify(uploadResult));
+              
+              if (uploadResult.token) {
+                imageToken = uploadResult.token;
+              }
+            }
+          } catch (uploadErr) {
+            console.error('Failed to upload image to MAX:', uploadErr);
+          }
+        }
         
         for (const maxAdminId of maxAdminIds) {
           try {
-            const body: { text: string; attachments?: { type: string; payload: { url: string } }[] } = {
+            const body: { text: string; attachments?: { type: string; payload: { token: string } }[] } = {
               text: maxMessage,
             };
             
-            if (fullPhotoUrl) {
+            if (imageToken) {
               body.attachments = [{
                 type: 'image',
-                payload: { url: fullPhotoUrl },
+                payload: { token: imageToken },
               }];
             }
             

@@ -352,9 +352,9 @@ export function AdminStep() {
         >
           <ClipboardText weight="duotone" className="w-4 h-4" />
           Заказы
-          {stats && stats.newBookings > 0 && (
+          {stats && (stats.newBookings + stats.awaitingPrepaymentBookings + stats.prepaidBookings) > 0 && (
             <span className="ml-1 px-1.5 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full min-w-[18px] text-center">
-              {stats.newBookings}
+              {stats.newBookings + stats.awaitingPrepaymentBookings + stats.prepaidBookings}
             </span>
           )}
         </button>
