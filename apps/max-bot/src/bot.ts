@@ -149,7 +149,7 @@ export function createBot() {
     if (videoToken) {
       await ctx.reply(welcomeText, { 
         attachments: [
-          { type: 'video', payload: { token: videoToken } } as any,
+          { type: 'file', payload: { token: videoToken } } as any,
           welcomeKeyboard(),
         ] 
       });
@@ -229,7 +229,7 @@ export function createBot() {
       if (videoToken) {
         await ctx.reply(welcomeText, { 
           attachments: [
-            { type: 'video', payload: { token: videoToken } } as any,
+            { type: 'file', payload: { token: videoToken } } as any,
             welcomeKeyboard(),
           ] 
         });
