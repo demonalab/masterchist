@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Admin" ADD COLUMN "notifyTelegram" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "Admin" ADD COLUMN "notifyMax" BOOLEAN NOT NULL DEFAULT true;

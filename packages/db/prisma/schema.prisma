@@ -169,14 +169,16 @@ enum AdminRole {
 }
 
 model Admin {
-  id          String    @id @default(uuid())
-  telegramId  String    @unique @db.VarChar(32)
-  role        AdminRole @default(admin)
-  name        String?   @db.VarChar(128)
-  addedBy     String?   @db.VarChar(32)
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String    @id @default(uuid())
+  telegramId     String    @unique @db.VarChar(32)
+  role           AdminRole @default(admin)
+  name           String?   @db.VarChar(128)
+  addedBy        String?   @db.VarChar(32)
+  isActive       Boolean   @default(true)
+  notifyTelegram Boolean   @default(true)
+  notifyMax      Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([telegramId])
 }

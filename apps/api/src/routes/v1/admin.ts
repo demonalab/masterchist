@@ -227,18 +227,53 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     const dbAdmins = await prisma.admin.findMany({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        telegramId: true,
+        role: true,
+        name: true,
+        isActive: true,
+        notifyTelegram: true,
+        notifyMax: true,
+        createdAt: true,
+      },
     });
 
-    // Get super admins from env
-    const envSuperAdmins = SUPER_ADMIN_IDS.filter(id => id.length > 0).map(id => ({
-      id: `env_${id}`,
-      telegramId: id,
-      role: 'super_admin (env)',
-      isActive: true,
-      createdAt: new Date(),
-    }));
+    // Get linked MAX IDs for admins
+    const adminTelegramIds = dbAdmins.map(a => a.telegramId);
+    const linkedUsers = await prisma.user.findMany({
+      where: { telegramId: { in: [...adminTelegramIds, ...SUPER_ADMIN_IDS] } },
+      select: { telegramId: true, maxId: true, firstName: true },
+    });
+    const linkedMap = new Map(linkedUsers.map(u => [u.telegramId, { maxId: u.maxId, firstName: u.firstName }]));
 
-    return [...envSuperAdmins, ...dbAdmins];
+    // Get super admins from env
+    const envSuperAdmins = SUPER_ADMIN_IDS.filter(id => id.length > 0).map(id => {
+      const linked = linkedMap.get(id);
+      return {
+        id: `env_${id}`,
+        telegramId: id,
+        role: 'super_admin',
+        name: linked?.firstName || null,
+        isActive: true,
+        notifyTelegram: true,
+        notifyMax: true,
+        maxId: linked?.maxId || null,
+        isEnvAdmin: true,
+        createdAt: new Date(),
+      };
+    });
+
+    const formattedDbAdmins = dbAdmins.map(a => {
+      const linked = linkedMap.get(a.telegramId);
+      return {
+        ...a,
+        maxId: linked?.maxId || null,
+        isEnvAdmin: false,
+      };
+    });
+
+    return [...envSuperAdmins, ...formattedDbAdmins];
   });
 
   // Add admin
@@ -281,6 +316,37 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
     return { success: true };
   });
+
+  // Update admin notification settings
+  fastify.patch<{ Params: { telegramId: string }; Body: { notifyTelegram?: boolean; notifyMax?: boolean } }>(
+    '/admins/:telegramId/notifications',
+    async (request, reply) => {
+      if ((request as any).adminRole !== 'super_admin') {
+        return reply.forbidden('Только для супер-админа');
+      }
+
+      const { telegramId } = request.params;
+      const { notifyTelegram, notifyMax } = request.body;
+
+      // For env admins, create/update record in DB
+      const admin = await prisma.admin.upsert({
+        where: { telegramId },
+        update: {
+          ...(notifyTelegram !== undefined && { notifyTelegram }),
+          ...(notifyMax !== undefined && { notifyMax }),
+        },
+        create: {
+          telegramId,
+          role: SUPER_ADMIN_IDS.includes(telegramId) || FALLBACK_SUPER_ADMINS.includes(telegramId) ? 'super_admin' : 'admin',
+          notifyTelegram: notifyTelegram ?? true,
+          notifyMax: notifyMax ?? true,
+          addedBy: String(request.telegramUser?.id),
+        },
+      });
+
+      return admin;
+    }
+  );
 
   // Delete booking
   fastify.delete<{ Params: { id: string } }>('/bookings/:id', async (request, reply) => {

@@ -75,6 +75,12 @@ interface Admin {
   id: string;
   telegramId: string;
   role: string;
+  name: string | null;
+  isActive: boolean;
+  notifyTelegram: boolean;
+  notifyMax: boolean;
+  maxId: string | null;
+  isEnvAdmin: boolean;
 }
 
 interface CitySettings {
@@ -848,18 +854,66 @@ export function AdminStep() {
               admins.map((admin) => (
                 <div
                   key={admin.id}
-                  className="glass-card-static p-4 flex items-center justify-between"
+                  className="glass-card-static p-4"
                 >
-                  <div>
-                    <p className="text-sm font-medium text-white">ID: {admin.telegramId}</p>
-                    <p className="text-xs text-white/40">{admin.role}</p>
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <p className="text-sm font-medium text-white">
+                        {admin.name || `ID: ${admin.telegramId}`}
+                      </p>
+                      <p className="text-xs text-white/40">
+                        {admin.role === 'super_admin' ? '👑 Супер-админ' : '👤 Админ'}
+                        {admin.isEnvAdmin && ' (env)'}
+                      </p>
+                      {admin.maxId && (
+                        <p className="text-xs text-accent-purple/60">MAX: {admin.maxId}</p>
+                      )}
+                    </div>
+                    {!admin.isEnvAdmin && (
+                      <button
+                        onClick={() => setConfirmDelete({ type: 'admin', id: admin.telegramId })}
+                        className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
+                      >
+                        <Trash weight="duotone" className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
-                  <button
-                    onClick={() => setConfirmDelete({ type: 'admin', id: admin.telegramId })}
-                    className="p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
-                  >
-                    <Trash weight="duotone" className="w-4 h-4" />
-                  </button>
+                  
+                  {/* Notification toggles */}
+                  <div className="flex gap-3 pt-3 border-t border-white/10">
+                    <button
+                      onClick={async () => {
+                        const result = await api.updateAdminNotifications(admin.telegramId, { notifyTelegram: !admin.notifyTelegram });
+                        if (result.ok) {
+                          setAdmins(admins.map(a => a.telegramId === admin.telegramId ? { ...a, notifyTelegram: !admin.notifyTelegram } : a));
+                          toast.success('Настройки обновлены');
+                        }
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                        admin.notifyTelegram
+                          ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                          : 'bg-white/5 text-white/40 border border-white/10'
+                      }`}
+                    >
+                      📱 Telegram {admin.notifyTelegram ? '✓' : '✗'}
+                    </button>
+                    <button
+                      onClick={async () => {
+                        const result = await api.updateAdminNotifications(admin.telegramId, { notifyMax: !admin.notifyMax });
+                        if (result.ok) {
+                          setAdmins(admins.map(a => a.telegramId === admin.telegramId ? { ...a, notifyMax: !admin.notifyMax } : a));
+                          toast.success('Настройки обновлены');
+                        }
+                      }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
+                        admin.notifyMax
+                          ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                          : 'bg-white/5 text-white/40 border border-white/10'
+                      }`}
+                    >
+                      💬 MAX {admin.notifyMax ? '✓' : '✗'}
+                    </button>
+                  </div>
                 </div>
               ))
             )}

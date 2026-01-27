@@ -64,9 +64,24 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
 
     const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
     
+    // Get notification settings for all admins
+    const adminSettings = await prisma.admin.findMany({
+      where: { telegramId: { in: adminIds } },
+      select: { telegramId: true, notifyTelegram: true, notifyMax: true },
+    });
+    type AdminNotifySettings = { telegramId: string; notifyTelegram: boolean; notifyMax: boolean };
+    const settingsMap = new Map<string, AdminNotifySettings>(adminSettings.map((a: AdminNotifySettings) => [a.telegramId, a]));
+    
     console.log('Sending payment notification, photoBuffer:', !!photoBuffer, 'mimeType:', mimeType);
     
     for (const adminId of adminIds) {
+      // Check if admin has Telegram notifications enabled (default true if not in DB)
+      const settings = settingsMap.get(adminId);
+      if (settings && !settings.notifyTelegram) {
+        console.log('Skipping Telegram notification for admin', adminId, '(disabled)');
+        continue;
+      }
+      
       try {
         if (photoBuffer && mimeType?.startsWith('image/')) {
           console.log('Sending photo to admin:', adminId, 'buffer size:', photoBuffer.length);
@@ -115,9 +130,16 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
           telegramId: { in: adminIds },
           maxId: { not: null },
         },
-        select: { maxId: true },
+        select: { telegramId: true, maxId: true },
       });
-      const maxAdminIds = adminUsers.map((u: { maxId: string | null }) => u.maxId).filter((id: string | null): id is string => !!id);
+      // Filter by MAX notification settings
+      const maxAdminIds = adminUsers
+        .filter((u: { telegramId: string | null; maxId: string | null }) => {
+          const settings = u.telegramId ? settingsMap.get(u.telegramId) : null;
+          return !settings || settings.notifyMax !== false;
+        })
+        .map((u: { maxId: string | null }) => u.maxId)
+        .filter((id: string | null): id is string => !!id);
       
       if (maxAdminIds.length > 0) {
         const maxMessage = message.replace(/<[^>]*>/g, ''); // Remove HTML tags for MAX
@@ -238,9 +260,24 @@ ${details || '—'}
 
     const adminIds = config.ADMIN_TELEGRAM_ID.split(',').map(id => id.trim());
     
+    // Get notification settings for all admins
+    const adminSettings = await prisma.admin.findMany({
+      where: { telegramId: { in: adminIds } },
+      select: { telegramId: true, notifyTelegram: true, notifyMax: true },
+    });
+    type AdminNotifySettings2 = { telegramId: string; notifyTelegram: boolean; notifyMax: boolean };
+    const settingsMap = new Map<string, AdminNotifySettings2>(adminSettings.map((a: AdminNotifySettings2) => [a.telegramId, a]));
+    
     console.log('Sending pro cleaning notification, photoBuffer:', !!photoBuffer, 'mimeType:', mimeType);
     
     for (const adminId of adminIds) {
+      // Check if admin has Telegram notifications enabled (default true if not in DB)
+      const settings = settingsMap.get(adminId);
+      if (settings && !settings.notifyTelegram) {
+        console.log('Skipping Telegram notification for admin', adminId, '(disabled)');
+        continue;
+      }
+      
       try {
         // Send photo with caption if available
         if (photoBuffer && mimeType?.startsWith('image/')) {
@@ -284,9 +321,16 @@ ${details || '—'}
           telegramId: { in: adminIds },
           maxId: { not: null },
         },
-        select: { maxId: true },
+        select: { telegramId: true, maxId: true },
       });
-      const maxAdminIds = adminUsers.map((u: { maxId: string | null }) => u.maxId).filter((id: string | null): id is string => !!id);
+      // Filter by MAX notification settings
+      const maxAdminIds = adminUsers
+        .filter((u: { telegramId: string | null; maxId: string | null }) => {
+          const settings = u.telegramId ? settingsMap.get(u.telegramId) : null;
+          return !settings || settings.notifyMax !== false;
+        })
+        .map((u: { maxId: string | null }) => u.maxId)
+        .filter((id: string | null): id is string => !!id);
       
       if (maxAdminIds.length > 0) {
         const maxMessage = message.replace(/<[^>]*>/g, ''); // Remove HTML tags for MAX

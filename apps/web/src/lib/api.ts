@@ -524,7 +524,17 @@ class ApiClientExtended extends ApiClient {
     }
   }
 
-  async getAdmins(): Promise<ApiResult<Array<{ id: string; telegramId: string; role: string }>>> {
+  async getAdmins(): Promise<ApiResult<Array<{
+    id: string;
+    telegramId: string;
+    role: string;
+    name: string | null;
+    isActive: boolean;
+    notifyTelegram: boolean;
+    notifyMax: boolean;
+    maxId: string | null;
+    isEnvAdmin: boolean;
+  }>>> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins`, {
         method: 'GET',
@@ -566,6 +576,25 @@ class ApiClientExtended extends ApiClient {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins/${telegramId}`, {
         method: 'DELETE',
         headers: this.headersNoBody,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async updateAdminNotifications(telegramId: string, data: { notifyTelegram?: boolean; notifyMax?: boolean }): Promise<ApiResult<{ id: string; telegramId: string; notifyTelegram: boolean; notifyMax: boolean }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/admins/${telegramId}/notifications`, {
+        method: 'PATCH',
+        headers: this.headers,
+        body: JSON.stringify(data),
       });
 
       if (!res.ok) {
