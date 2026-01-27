@@ -28,7 +28,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
         scheduledDate: true,
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
-        address: { select: { addressLine: true, contactName: true, contactPhone: true } },
+        address: { select: { city: true, addressLine: true, contactName: true, contactPhone: true } },
         user: { select: { telegramId: true, firstName: true } },
         service: { select: { title: true } },
       },
@@ -40,6 +40,13 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       ? booking.scheduledDate.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })
       : '—';
 
+    const cityNames: Record<string, string> = {
+      ROSTOV_NA_DONU: 'Ростов-на-Дону',
+      BATAYSK: 'Батайск',
+      STAVROPOL: 'Ставрополь',
+    };
+    const cityName = booking.address?.city ? cityNames[booking.address.city] ?? booking.address.city : '—';
+
     const message = `💰 <b>Новая оплата!</b>
 
 📋 ID: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
@@ -49,6 +56,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
 
 👤 ${booking.address?.contactName ?? '—'}
 📞 ${booking.address?.contactPhone ?? '—'}
+🏙 ${cityName}
 📍 ${booking.address?.addressLine ?? '—'}
 
 ⏳ Подтвердите в админ-панели`;
