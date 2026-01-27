@@ -1,61 +1,10 @@
 import { Bot, Keyboard } from '@maxhub/max-bot-api';
 import { config } from './config';
-import fs from 'fs';
-import path from 'path';
 
-const LOGO_VIDEO_PATH = path.join(__dirname, '../assets/logo.mp4');
+// Public URL for the logo video (hosted on web app)
+const LOGO_VIDEO_URL = 'https://xn--80akjnwedee1c.xn--p1ai/logo.mp4';
 
 let botInstance: Bot | null = null;
-let cachedVideoToken: string | null = null;
-
-async function getVideoToken(): Promise<string | null> {
-  if (cachedVideoToken) return cachedVideoToken;
-  try {
-    // Step 1: Get upload URL (using 'file' type as 'video' returns XML instead of JSON)
-    const uploadUrlRes = await fetch(`${config.MAX_API_URL}/uploads?type=file`, {
-      method: 'POST',
-      headers: { 'Authorization': config.BOT_TOKEN },
-    });
-    if (!uploadUrlRes.ok) {
-      console.error('Failed to get upload URL:', await uploadUrlRes.text());
-      return null;
-    }
-    const uploadData = await uploadUrlRes.json() as { url: string };
-    console.log('Got upload URL:', uploadData.url);
-    
-    // Step 2: Upload the video file
-    const videoBuffer = fs.readFileSync(LOGO_VIDEO_PATH);
-    const formData = new FormData();
-    formData.append('data', new Blob([videoBuffer], { type: 'video/mp4' }), 'logo.mp4');
-    
-    const uploadRes = await fetch(uploadData.url, { method: 'POST', body: formData });
-    const uploadText = await uploadRes.text();
-    console.log('Upload response text:', uploadText);
-    
-    // Try to parse as JSON
-    let uploadResult: { token?: string; fileId?: number } | null = null;
-    try {
-      uploadResult = JSON.parse(uploadText);
-      console.log('Upload result (JSON):', JSON.stringify(uploadResult));
-    } catch {
-      console.log('Upload returned non-JSON');
-      return null;
-    }
-    
-    // Extract token directly from response: {"fileId":123,"token":"..."}
-    if (uploadResult && uploadResult.token) {
-      cachedVideoToken = uploadResult.token;
-      console.log('File token extracted:', cachedVideoToken?.substring(0, 30) + '...');
-      return cachedVideoToken;
-    }
-    
-    console.error('No video token in upload response');
-    return null;
-  } catch (err) {
-    console.error('Error uploading video:', err);
-    return null;
-  }
-}
 
 export function getBotInstance(): Bot | null {
   return botInstance;
@@ -144,18 +93,13 @@ export function createBot() {
 
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
-    // Send video with welcome message
-    const videoToken = await getVideoToken();
-    if (videoToken) {
-      await ctx.reply(welcomeText, { 
-        attachments: [
-          { type: 'file', payload: { token: videoToken } } as any,
-          welcomeKeyboard(),
-        ] 
-      });
-    } else {
-      await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
-    }
+    // Send video with welcome message using public URL
+    await ctx.reply(welcomeText, { 
+      attachments: [
+        { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
+        welcomeKeyboard(),
+      ] 
+    });
   });
 
   bot.command('stats', async (ctx) => {
@@ -225,24 +169,19 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     try {
-      const videoToken = await getVideoToken();
-      if (videoToken) {
-        await ctx.reply(welcomeText, { 
-          attachments: [
-            { type: 'file', payload: { token: videoToken } } as any,
-            welcomeKeyboard(),
-          ] 
-        });
-      } else {
-        await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
-      }
+      // Send video with welcome message using public URL
+      await ctx.reply(welcomeText, { 
+        attachments: [
+          { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
+          welcomeKeyboard(),
+        ] 
+      });
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
       
-      // Fallback: send message directly via API
+      // Fallback: send message without video
       const userId = update?.user_id || update?.user?.user_id;
-      
       if (userId) {
         console.log('bot_started: trying direct API send to user:', userId);
         await sendWelcomeMessage(String(userId));
