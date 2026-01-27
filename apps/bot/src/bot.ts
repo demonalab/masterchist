@@ -1,4 +1,4 @@
-import { Bot, InlineKeyboard, BotError, GrammyError, HttpError, Context } from 'grammy';
+import { Bot, InlineKeyboard, BotError, GrammyError, HttpError, Context, Keyboard } from 'grammy';
 import { config } from './config';
 import { setBotInstance } from './handlers/payment-proof';
 import { handleAdminConfirm, handleAdminReject } from './handlers/admin';
@@ -28,8 +28,13 @@ export function createBot(): Bot<Context> {
 
   setBotInstance(bot);
 
-  // Welcome message on /start
+  // Welcome message on /start - first remove old keyboard, then show inline
   bot.command('start', async (ctx) => {
+    // Remove old reply keyboard
+    await ctx.reply('👋', {
+      reply_markup: { remove_keyboard: true },
+    });
+    // Send welcome with inline keyboard
     await ctx.reply(WELCOME_TEXT, {
       reply_markup: welcomeKeyboard(),
     });
