@@ -247,17 +247,25 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
     });
     const linkedMap = new Map(linkedUsers.map(u => [u.telegramId, { maxId: u.maxId, firstName: u.firstName }]));
 
+    // Get notification settings for env admins from DB (if they exist)
+    const envAdminSettings = await prisma.admin.findMany({
+      where: { telegramId: { in: SUPER_ADMIN_IDS } },
+      select: { telegramId: true, notifyTelegram: true, notifyMax: true },
+    });
+    const envSettingsMap = new Map(envAdminSettings.map(a => [a.telegramId, a]));
+
     // Get super admins from env
     const envSuperAdmins = SUPER_ADMIN_IDS.filter(id => id.length > 0).map(id => {
       const linked = linkedMap.get(id);
+      const settings = envSettingsMap.get(id);
       return {
         id: `env_${id}`,
         telegramId: id,
         role: 'super_admin',
         name: linked?.firstName || null,
         isActive: true,
-        notifyTelegram: true,
-        notifyMax: true,
+        notifyTelegram: settings?.notifyTelegram ?? true,
+        notifyMax: settings?.notifyMax ?? true,
         maxId: linked?.maxId || null,
         isEnvAdmin: true,
         createdAt: new Date(),

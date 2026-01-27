@@ -859,14 +859,15 @@ export function AdminStep() {
                   <div className="flex items-center justify-between mb-3">
                     <div>
                       <p className="text-sm font-medium text-white">
-                        {admin.name || `ID: ${admin.telegramId}`}
+                        {admin.name || 'Без имени'}
                       </p>
                       <p className="text-xs text-white/40">
                         {admin.role === 'super_admin' ? '👑 Супер-админ' : '👤 Админ'}
                         {admin.isEnvAdmin && ' (env)'}
                       </p>
+                      <p className="text-xs text-blue-400/60">TG: {admin.telegramId}</p>
                       {admin.maxId && (
-                        <p className="text-xs text-accent-purple/60">MAX: {admin.maxId}</p>
+                        <p className="text-xs text-purple-400/60">MAX: {admin.maxId}</p>
                       )}
                     </div>
                     {!admin.isEnvAdmin && (
