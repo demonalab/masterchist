@@ -429,9 +429,12 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
   // ============ TIME SLOTS ============
 
-  // Get all time slots
-  fastify.get('/time-slots', async () => {
+  // Get time slots for a specific city (with city-specific settings)
+  fastify.get<{ Querystring: { city?: string } }>('/time-slots', async (request) => {
+    const { city } = request.query;
+    
     const slots = await prisma.timeSlot.findMany({
+      where: { isActive: true },
       orderBy: { sortOrder: 'asc' },
       select: {
         id: true,
@@ -441,18 +444,32 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         isActive: true,
       },
     });
-    return slots;
+    
+    if (!city) {
+      return slots;
+    }
+    
+    // Get city-specific settings
+    const citySlotSettings = await prisma.cityTimeSlotSettings.findMany({
+      where: { city: city as any },
+    });
+    const citySettingsMap = new Map(citySlotSettings.map((s: { timeSlotId: string; isActive: boolean }) => [s.timeSlotId, s.isActive]));
+    
+    return slots.map((slot: typeof slots[number]) => ({
+      ...slot,
+      isActive: citySettingsMap.has(slot.id) ? citySettingsMap.get(slot.id) : true,
+    }));
   });
 
-  // Update time slot
-  fastify.patch<{ Params: { code: string }; Body: { isActive?: boolean } }>(
-    '/time-slots/:code',
+  // Update time slot for a specific city
+  fastify.patch<{ Params: { city: string; code: string }; Body: { isActive?: boolean } }>(
+    '/time-slots/:city/:code',
     async (request, reply) => {
       if ((request as any).adminRole !== 'super_admin') {
         return reply.forbidden('Только для супер-админа');
       }
 
-      const { code } = request.params;
+      const { city, code } = request.params;
       const { isActive } = request.body;
 
       const slot = await prisma.timeSlot.findUnique({ where: { code } });
@@ -460,14 +477,13 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         return reply.notFound('Слот не найден');
       }
 
-      const updated = await prisma.timeSlot.update({
-        where: { code },
-        data: {
-          ...(isActive !== undefined && { isActive }),
-        },
+      const updated = await prisma.cityTimeSlotSettings.upsert({
+        where: { city_timeSlotId: { city: city as any, timeSlotId: slot.id } },
+        update: { isActive: isActive ?? true },
+        create: { city: city as any, timeSlotId: slot.id, isActive: isActive ?? true },
       });
 
-      return updated;
+      return { code, city, isActive: updated.isActive };
     }
   );
 

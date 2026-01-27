@@ -123,6 +123,7 @@ export function AdminStep() {
   const [cities, setCities] = useState<CitySettings[]>([]);
   const [editingCity, setEditingCity] = useState<CitySettings | null>(null);
   const [timeSlots, setTimeSlots] = useState<TimeSlotSettings[]>([]);
+  const [selectedDevCity, setSelectedDevCity] = useState<string | null>(null);
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'booking' | 'admin'; id: string } | null>(null);
@@ -183,12 +184,17 @@ export function AdminStep() {
 
   const loadDevData = async () => {
     try {
-      const [citiesRes, slotsRes] = await Promise.all([
-        api.getCities(),
-        api.getTimeSlots(),
-      ]);
+      const citiesRes = await api.getCities();
       if (citiesRes.ok) setCities(citiesRes.data);
-      if (slotsRes.ok) setTimeSlots(slotsRes.data);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadTimeSlotsForCity = async (city: string) => {
+    try {
+      const res = await api.getTimeSlots(city);
+      if (res.ok) setTimeSlots(res.data);
     } catch (err) {
       console.error(err);
     }
@@ -208,13 +214,13 @@ export function AdminStep() {
     }
   };
 
-  const handleUpdateTimeSlot = async (code: string, isActive: boolean) => {
+  const handleUpdateTimeSlot = async (city: string, code: string, isActive: boolean) => {
     setActionLoading(true);
-    const res = await api.updateTimeSlot(code, { isActive });
+    const res = await api.updateTimeSlot(city, code, { isActive });
     setActionLoading(false);
     if (res.ok) {
       haptic.success();
-      loadDevData();
+      loadTimeSlotsForCity(city);
     } else {
       haptic.error();
       toast.error(res.error);
@@ -982,30 +988,56 @@ export function AdminStep() {
               </div>
             </div>
 
-            {/* Time Slots Section */}
-            <div className="glass-card-static p-4">
-              <h3 className="text-sm font-medium text-white mb-3">🕐 Временные слоты</h3>
-              <div className="space-y-2">
-                {timeSlots.length === 0 ? (
-                  <p className="text-xs text-white/40">Загрузка...</p>
-                ) : (
-                  timeSlots.map((slot) => (
-                    <div key={slot.id} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
-                      <p className="text-sm text-white">{slot.startTime} - {slot.endTime}</p>
-                      <button
-                        onClick={() => handleUpdateTimeSlot(slot.code, !slot.isActive)}
-                        disabled={actionLoading}
-                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
-                          slot.isActive ? 'bg-accent-green/20 text-accent-green' : 'bg-red-500/20 text-red-400'
-                        }`}
-                      >
-                        {slot.isActive ? 'Вкл' : 'Выкл'}
-                      </button>
-                    </div>
-                  ))
+            {/* Time Slots Per City */}
+            {cities.filter(c => c.isActive).map((city) => (
+              <div key={city.id} className="glass-card-static p-4">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => {
+                    if (selectedDevCity === city.city) {
+                      setSelectedDevCity(null);
+                      setTimeSlots([]);
+                    } else {
+                      setSelectedDevCity(city.city);
+                      loadTimeSlotsForCity(city.city);
+                    }
+                  }}
+                >
+                  <h3 className="text-sm font-medium text-white">
+                    🕐 Время для {CITY_LABELS[city.city] || city.city}
+                  </h3>
+                  <span className="text-white/40 text-xs">
+                    {selectedDevCity === city.city ? '▼' : '▶'}
+                  </span>
+                </div>
+                
+                {selectedDevCity === city.city && (
+                  <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
+                    {timeSlots.length === 0 ? (
+                      <p className="text-xs text-white/40">Загрузка...</p>
+                    ) : (
+                      timeSlots.map((slot) => (
+                        <div key={slot.id} className="flex items-center justify-between py-1">
+                          <p className="text-sm text-white">{slot.startTime} - {slot.endTime}</p>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleUpdateTimeSlot(city.city, slot.code, !slot.isActive);
+                            }}
+                            disabled={actionLoading}
+                            className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                              slot.isActive ? 'bg-accent-green/20 text-accent-green' : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            {slot.isActive ? 'Вкл' : 'Выкл'}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
+            ))}
           </div>
         </motion.div>
       )}

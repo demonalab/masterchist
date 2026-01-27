@@ -710,9 +710,12 @@ class ApiClientExtended extends ApiClient {
     }
   }
 
-  async getTimeSlots(): Promise<ApiResult<Array<{ id: string; code: string; startTime: string; endTime: string; isActive: boolean }>>> {
+  async getTimeSlots(city?: string): Promise<ApiResult<Array<{ id: string; code: string; startTime: string; endTime: string; isActive: boolean }>>> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/admin/time-slots`, {
+      const url = city 
+        ? `${API_BASE_URL}/api/v1/admin/time-slots?city=${city}`
+        : `${API_BASE_URL}/api/v1/admin/time-slots`;
+      const res = await fetch(url, {
         method: 'GET',
         headers: this.headersNoBody,
       });
@@ -728,9 +731,9 @@ class ApiClientExtended extends ApiClient {
     }
   }
 
-  async updateTimeSlot(code: string, data: { isActive?: boolean }): Promise<ApiResult<{ id: string; code: string; isActive: boolean }>> {
+  async updateTimeSlot(city: string, code: string, data: { isActive?: boolean }): Promise<ApiResult<{ code: string; city: string; isActive: boolean }>> {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/v1/admin/time-slots/${code}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/admin/time-slots/${city}/${code}`, {
         method: 'PATCH',
         headers: this.headers,
         body: JSON.stringify(data),

@@ -89,6 +89,7 @@ model TimeSlot {
   updatedAt DateTime @updatedAt
 
   bookings Booking[]
+  citySettings CityTimeSlotSettings[]
 
   @@index([sortOrder])
 }
@@ -219,4 +220,18 @@ model CitySettings {
   workingHoursTo   String? @db.VarChar(5) // "21:00"
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model CityTimeSlotSettings {
+  id         String   @id @default(uuid())
+  city       City
+  timeSlotId String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  timeSlot TimeSlot @relation(fields: [timeSlotId], references: [id], onDelete: Cascade)
+
+  @@unique([city, timeSlotId])
+  @@index([city])
 }
