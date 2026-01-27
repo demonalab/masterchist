@@ -32,11 +32,21 @@ export function createBot(): Bot<Context> {
 
   // Welcome message on /start - send video with inline keyboard
   bot.command('start', async (ctx) => {
-    // Send looped video with welcome message (also removes old reply keyboard)
-    await ctx.replyWithAnimation(new InputFile(LOGO_VIDEO_PATH), {
-      caption: WELCOME_TEXT,
-      reply_markup: welcomeKeyboard(),
-    });
+    console.log('Received /start command from user:', ctx.from?.id);
+    try {
+      // Send video with welcome message
+      await ctx.replyWithVideo(new InputFile(LOGO_VIDEO_PATH), {
+        caption: WELCOME_TEXT,
+        reply_markup: welcomeKeyboard(),
+      });
+      console.log('Video sent successfully');
+    } catch (err) {
+      console.error('Failed to send video:', err);
+      // Fallback to text message
+      await ctx.reply(WELCOME_TEXT, {
+        reply_markup: welcomeKeyboard(),
+      });
+    }
   });
 
   // Admin notification callbacks (for confirming/rejecting bookings)
