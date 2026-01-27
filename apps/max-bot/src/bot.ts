@@ -25,15 +25,34 @@ async function getVideoToken(): Promise<string | null> {
     const formData = new FormData();
     formData.append('data', new Blob([videoBuffer], { type: 'video/mp4' }), 'logo.mp4');
     const uploadRes = await fetch(uploadData.url, { method: 'POST', body: formData });
+    const uploadText = await uploadRes.text();
+    console.log('Upload response:', uploadText);
     if (!uploadRes.ok) {
-      console.error('Failed to upload video:', await uploadRes.text());
+      console.error('Failed to upload video:', uploadText);
       return null;
     }
-    const result = await uploadRes.json() as { token?: string };
-    console.log('Upload result:', result);
-    if (result.token) {
-      cachedVideoToken = result.token;
-      return result.token;
+    // Response may be JSON or XML - try to parse token
+    try {
+      const result = JSON.parse(uploadText) as { token?: string };
+      if (result.token) {
+        cachedVideoToken = result.token;
+        return result.token;
+      }
+    } catch {
+      // Check if response contains token in XML or indicates success
+      // retval=1 means success, but token might be in different field
+      const tokenMatch = uploadText.match(/token[>="']([^<"']+)/i);
+      if (tokenMatch) {
+        cachedVideoToken = tokenMatch[1];
+        return tokenMatch[1];
+      }
+      // If upload succeeded (retval=1), use the upload id from URL as token
+      const idMatch = (uploadData as any).url?.match(/id=(\d+)/);
+      if (uploadText.includes('1') && idMatch) {
+        console.log('Using upload id as token:', idMatch[1]);
+        cachedVideoToken = idMatch[1];
+        return idMatch[1];
+      }
     }
     return null;
   } catch (err) {
