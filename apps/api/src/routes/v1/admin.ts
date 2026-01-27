@@ -487,12 +487,15 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       }
 
       // Update city-specific setting
+      console.log(`Updating time slot ${code} for city ${city}: isActive=${isActive}`);
+      
       const updated = await prisma.cityTimeSlotSettings.upsert({
         where: { city_timeSlotId: { city: city as any, timeSlotId: slot.id } },
         update: { isActive: isActive ?? true },
         create: { city: city as any, timeSlotId: slot.id, isActive: isActive ?? true },
       });
 
+      console.log(`Updated city time slot setting: ${JSON.stringify(updated)}`);
       return { code, city, isActive: updated.isActive };
     }
   );
