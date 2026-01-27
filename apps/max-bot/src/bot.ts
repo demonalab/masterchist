@@ -1,10 +1,11 @@
-import { Bot, Keyboard } from '@maxhub/max-bot-api';
+import { Bot, Keyboard, VideoAttachment } from '@maxhub/max-bot-api';
 import { config } from './config';
+import path from 'path';
 
-// Public URL for the logo video (hosted on web app)
-const LOGO_VIDEO_URL = 'https://xn--80akjnwedee1c.xn--p1ai/logo.mp4';
+const LOGO_VIDEO_PATH = path.join(__dirname, '../assets/logo.mp4');
 
 let botInstance: Bot | null = null;
+let cachedVideoAttachment: VideoAttachment | null = null;
 
 export function getBotInstance(): Bot | null {
   return botInstance;
@@ -93,13 +94,20 @@ export function createBot() {
 
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
-    // Send video with welcome message using public URL
-    await ctx.reply(welcomeText, { 
-      attachments: [
-        { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
-        welcomeKeyboard(),
-      ] 
-    });
+    // Upload video and send with welcome message
+    try {
+      if (!cachedVideoAttachment) {
+        console.log('Uploading video from:', LOGO_VIDEO_PATH);
+        cachedVideoAttachment = await ctx.api.uploadVideo({ source: LOGO_VIDEO_PATH });
+        console.log('Video uploaded successfully');
+      }
+      await ctx.reply(welcomeText, { 
+        attachments: [cachedVideoAttachment.toJson(), welcomeKeyboard()] 
+      });
+    } catch (videoErr) {
+      console.error('Video upload/send failed:', videoErr);
+      await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
+    }
   });
 
   bot.command('stats', async (ctx) => {
@@ -169,12 +177,14 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     try {
-      // Send video with welcome message using public URL
+      // Upload video and send with welcome message
+      if (!cachedVideoAttachment) {
+        console.log('Uploading video from:', LOGO_VIDEO_PATH);
+        cachedVideoAttachment = await ctx.api.uploadVideo({ source: LOGO_VIDEO_PATH });
+        console.log('Video uploaded successfully');
+      }
       await ctx.reply(welcomeText, { 
-        attachments: [
-          { type: 'video', payload: { url: LOGO_VIDEO_URL } } as any,
-          welcomeKeyboard(),
-        ] 
+        attachments: [cachedVideoAttachment.toJson(), welcomeKeyboard()] 
       });
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
