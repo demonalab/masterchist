@@ -1,11 +1,11 @@
-import { Bot, Keyboard, VideoAttachment } from '@maxhub/max-bot-api';
+import { Bot, Keyboard, ImageAttachment } from '@maxhub/max-bot-api';
 import { config } from './config';
 import path from 'path';
 
-const LOGO_VIDEO_PATH = path.join(__dirname, '../assets/logo.mp4');
+const LOGO_GIF_PATH = path.join(__dirname, '../assets/logo.gif');
 
 let botInstance: Bot | null = null;
-let cachedVideoAttachment: VideoAttachment | null = null;
+let cachedImageAttachment: ImageAttachment | null = null;
 
 export function getBotInstance(): Bot | null {
   return botInstance;
@@ -94,18 +94,18 @@ export function createBot() {
 
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
-    // Upload video and send with welcome message
+    // Upload GIF and send with welcome message
     try {
-      if (!cachedVideoAttachment) {
-        console.log('Uploading video from:', LOGO_VIDEO_PATH);
-        cachedVideoAttachment = await ctx.api.uploadVideo({ source: LOGO_VIDEO_PATH });
-        console.log('Video uploaded successfully');
+      if (!cachedImageAttachment) {
+        console.log('Uploading GIF from:', LOGO_GIF_PATH);
+        cachedImageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
+        console.log('GIF uploaded successfully');
       }
       await ctx.reply(welcomeText, { 
-        attachments: [cachedVideoAttachment.toJson(), welcomeKeyboard()] 
+        attachments: [cachedImageAttachment.toJson(), welcomeKeyboard()] 
       });
-    } catch (videoErr) {
-      console.error('Video upload/send failed:', videoErr);
+    } catch (err) {
+      console.error('GIF upload/send failed:', err);
       await ctx.reply(welcomeText, { attachments: [welcomeKeyboard()] });
     }
   });
@@ -177,20 +177,20 @@ export function createBot() {
 📱 Нажмите кнопку ниже, чтобы открыть приложение:`;
 
     try {
-      // Upload video and send with welcome message
-      if (!cachedVideoAttachment) {
-        console.log('Uploading video from:', LOGO_VIDEO_PATH);
-        cachedVideoAttachment = await ctx.api.uploadVideo({ source: LOGO_VIDEO_PATH });
-        console.log('Video uploaded successfully');
+      // Upload GIF and send with welcome message
+      if (!cachedImageAttachment) {
+        console.log('Uploading GIF from:', LOGO_GIF_PATH);
+        cachedImageAttachment = await ctx.api.uploadImage({ source: LOGO_GIF_PATH });
+        console.log('GIF uploaded successfully');
       }
       await ctx.reply(welcomeText, { 
-        attachments: [cachedVideoAttachment.toJson(), welcomeKeyboard()] 
+        attachments: [cachedImageAttachment.toJson(), welcomeKeyboard()] 
       });
       console.log('bot_started: ctx.reply succeeded');
     } catch (err) {
       console.error('bot_started: ctx.reply failed:', err);
       
-      // Fallback: send message without video
+      // Fallback: send message without GIF
       const userId = update?.user_id || update?.user?.user_id;
       if (userId) {
         console.log('bot_started: trying direct API send to user:', userId);
