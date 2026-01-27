@@ -218,19 +218,22 @@ export function AdminStep() {
     if (actionLoading) return; // Prevent double clicks
     setActionLoading(true);
     
-    // Optimistic update
-    setTimeSlots(prev => prev.map(s => s.code === code ? { ...s, isActive } : s));
+    console.log(`Updating time slot ${code} for ${city}: isActive=${isActive}`);
     
     const res = await api.updateTimeSlot(city, code, { isActive });
-    setActionLoading(false);
+    
     if (res.ok) {
       haptic.success();
+      console.log(`Update successful, reloading slots for ${city}`);
     } else {
       haptic.error();
       toast.error(res.error);
-      // Revert on error
-      loadTimeSlotsForCity(city);
+      console.log(`Update failed: ${res.error}`);
     }
+    
+    // Always reload from server
+    await loadTimeSlotsForCity(city);
+    setActionLoading(false);
   };
 
   const handleConfirm = async (bookingId: string) => {
