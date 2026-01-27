@@ -36,7 +36,13 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
       return reply.badRequest(parseResult.error.errors[0]?.message ?? 'Invalid query');
     }
 
-    const { scheduledDate } = parseResult.data;
+    const { city, scheduledDate } = parseResult.data;
+    
+    // Check if city is active
+    const citySettings = await prisma.citySettings.findUnique({ where: { city: city as any } });
+    if (citySettings && !citySettings.isActive) {
+      return reply.badRequest('Город временно недоступен');
+    }
     const dateObj = new Date(scheduledDate + 'T00:00:00.000Z');
     
     // Previous day
@@ -96,6 +102,12 @@ const availabilityRoutes: FastifyPluginAsync = async (fastify) => {
     
     if (!city || !month || !serviceCode) {
       return reply.badRequest('city, month, and serviceCode are required');
+    }
+    
+    // Check if city is active
+    const citySettings = await prisma.citySettings.findUnique({ where: { city: city as any } });
+    if (citySettings && !citySettings.isActive) {
+      return []; // Return empty array for inactive cities
     }
     
     // Parse month (YYYY-MM format)
