@@ -46,7 +46,6 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
 🧹 ${booking.service?.title ?? 'Химчистка'}
 📅 ${date}
 🕐 ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}
-📦 Набор #${booking.cleaningKit?.number ?? '—'}
 
 👤 ${booking.address?.contactName ?? '—'}
 📞 ${booking.address?.contactPhone ?? '—'}

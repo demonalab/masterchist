@@ -121,8 +121,7 @@ export async function notifyBookingStatusChange(
 📋 Заказ: <code>${booking.id.slice(0, 8).toUpperCase()}</code>
 🧹 ${booking.service?.title ?? 'Химчистка'}
 📅 ${date}
-🕐 ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}
-📦 Набор #${booking.cleaningKit?.number ?? '—'}`;
+🕐 ${booking.timeSlot?.startTime ?? '—'} - ${booking.timeSlot?.endTime ?? '—'}`;
 
     await notifyUserAllChannels({
       userId: booking.userId,
