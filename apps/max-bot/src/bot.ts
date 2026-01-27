@@ -11,6 +11,7 @@ let cachedVideoToken: string | null = null;
 async function getVideoToken(): Promise<string | null> {
   if (cachedVideoToken) return cachedVideoToken;
   try {
+    // Step 1: Get upload URL
     const uploadUrlRes = await fetch(`${config.MAX_API_URL}/uploads?type=video`, {
       method: 'POST',
       headers: { 'Authorization': config.BOT_TOKEN },
@@ -21,39 +22,28 @@ async function getVideoToken(): Promise<string | null> {
     }
     const uploadData = await uploadUrlRes.json() as { url: string };
     console.log('Got upload URL:', uploadData.url);
+    
+    // Step 2: Upload the video file
     const videoBuffer = fs.readFileSync(LOGO_VIDEO_PATH);
     const formData = new FormData();
     formData.append('data', new Blob([videoBuffer], { type: 'video/mp4' }), 'logo.mp4');
+    
     const uploadRes = await fetch(uploadData.url, { method: 'POST', body: formData });
-    const uploadText = await uploadRes.text();
-    console.log('Upload response:', uploadText);
-    if (!uploadRes.ok) {
-      console.error('Failed to upload video:', uploadText);
-      return null;
-    }
-    // Response may be JSON or XML - try to parse token
-    try {
-      const result = JSON.parse(uploadText) as { token?: string };
-      if (result.token) {
-        cachedVideoToken = result.token;
-        return result.token;
-      }
-    } catch {
-      // Check if response contains token in XML or indicates success
-      // retval=1 means success, but token might be in different field
-      const tokenMatch = uploadText.match(/token[>="']([^<"']+)/i);
-      if (tokenMatch) {
-        cachedVideoToken = tokenMatch[1];
-        return tokenMatch[1];
-      }
-      // If upload succeeded (retval=1), use the upload id from URL as token
-      const idMatch = (uploadData as any).url?.match(/id=(\d+)/);
-      if (uploadText.includes('1') && idMatch) {
-        console.log('Using upload id as token:', idMatch[1]);
-        cachedVideoToken = idMatch[1];
-        return idMatch[1];
+    const uploadResult = await uploadRes.json() as { videos?: Record<string, { token: string }> };
+    console.log('Upload result:', JSON.stringify(uploadResult));
+    
+    // Extract token from videos object: {"videos":{"videoId":{"token":"..."}}}
+    if (uploadResult.videos) {
+      const videoIds = Object.keys(uploadResult.videos);
+      const firstVideoId = videoIds[0];
+      if (firstVideoId && uploadResult.videos[firstVideoId]) {
+        cachedVideoToken = uploadResult.videos[firstVideoId].token;
+        console.log('Video token extracted:', cachedVideoToken?.substring(0, 30) + '...');
+        return cachedVideoToken;
       }
     }
+    
+    console.error('No video token in upload response');
     return null;
   } catch (err) {
     console.error('Error uploading video:', err);
