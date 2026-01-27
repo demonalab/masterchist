@@ -636,7 +636,7 @@ export function AdminStep() {
                               {selectedBooking.city === 'ROSTOV_NA_DONU' ? 'Ростов-на-Дону' : 
                                selectedBooking.city === 'BATAYSK' ? 'Батайск' : 
                                selectedBooking.city === 'STAVROPOL' ? 'Ставрополь' : selectedBooking.city}
-                              {selectedBooking.district && ` (${selectedBooking.district})`}
+                              {selectedBooking.district && ` (${selectedBooking.district === 'other' ? 'Другой район' : selectedBooking.district})`}
                               {' — '}
                             </span>
                           )}

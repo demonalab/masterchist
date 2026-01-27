@@ -99,7 +99,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
         proCleaningDetails: true,
         proCleaningPhotoFileIds: true,
         user: { select: { telegramId: true, firstName: true } },
-        address: { select: { addressLine: true, contactName: true, contactPhone: true } },
+        address: { select: { city: true, district: true, addressLine: true, contactName: true, contactPhone: true } },
         cleaningKit: { select: { number: true } },
         timeSlot: { select: { startTime: true, endTime: true } },
         service: { select: { code: true, title: true } },
@@ -116,6 +116,8 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
       kitNumber: b.cleaningKit?.number ?? null,
       timeSlot: b.timeSlot ? `${b.timeSlot.startTime} - ${b.timeSlot.endTime}` : null,
       service: b.service?.title ?? b.service?.code ?? null,
+      city: b.address?.city ?? null,
+      district: b.address?.district ?? null,
       user: b.user ? { telegramId: b.user.telegramId, firstName: b.user.firstName ?? '' } : null,
       address: b.address ? {
         addressLine: b.address.addressLine,

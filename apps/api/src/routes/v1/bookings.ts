@@ -45,8 +45,11 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       BATAYSK: 'Батайск',
       STAVROPOL: 'Ставрополь',
     };
+    const districtNames: Record<string, string> = {
+      other: 'Другой район',
+    };
     const cityName = booking.address?.city ? cityNames[booking.address.city] ?? booking.address.city : '—';
-    const districtName = booking.address?.district || null;
+    const districtName = booking.address?.district ? (districtNames[booking.address.district] ?? booking.address.district) : null;
 
     const message = `💰 <b>Новая оплата!</b>
 
@@ -241,8 +244,9 @@ async function notifyAdminsAboutProCleaning(bookingId: string, details: string, 
 
     if (!booking) return;
 
+    const DISTRICT_NAMES: Record<string, string> = { other: 'Другой район' };
     const cityName = CITY_NAMES[booking.address?.city ?? ''] || booking.address?.city || '—';
-    const districtName = booking.address?.district || null;
+    const districtName = booking.address?.district ? (DISTRICT_NAMES[booking.address.district] ?? booking.address.district) : null;
     
     const message = `🧹 <b>Новая заявка на проф. химчистку!</b>
 
