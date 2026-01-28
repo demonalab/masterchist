@@ -678,7 +678,7 @@ export function AdminStep() {
                                selectedBooking.city === 'BATAYSK' ? 'Батайск' : 
                                selectedBooking.city === 'STAVROPOL' ? 'Ставрополь' : selectedBooking.city}
                               {selectedBooking.district && ` (${
-                                ({'sovetsky': 'Советский', 'kirovsky': 'Кировский', 'leninsky': 'Ленинский', 'oktyabrsky': 'Октябрьский', 'pervomaysky': 'Первомайский', 'proletarsky': 'Пролетарский', 'voroshilovsky': 'Ворошиловский', 'zheleznodorozhny': 'Железнодорожный', 'other': 'Другой район'} as Record<string, string>)[selectedBooking.district] || selectedBooking.district
+                                ({'sovetsky': 'Советский', 'kirovsky': 'Кировский', 'leninsky': 'Ленинский', 'oktyabrsky': 'Октябрьский', 'pervomaysky': 'Первомайский', 'proletarsky': 'Пролетарский', 'voroshilovsky': 'Ворошиловский', 'zheleznodorozhny': 'Железнодорожный', 'zhd': 'Железнодорожный', 'other': 'Другой район'} as Record<string, string>)[selectedBooking.district] || selectedBooking.district
                               })`}
                               {' — '}
                             </span>
