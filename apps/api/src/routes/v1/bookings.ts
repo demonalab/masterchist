@@ -59,6 +59,7 @@ async function notifyAdminsAboutPayment(bookingId: string, photoBuffer?: Buffer,
       proletarsky: 'Пролетарский',
       voroshilovsky: 'Ворошиловский',
       zheleznodorozhny: 'Железнодорожный',
+      zhd: 'Железнодорожный',
       other: 'Другой район',
     };
     const cityName = booking.address?.city ? cityNames[booking.address.city] ?? booking.address.city : '—';
@@ -266,6 +267,7 @@ async function notifyAdminsAboutProCleaning(bookingId: string, details: string, 
       proletarsky: 'Пролетарский',
       voroshilovsky: 'Ворошиловский',
       zheleznodorozhny: 'Железнодорожный',
+      zhd: 'Железнодорожный',
       other: 'Другой район',
     };
     const cityName = CITY_NAMES[booking.address?.city ?? ''] || booking.address?.city || '—';
