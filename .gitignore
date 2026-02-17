@@ -9,3 +9,6 @@ coverage
 .DS_Store
 *.tsbuildinfo
 .turbo/
+# Large video files (copied to server manually)
+apps/web/public/instruction.mp4
+VID_*.mp4

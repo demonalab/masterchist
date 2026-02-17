@@ -2,7 +2,7 @@ import { FastifyPluginAsync } from 'fastify';
 import { prisma } from '@himchistka/db';
 import { BookingStatuses } from '@himchistka/shared';
 import { telegramAuthHook } from '../../plugins/telegram-auth.plugin';
-import { notifyBookingStatusChange } from '../../lib/user-notifications';
+import { notifyBookingStatusChange, sendVideoInstruction } from '../../lib/user-notifications';
 import ExcelJS from 'exceljs';
 
 // Support multiple admin IDs via comma-separated list
@@ -165,7 +165,7 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
     const booking = await prisma.booking.findUnique({
       where: { id },
-      select: { id: true, status: true, user: { select: { telegramId: true } } },
+      select: { id: true, status: true, userId: true, service: { select: { code: true } }, user: { select: { telegramId: true } } },
     });
 
     if (!booking) {
@@ -184,6 +184,11 @@ const adminRoutes: FastifyPluginAsync = async (fastify) => {
 
     // Notify user in all linked messengers
     notifyBookingStatusChange(id, BookingStatuses.CONFIRMED, '✅ <b>Ваш заказ подтверждён!</b>').catch(console.error);
+
+    // Send video instruction for self-cleaning service
+    if (booking.service?.code === 'self_cleaning') {
+      sendVideoInstruction(booking.userId).catch(console.error);
+    }
 
     return { success: true, userTelegramId: booking.user.telegramId };
   });

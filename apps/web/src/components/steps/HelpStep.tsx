@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowLeft, Question, SprayBottle, Sparkle, Phone, TelegramLogo } from '@phosphor-icons/react';
+import { ArrowLeft, Question, SprayBottle, Sparkle, Phone, TelegramLogo, PlayCircle } from '@phosphor-icons/react';
 
 interface HelpStepProps {
   onBack: () => void;
@@ -67,6 +67,34 @@ export function HelpStep({ onBack }: HelpStepProps) {
           </p>
         </motion.div>
       </div>
+
+      {/* Video instruction */}
+      <motion.div 
+        className="mb-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+      >
+        <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+          <PlayCircle weight="duotone" className="w-5 h-5 text-accent-green" />
+          Видеоинструкция
+        </h2>
+        <div className="glass-card-static p-4 rounded-2xl overflow-hidden">
+          <p className="text-sm text-white/50 mb-3">
+            Как пользоваться аппаратом для химчистки и химией
+          </p>
+          <video
+            controls
+            playsInline
+            preload="metadata"
+            className="w-full rounded-xl"
+            poster=""
+          >
+            <source src="/instruction.mp4" type="video/mp4" />
+            Ваш браузер не поддерживает видео.
+          </video>
+        </div>
+      </motion.div>
 
       {/* FAQ */}
       <motion.div 

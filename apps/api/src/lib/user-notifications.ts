@@ -100,6 +100,87 @@ export async function notifyUserAllChannels(options: NotifyUserOptions): Promise
   }
 }
 
+const INSTRUCTION_VIDEO_URL = 'https://xn--80akjnwedee1c.xn--p1ai/instruction.mp4';
+
+export async function sendVideoInstruction(userId: string): Promise<void> {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, telegramId: true, maxId: true, phone: true },
+    });
+
+    if (!user) return;
+
+    const telegramIds: string[] = [];
+    const maxIds: string[] = [];
+
+    if (user.telegramId) telegramIds.push(user.telegramId);
+    if (user.maxId) maxIds.push(user.maxId);
+
+    if (user.phone) {
+      const linkedUsers = await prisma.user.findMany({
+        where: { phone: user.phone, id: { not: userId } },
+        select: { telegramId: true, maxId: true },
+      });
+      for (const linked of linkedUsers) {
+        if (linked.telegramId && !telegramIds.includes(linked.telegramId)) {
+          telegramIds.push(linked.telegramId);
+        }
+        if (linked.maxId && !maxIds.includes(linked.maxId)) {
+          maxIds.push(linked.maxId);
+        }
+      }
+    }
+
+    const caption = '📹 <b>Видеоинструкция</b>\n\nКак пользоваться аппаратом для химчистки и химией. Сохраните это видео!';
+
+    // Send video to Telegram
+    if (config.BOT_TOKEN && telegramIds.length > 0) {
+      for (const chatId of telegramIds) {
+        try {
+          await fetch(`https://api.telegram.org/bot${config.BOT_TOKEN}/sendVideo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: chatId,
+              video: INSTRUCTION_VIDEO_URL,
+              caption,
+              parse_mode: 'HTML',
+            }),
+          });
+          console.log(`Video instruction sent to Telegram ${chatId}`);
+        } catch (err) {
+          console.error(`Failed to send video to Telegram ${chatId}:`, err);
+        }
+      }
+    }
+
+    // Send video link to MAX (as text with link since MAX video upload is complex)
+    if (config.MAX_BOT_TOKEN && maxIds.length > 0) {
+      const maxMessage = `📹 Видеоинструкция\n\nКак пользоваться аппаратом для химчистки и химией.\n\n▶️ Смотреть: ${INSTRUCTION_VIDEO_URL}`;
+      for (const chatId of maxIds) {
+        try {
+          await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': config.MAX_BOT_TOKEN,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text: maxMessage }),
+          });
+          console.log(`Video instruction sent to MAX ${chatId}`);
+        } catch (err) {
+          console.error(`Failed to send video to MAX ${chatId}:`, err);
+        }
+      }
+    }
+
+    console.log(`Video instruction sent: TG=${telegramIds.join(',')}, MAX=${maxIds.join(',')}`);
+  } catch (err) {
+    console.error('Failed to send video instruction:', err);
+  }
+}
+
 export async function notifyBookingStatusChange(
   bookingId: string,
   newStatus: string,
