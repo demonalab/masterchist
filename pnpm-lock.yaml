@@ -111,8 +111,8 @@ importers:
   apps/max-bot:
     dependencies:
       '@maxhub/max-bot-api':
-        specifier: ^0.2.1
-        version: 0.2.1
+        specifier: ^0.2.2
+        version: 0.2.2
       node-fetch:
         specifier: ^3.3.2
         version: 3.3.2
@@ -755,8 +755,8 @@ packages:
     resolution: {integrity: sha512-9I2Zn6+NJLfaGoz9jN3lpwDgAYvfGeNYdbAIjJOqzs4Tpc+VU3Jqq4IofSUBKajiDS8k9fZIg18/z13mpk1bsA==}
     engines: {node: '>=8'}
 
-  '@maxhub/max-bot-api@0.2.1':
-    resolution: {integrity: sha512-nCc/4eFfvlGvLm4syx39plCfajIwczTmXuM6LsI6n1So05YvtPezHKEFurWGh3f2FxrfDi1O4lYH/iKZ/FCv5w==}
+  '@maxhub/max-bot-api@0.2.2':
+    resolution: {integrity: sha512-Su3Ar7L+lsOctu7V5+me+eh+84l909ka3LtlPVuBbSz1fygk5L/F45HQp1vaUGg9sRpQ6/qoyKg6HJgemnX3mg==}
     engines: {node: '>=18.18.0'}
 
   '@napi-rs/wasm-runtime@0.2.12':
@@ -4076,7 +4076,7 @@ snapshots:
 
   '@lukeed/ms@2.0.2': {}
 
-  '@maxhub/max-bot-api@0.2.1':
+  '@maxhub/max-bot-api@0.2.2':
     dependencies:
       debug: 4.4.3
       vcf: 2.1.2
