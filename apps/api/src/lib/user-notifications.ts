@@ -155,24 +155,24 @@ export async function sendVideoInstruction(userId: string): Promise<void> {
       }
     }
 
-    // Send video to MAX via file upload
+    // Отправляем видео в MAX через upload API
     if (config.MAX_BOT_TOKEN && maxIds.length > 0) {
       try {
         // Скачиваем видео
         const videoRes = await fetch(INSTRUCTION_VIDEO_URL);
-        if (!videoRes.ok) throw new Error(`Failed to download video: ${videoRes.status}`);
+        if (!videoRes.ok) throw new Error(`Не удалось скачать видео: ${videoRes.status}`);
         const videoBuffer = Buffer.from(await videoRes.arrayBuffer());
 
-        // Получаем upload URL
+        // Получаем upload URL и токен (для видео токен приходит сразу)
         const uploadUrlRes = await fetch('https://platform-api.max.ru/uploads?type=video', {
           method: 'POST',
           headers: { 'Authorization': config.MAX_BOT_TOKEN },
         });
-        const uploadUrlData = await uploadUrlRes.json() as { url?: string };
+        const uploadUrlData = await uploadUrlRes.json() as { url?: string; token?: string };
         console.log('MAX video upload URL:', JSON.stringify(uploadUrlData));
 
-        if (uploadUrlData.url) {
-          // Загружаем видео
+        if (uploadUrlData.url && uploadUrlData.token) {
+          // Загружаем видео на сервер (ответ XML, парсить не нужно)
           const formData = new FormData();
           const blob = new Blob([videoBuffer], { type: 'video/mp4' });
           formData.append('data', blob, 'instruction.mp4');
@@ -181,46 +181,28 @@ export async function sendVideoInstruction(userId: string): Promise<void> {
             method: 'POST',
             body: formData,
           });
-          const uploadResult = await uploadRes.json() as any;
-          console.log('MAX video upload result:', JSON.stringify(uploadResult));
+          console.log('MAX video file upload status:', uploadRes.status);
 
-          // Извлекаем токен (может быть в разных полях)
-          let videoToken: string | null = null;
-          if (uploadResult.token) {
-            videoToken = uploadResult.token;
-          } else if (uploadResult.id) {
-            videoToken = uploadResult.id;
-          }
-
-          if (videoToken) {
-            const maxCaption = '📹 Видеоинструкция\n\nКак пользоваться аппаратом для химчистки и химией. Сохраните это видео!';
-            for (const chatId of maxIds) {
-              try {
-                await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
-                  method: 'POST',
-                  headers: {
-                    'Authorization': config.MAX_BOT_TOKEN,
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                    text: maxCaption,
-                    attachments: [{ type: 'video', payload: { token: videoToken } }],
-                  }),
-                });
-                console.log(`Video instruction sent to MAX ${chatId} with attachment`);
-              } catch (err) {
-                console.error(`Failed to send video to MAX ${chatId}:`, err);
-              }
-            }
-          } else {
-            console.error('MAX video upload: no token in response', uploadResult);
-            // Фолбэк — отправляем ссылку
-            for (const chatId of maxIds) {
-              await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
+          // Используем токен из первого ответа
+          const videoToken = uploadUrlData.token;
+          const maxCaption = '📹 Видеоинструкция\n\nКак пользоваться аппаратом для химчистки и химией. Сохраните это видео!';
+          for (const chatId of maxIds) {
+            try {
+              const sendRes = await fetch(`https://platform-api.max.ru/messages?user_id=${chatId}`, {
                 method: 'POST',
-                headers: { 'Authorization': config.MAX_BOT_TOKEN, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: `📹 Видеоинструкция\n\n▶️ Смотреть: ${INSTRUCTION_VIDEO_URL}` }),
+                headers: {
+                  'Authorization': config.MAX_BOT_TOKEN,
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  text: maxCaption,
+                  attachments: [{ type: 'video', payload: { token: videoToken } }],
+                }),
               });
+              const sendResult = await sendRes.text();
+              console.log(`MAX video send to ${chatId}: status=${sendRes.status}, response=${sendResult}`);
+            } catch (err) {
+              console.error(`Не удалось отправить видео в MAX ${chatId}:`, err);
             }
           }
         }
