@@ -64,7 +64,7 @@ export function ServiceStep() {
 
       {/* Hero text */}
       <motion.div 
-        className="mt-8 mb-10"
+        className="mt-2 mb-8"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
