@@ -5,11 +5,12 @@ import { useBookingStore } from '@/lib/booking-store';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   CaretLeft, ChartBar, ClipboardText, Clock, Check, X, Phone,
-  SpinnerGap, User, MapPin, Package, Warning, Export, Trash, UserPlus, Users, Wrench
+  SpinnerGap, User, MapPin, Package, Warning, Export, Trash, UserPlus, Users, Wrench, ChatCircle
 } from '@phosphor-icons/react';
 import { api } from '@/lib/api';
 import { useHaptic } from '@/lib/haptic';
 import { ImageLightbox } from '@/components/ImageLightbox';
+import { BookingChat } from '@/components/BookingChat';
 import { toast } from 'sonner';
 
 interface AdminBooking {
@@ -127,6 +128,7 @@ export function AdminStep() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [confirmDelete, setConfirmDelete] = useState<{ type: 'booking' | 'admin'; id: string } | null>(null);
+  const [chatBookingId, setChatBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -828,6 +830,14 @@ export function AdminStep() {
                 )}
 
                 <button
+                  onClick={() => { setChatBookingId(selectedBooking.id); setSelectedBooking(null); }}
+                  className="w-full py-3 px-4 bg-accent-purple/20 text-accent-purple font-medium rounded-xl flex items-center justify-center gap-2"
+                >
+                  <ChatCircle weight="bold" className="w-5 h-5" />
+                  Чат с клиентом
+                </button>
+
+                <button
                   onClick={() => setSelectedBooking(null)}
                   className="w-full py-3 px-4 bg-white/5 text-white/60 font-medium rounded-xl"
                 >
@@ -1110,6 +1120,17 @@ export function AdminStep() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {chatBookingId && (
+        <div className="fixed inset-0 z-50 bg-[#0a0a0f]">
+          <BookingChat
+            bookingId={chatBookingId}
+            shortId={chatBookingId.slice(0, 8).toUpperCase()}
+            onBack={() => setChatBookingId(null)}
+            isAdmin={true}
+          />
+        </div>
+      )}
     </div>
   );
 }

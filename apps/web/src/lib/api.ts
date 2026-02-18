@@ -731,6 +731,76 @@ class ApiClientExtended extends ApiClient {
     }
   }
 
+  // ============ MESSAGES API ============
+
+  async getMessages(bookingId: string): Promise<ApiResult<Array<{
+    id: string;
+    bookingId: string;
+    sender: 'client' | 'admin' | 'system';
+    senderName: string | null;
+    text: string;
+    isRead: boolean;
+    createdAt: string;
+  }>>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/messages/${bookingId}`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async sendMessage(bookingId: string, text: string): Promise<ApiResult<{
+    id: string;
+    bookingId: string;
+    sender: string;
+    text: string;
+    createdAt: string;
+  }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/messages/${bookingId}`, {
+        method: 'POST',
+        headers: this.headers,
+        body: JSON.stringify({ text }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({ message: res.statusText }));
+        return { ok: false, status: res.status, error: body.message ?? res.statusText };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch (err) {
+      return { ok: false, status: 0, error: (err as Error).message };
+    }
+  }
+
+  async getUnreadCount(): Promise<ApiResult<{ count: number }>> {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/v1/messages/unread/count`, {
+        method: 'GET',
+        headers: this.headers,
+      });
+
+      if (!res.ok) {
+        return { ok: true, data: { count: 0 } };
+      }
+
+      return { ok: true, data: await res.json() };
+    } catch {
+      return { ok: true, data: { count: 0 } };
+    }
+  }
+
   async updateTimeSlot(city: string, code: string, data: { isActive?: boolean }): Promise<ApiResult<{ code: string; city: string; isActive: boolean }>> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/admin/time-slots/${city}/${code}`, {
