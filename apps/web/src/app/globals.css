@@ -111,10 +111,16 @@ body {
     @apply flex flex-col p-5;
     min-height: 100dvh;
     min-height: var(--tg-viewport-stable-height, 100dvh);
-    padding-top: calc(env(safe-area-inset-top, 0px) + 12px);
-    padding-top: calc(var(--tg-content-safe-area-inset-top, 0px) + 12px);
-    padding-bottom: max(100px, calc(env(safe-area-inset-bottom, 0px) + 80px));
-    padding-bottom: max(100px, calc(var(--tg-content-safe-area-inset-bottom, 0px) + 80px));
+    padding-top: calc(
+      var(--tg-safe-area-inset-top, env(safe-area-inset-top, 0px)) +
+      var(--tg-content-safe-area-inset-top, 0px) +
+      8px
+    );
+    padding-bottom: calc(
+      var(--tg-safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)) +
+      var(--tg-content-safe-area-inset-bottom, 0px) +
+      80px
+    );
   }
 
   .label-sm {
