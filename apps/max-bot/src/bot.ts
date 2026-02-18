@@ -207,6 +207,27 @@ export function createBot() {
     const message = ctx.message as any;
     const text = message?.body?.text || '';
     if (text.startsWith('/')) return;
+
+    // Сохранить сообщение клиента в чат по заказу
+    const userId = message?.sender?.user_id;
+    if (userId && text.trim()) {
+      try {
+        const res = await fetch(`${config.API_BASE_URL}/api/v1/messages/from-bot`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ maxId: String(userId), text: text.trim() }),
+        });
+        const result = await res.json() as { saved?: boolean };
+
+        if (result.saved) {
+          await ctx.reply('✅ Сообщение отправлено администратору. Ответ придёт сюда.', { attachments: [welcomeKeyboard()] });
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to save message from MAX bot:', err);
+      }
+    }
+
     await ctx.reply('👋 Для оформления заказа нажмите кнопку ниже:', { attachments: [welcomeKeyboard()] });
   });
 

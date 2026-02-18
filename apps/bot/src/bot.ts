@@ -53,7 +53,38 @@ export function createBot(): Bot<Context> {
   bot.callbackQuery(/^admin:confirm:/, handleAdminConfirm);
   bot.callbackQuery(/^admin:reject:/, handleAdminReject);
 
-  // Any other message - redirect to Mini App
+  // Текстовое сообщение от клиента → сохранить в чат по последнему активному заказу
+  bot.on('message:text', async (ctx) => {
+    const userId = ctx.from?.id;
+    const text = ctx.message?.text;
+    if (!userId || !text) return;
+
+    try {
+      const res = await fetch(`${config.API_BASE_URL}/api/v1/messages/from-bot`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telegramId: String(userId), text }),
+      });
+      const result = await res.json() as { saved?: boolean; reason?: string };
+
+      if (result.saved) {
+        await ctx.reply('✅ Сообщение отправлено администратору. Ответ придёт сюда.', {
+          reply_markup: welcomeKeyboard(),
+        });
+      } else {
+        await ctx.reply('📱 У вас нет активных заказов. Для оформления нажмите кнопку ниже:', {
+          reply_markup: welcomeKeyboard(),
+        });
+      }
+    } catch (err) {
+      console.error('Failed to save message from bot:', err);
+      await ctx.reply('📱 Для оформления заказа нажмите кнопку ниже:', {
+        reply_markup: welcomeKeyboard(),
+      });
+    }
+  });
+
+  // Любое другое сообщение (фото, стикер и т.д.)
   bot.on('message', async (ctx) => {
     await ctx.reply('📱 Для оформления заказа нажмите кнопку ниже:', {
       reply_markup: welcomeKeyboard(),
