@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin, X, Image as ImageIcon, ChatCircle } from '@phosphor-icons/react';
+import { ClipboardText, Package, CalendarBlank, Clock, ArrowLeft, SpinnerGap, ArrowClockwise, MapPin, X, Image as ImageIcon, ChatCircle, CreditCard } from '@phosphor-icons/react';
 import { api, MyBooking } from '@/lib/api';
 import { useBookingStore } from '@/lib/booking-store';
 import { ImageLightbox } from '@/components/ImageLightbox';
 import { BookingChat } from '@/components/BookingChat';
+import { PaymentModal } from '@/components/PaymentModal';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   new: { label: 'Новый', color: 'text-blue-400' },
@@ -29,6 +30,7 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [chatBookingId, setChatBookingId] = useState<string | null>(null);
+  const [payBookingId, setPayBookingId] = useState<string | null>(null);
   const { updateDraft, setStep } = useBookingStore();
 
   useEffect(() => {
@@ -241,6 +243,15 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
                         Отменить
                       </button>
                     )}
+                    {booking.status === 'awaiting_prepayment' && (
+                      <button
+                        onClick={() => setPayBookingId(booking.id)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-green/10 hover:bg-accent-green/20 text-accent-green text-xs font-medium rounded-lg transition-colors"
+                      >
+                        <CreditCard weight="bold" className="w-3.5 h-3.5" />
+                        Оплатить
+                      </button>
+                    )}
                     <button
                       onClick={() => setChatBookingId(booking.id)}
                       className="flex items-center gap-1.5 px-3 py-1.5 bg-accent-purple/10 hover:bg-accent-purple/20 text-accent-purple text-xs font-medium rounded-lg transition-colors"
@@ -277,6 +288,22 @@ export function MyOrdersStep({ onBack }: MyOrdersStepProps) {
             bookingId={chatBookingId}
             shortId={chatBookingId.slice(0, 8).toUpperCase()}
             onBack={() => setChatBookingId(null)}
+          />
+        </div>
+      )}
+
+      {payBookingId && (
+        <div className="fixed inset-0 z-50 bg-[#0a0a0f]">
+          <PaymentModal
+            bookingId={payBookingId}
+            shortId={payBookingId.slice(0, 8).toUpperCase()}
+            onBack={() => setPayBookingId(null)}
+            onSuccess={() => {
+              setPayBookingId(null);
+              setBookings(prev => prev.map(b =>
+                b.id === payBookingId ? { ...b, status: 'prepaid' } : b
+              ));
+            }}
           />
         </div>
       )}
