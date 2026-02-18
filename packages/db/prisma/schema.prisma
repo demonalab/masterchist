@@ -143,6 +143,7 @@ model Booking {
 
   paymentProofs PaymentProof[]
   statusHistory BookingStatusHistory[]
+  messages      Message[]
 
   @@unique([cleaningKitId, scheduledDate, timeSlotId], map: "uniq_kit_date_slot")
   @@index([userId, createdAt])
@@ -203,6 +204,26 @@ model BookingStatusHistory {
   status    BookingStatus
   comment   String?       @db.Text
   changedBy String?       @db.VarChar(32) // admin telegramId or 'system'
+  createdAt DateTime      @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId, createdAt])
+}
+
+enum MessageSender {
+  client
+  admin
+  system
+}
+
+model Message {
+  id        String        @id @default(uuid())
+  bookingId String
+  sender    MessageSender
+  senderName String?      @db.VarChar(128)
+  text      String        @db.Text
+  isRead    Boolean       @default(false)
   createdAt DateTime      @default(now())
 
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
